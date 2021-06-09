@@ -33,13 +33,13 @@ func convertSDKCluster(sdkCluster *ovirtsdk4.Cluster) (Cluster, error) {
 		return nil, fmt.Errorf("failed to fetch name for cluster %s", id)
 	}
 	return &cluster{
-		id: id,
+		id:   id,
 		name: name,
 	}, nil
 }
 
 type cluster struct {
-	id string
+	id   string
 	name string
 }
 

@@ -22,4 +22,3 @@ func (o *oVirtClient) ListTemplates() ([]Template, error) {
 	}
 	return result, nil
 }
-

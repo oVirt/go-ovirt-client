@@ -28,7 +28,7 @@ func NewVMCPUTopo(cores uint, threads uint, sockets uint) (VMCPUTopo, error) {
 		return nil, fmt.Errorf("BUG: sockets cannot be zero")
 	}
 	return &vmCPUTopo{
-		cores: cores,
+		cores:   cores,
 		threads: threads,
 		sockets: sockets,
 	}, nil
@@ -51,7 +51,7 @@ type VMCPUTopo interface {
 }
 
 type vmCPUTopo struct {
-	cores uint
+	cores   uint
 	threads uint
 	sockets uint
 }
@@ -73,5 +73,4 @@ type VMBlockDevice interface {
 	Bootable() bool
 
 	StorageDomainID() string
-
 }

@@ -68,7 +68,7 @@ type Disk interface {
 	Alias() string
 	ProvisionedSize() uint
 	Format() ImageFormat
-	StorageDomain() StorageDomain
+	StorageDomainID() string
 }
 
 // UploadImageProgress is a tracker for the upload progress happening in the background.
@@ -99,13 +99,19 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 	if !ok {
 		return nil, fmt.Errorf("disk does not contain an ID")
 	}
-	sdkStorageDomain, ok := sdkDisk.StorageDomain()
-	if !ok {
-		return nil, fmt.Errorf("disk %s does not contain a storage domain", id)
+	var storageDomainID string
+	if sdkStorageDomain, ok := sdkDisk.StorageDomain(); ok {
+		storageDomainID, _ = sdkStorageDomain.Id()
 	}
-	storageDomain, err := convertSDKStorageDomain(sdkStorageDomain)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert storage domain in disk %s (%w)", id, err)
+	if storageDomainID == "" {
+		if sdkStorageDomains, ok := sdkDisk.StorageDomains(); ok {
+			if len(sdkStorageDomains.Slice()) == 1 {
+				storageDomainID, _ = sdkStorageDomains.Slice()[0].Id()
+			}
+		}
+	}
+	if storageDomainID == "" {
+		return nil, fmt.Errorf("failed to find a valid storage domain ID for disk %s", id)
 	}
 	alias, ok := sdkDisk.Alias()
 	if !ok {
@@ -124,16 +130,16 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 		alias:           alias,
 		provisionedSize: uint(provisionedSize),
 		format:          ImageFormat(format),
-		storageDomain:   storageDomain,
+		storageDomainID: storageDomainID,
 	}, nil
 }
 
 type disk struct {
-	id string
-	alias string
+	id              string
+	alias           string
 	provisionedSize uint
-	format ImageFormat
-	storageDomain StorageDomain
+	format          ImageFormat
+	storageDomainID string
 }
 
 func (d disk) ID() string {
@@ -152,9 +158,6 @@ func (d disk) Format() ImageFormat {
 	return d.format
 }
 
-func (d disk) StorageDomain() StorageDomain {
-	return d.storageDomain
+func (d disk) StorageDomainID() string {
+	return d.storageDomainID
 }
-
-
-

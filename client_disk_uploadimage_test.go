@@ -28,7 +28,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	disk, err := client.UploadImage(

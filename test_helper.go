@@ -121,11 +121,11 @@ func NewTestHelper(
 	}
 
 	return &testHelper{
-		client: client,
-		clusterID: clusterID,
+		client:          client,
+		clusterID:       clusterID,
 		storageDomainID: storageDomainID,
 		blankTemplateID: blankTemplateID,
-		rand: rand.New(rand.NewSource(time.Now().UnixNano())),
+		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
 	}, nil
 }
 

@@ -58,16 +58,16 @@ func convertSDKHost(sdkHost *ovirtsdk4.Host) (Host, error) {
 		return nil, fmt.Errorf("failed to fetch cluster ID from host %s", id)
 	}
 	return &host{
-		id: id,
-		status: HostStatus(status),
+		id:        id,
+		status:    HostStatus(status),
 		clusterID: clusterID,
 	}, nil
 }
 
 type host struct {
-	id string
+	id        string
 	clusterID string
-	status HostStatus
+	status    HostStatus
 }
 
 func (h host) ID() string {
@@ -81,4 +81,3 @@ func (h host) ClusterID() string {
 func (h host) Status() HostStatus {
 	return h.status
 }
-

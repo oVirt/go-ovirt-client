@@ -87,10 +87,10 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (Storage
 }
 
 type storageDomain struct {
-	id string
-	name string
-	available uint
-	status StorageDomainStatus
+	id             string
+	name           string
+	available      uint
+	status         StorageDomainStatus
 	externalStatus StorageDomainExternalStatus
 }
 
@@ -113,4 +113,3 @@ func (s storageDomain) Status() StorageDomainStatus {
 func (s storageDomain) ExternalStatus() StorageDomainExternalStatus {
 	return s.externalStatus
 }
-

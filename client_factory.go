@@ -38,8 +38,7 @@ func New(
 		Password(password).
 		CAFile(caFile).
 		CACert(caCert).
-		Insecure(insecure).
-		LogFunc(logger.Logf)
+		Insecure(insecure)
 	if len(extraHeaders) > 0 {
 		connBuilder.Headers(extraHeaders)
 	}
@@ -114,6 +113,7 @@ func createTLSConfig(
 			)
 		}
 	}
+	tlsConfig.RootCAs = certPool
 	return tlsConfig, nil
 }
 

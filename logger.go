@@ -15,7 +15,6 @@ func NewGoLogLogger() Logger {
 }
 
 type goLogLogger struct {
-
 }
 
 func (g *goLogLogger) Log(v ...interface{}) {

@@ -22,4 +22,3 @@ func (o *oVirtClient) ListHosts() ([]Host, error) {
 	}
 	return result, nil
 }
-

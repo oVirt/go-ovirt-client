@@ -31,15 +31,15 @@ func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template) (Template, error) {
 		return nil, fmt.Errorf("template does not contain a description")
 	}
 	return &template{
-		id: id,
-		name: name,
+		id:          id,
+		name:        name,
 		description: description,
 	}, nil
 }
 
 type template struct {
-	id string
-	name string
+	id          string
+	name        string
 	description string
 }
 
