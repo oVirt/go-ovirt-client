@@ -91,3 +91,9 @@ func TestSomething(t *testing.T) {
     //...
 }
 ```
+
+## FAQ
+
+### Why doesn't the library return the underlying oVirt SDK objects?
+
+It's a painful decision we made. We want to encourage anyone who needs a certain function to submit a PR instead of simply relying on the SDK objects. This will lead to some overhead when a new function needs to be added, but leads to cleaner code in the end and makes this library more comprehensive.

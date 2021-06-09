@@ -110,7 +110,7 @@ func (t *testHelper) GetSDKClient() *ovirtsdk4.Connection {
 	return t.client.GetSDKClient()
 }
 
-func (t *testHelper) GetCluster() *ovirtsdk4.Cluster {
+func (t *testHelper) GetClusterID() string {
 	panic("implement me")
 }
 
