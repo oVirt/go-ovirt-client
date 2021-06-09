@@ -12,7 +12,9 @@ import (
 	"github.com/janoszen/govirt"
 )
 
-func getClient(t *testing.T) govirt.OVirtClient {
+
+
+func getClient(t *testing.T) govirt.Client {
 	url := os.Getenv("OVIRT_URL")
 	if url == "" {
 		t.Fatal(fmt.Errorf("the OVIRT_URL environment variable must not be empty"))

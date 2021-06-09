@@ -23,7 +23,7 @@ func New(
 	insecure bool,
 	extraHeaders map[string]string,
 	logger Logger,
-) (OVirtClient, error) {
+) (Client, error) {
 	if err := validateURL(url); err != nil {
 		return nil, fmt.Errorf("invalid URL: %s (%w)", url, err)
 	}
@@ -66,6 +66,7 @@ func New(
 		conn:       conn,
 		httpClient: httpClient,
 		logger:     logger,
+		url:        url,
 	}, nil
 }
 
@@ -122,16 +123,19 @@ type oVirtClient struct {
 	conn       *ovirtsdk4.Connection
 	httpClient http.Client
 	logger     Logger
+	url        string
 }
 
-func (o *oVirtClient) CreateVM(
-	ctx context.Context,
-	clusterID string,
-	cpuTopo VMCPUTopo,
-	templateID string,
-	blockDevices []VMBlockDevice,
-) {
-	panic("implement me")
+func (o *oVirtClient) GetSDKClient() *ovirtsdk4.Connection {
+	return o.conn
+}
+
+func (o *oVirtClient) GetHTTPClient() http.Client {
+	return o.httpClient
+}
+
+func (o *oVirtClient) GetURL() string {
+	return o.url
 }
 
 func (o *oVirtClient) RemoveDisk(ctx context.Context, diskID string) error {

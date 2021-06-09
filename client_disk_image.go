@@ -132,7 +132,7 @@ type uploadImageProgress struct {
 	disk *ovirtsdk4.Disk
 	// diskID contains the ID of the disk that has been created. This field is only filled once the disk exists.
 	diskID string
-	// client is the OVirtClient instance that created this image upload.
+	// client is the Client instance that created this image upload.
 	client *oVirtClient
 }
 

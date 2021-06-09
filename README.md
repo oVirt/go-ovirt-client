@@ -52,3 +52,7 @@ func main() {
     //....
 }
 ```
+
+## Test helper
+
+This library also provides a test helper for integration testing against the oVirt engine. It allows for automatically discovering a usable storage domain, host, clusters, etc. 
