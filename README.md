@@ -1,6 +1,6 @@
 # goVirt: an easy-to-use overlay for the oVirt Go SDK
 
-<center>⚠⚠⚠ This library is work-in-progress. Do not use. ⚠⚠⚠</center>
+<p align="center"><strong>⚠⚠⚠ This library is work-in-progress. Do not use. ⚠⚠⚠</strong></p>
 
 This library provides an easy-to-use overlay for the automatically generated [Go SDK for oVirt](https://github.com/oVirt/go-ovirt). It does *not* replace the Go SDK. It implements the functions of the SDK only partially and is primarily used by the [oVirt Terraform provider](https://github.com/oVirt/terraform-provider-ovirt/).
 
@@ -25,20 +25,20 @@ func main() {
     // Create a new goVirt instance:
 	client, err := govirt.New(
         // URL to your oVirt engine API here:
-		"https://your-ovirt-engine/ovirt-engine/api/",
+        "https://your-ovirt-engine/ovirt-engine/api/",
         // Username here:
-		"admin@internal",
-	    // Password here:
-		"password-here",
+        "admin@internal",
+        // Password here:
+        "password-here",
         // Provide the path to the CA certificate here:
-		"/path/to/ca.crt",
+        "/path/to/ca.crt",
         // Alternatively, provide the certificate directly:
-		[]byte("ca-cert-here in PEM format"),
+        []byte("ca-cert-here in PEM format"),
         // Disable certificate verification. This is a bad idea:
-		false,
+        false,
         // Extra headers map:
-		map[string]string{},
-		logger,
+        map[string]string{},
+        logger,
 	)
     if err != nil {
         // Handle error, here in a really crude way:
