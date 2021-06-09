@@ -13,8 +13,8 @@ type TestHelper interface {
 	// GetSDKClient returns the oVirt SDK client.
 	GetSDKClient() *ovirtsdk4.Connection
 
-	// GetCluster returns the oVirt cluster for testing purposes.
-	GetCluster() *ovirtsdk4.Cluster
+	// GetClusterID returns the ID for the cluster.
+	GetClusterID() string
 
 	// GetBlankTemplateID returns the ID of the blank template that can be used for creating dummy VMs.
 	GetBlankTemplateID() string
@@ -30,9 +30,6 @@ type TestHelper interface {
 
 	// GetAuthzName returns the name of an authz that can be used for testing purposes.
 	GetAuthzName() string
-
-	// GetDatacenterName returns the name of a datacenter that can be used for testing purposes.
-	GetDatacenterName() string
 
 	// GetDatacenterID returns the ID of the test datacenter
 	GetDatacenterID() string

@@ -39,7 +39,7 @@ func main() {
         // Extra headers map:
         map[string]string{},
         logger,
-	)
+    )
     if err != nil {
         // Handle error, here in a really crude way:
     	panic(err)
@@ -55,4 +55,39 @@ func main() {
 
 ## Test helper
 
-This library also provides a test helper for integration testing against the oVirt engine. It allows for automatically discovering a usable storage domain, host, clusters, etc. 
+This library also provides a test helper for integration testing against the oVirt engine. It allows for automatically discovering a usable storage domain, host, clusters, etc:
+
+```go
+package main
+
+import (
+  "os"
+  "testing"
+
+  "github.com/janoszen/govirt"
+)
+
+func TestSomething(t *testing.T) {
+    // Create a logger that logs to the standard Go log here:
+    logger := govirt.NewGoTestLogger(t)
+    // Create the test helper
+    helper, err := govirt.NewTestHelper(
+        os.Getenv("OVIRT_URL"),
+        os.Getenv("OVIRT_USER"),
+        os.Getenv("OVIRT_PASSWORD"),
+        os.Getenv("OVIRT_CAFILE"),
+        []byte(os.Getenv("OVIRT_CABUNDLE")),
+        os.Getenv("OVIRT_INSECURE") != "",
+        os.Getenv("OVIRT_CLUSTER_ID"),
+        os.Getenv("OVIRT_BLANK_TEMPLATE_ID"),
+        os.Getenv("OVIRT_STORAGE_DOMAIN_ID"),
+        logger,
+    )
+    if err != nil {
+        t.Fatal(err)
+    }
+    // Fetch the cluster ID for testing
+    clusterID := helper.GetClusterID()
+    //...
+}
+```
