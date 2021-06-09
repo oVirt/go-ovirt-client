@@ -26,16 +26,16 @@ func (o *oVirtClient) UploadImage(
 	sparse bool,
 	size uint64,
 	reader io.Reader,
-) (string, error) {
+) (Disk, error) {
 	progress, err := o.StartImageUpload(ctx, alias, storageDomainID, sparse, size, reader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	<-progress.Done()
 	if err := progress.Err(); err != nil {
-		return "", err
+		return nil, err
 	}
-	return progress.DiskID(), nil
+	return progress.Disk(), nil
 }
 
 func (o *oVirtClient) StartImageUpload(
@@ -62,11 +62,11 @@ func (o *oVirtClient) StartImageUpload(
 		qcowSize = binary.BigEndian.Uint64(header[qcowSizeStartByte : qcowSizeStartByte+8])
 	}
 
-	newCtx, cancel := context.WithCancel(ctx)
+	newCtx, cancel := context.WithCancel(ctx) //nolint:govet
 
 	storageDomain, err := ovirtsdk4.NewStorageDomainBuilder().Id(storageDomainID).Build()
 	if err != nil {
-		panic(fmt.Errorf("BUG: failed to build storage domain object from storage domain ID: %s", storageDomainID))
+		panic(fmt.Errorf("bug: failed to build storage domain object from storage domain ID: %s", storageDomainID))
 	}
 	diskBuilder := ovirtsdk4.NewDiskBuilder().
 		Alias(alias).
@@ -77,7 +77,9 @@ func (o *oVirtClient) StartImageUpload(
 	diskBuilder.Sparse(sparse)
 	disk, err := diskBuilder.Build()
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf(
+			//nolint:govet
 			"failed to build disk with alias %s, format %s, provisioned and initial size %d (%w)",
 			alias,
 			format,
@@ -98,6 +100,7 @@ func (o *oVirtClient) StartImageUpload(
 		reader:          bufReader,
 		disk:            disk,
 		done:            make(chan struct{}),
+		conn:            o.conn,
 		client:          o,
 	}
 	go progress.upload()
@@ -136,8 +139,17 @@ type uploadImageProgress struct {
 	client *oVirtClient
 }
 
-func (u *uploadImageProgress) DiskID() string {
-	return u.diskID
+func (u *uploadImageProgress) Disk() Disk {
+	sdkDisk := u.disk
+	id, ok := sdkDisk.Id()
+	if !ok || id != "" {
+		return nil
+	}
+	disk, err := convertSDKDisk(sdkDisk)
+	if err != nil {
+		panic(fmt.Errorf("bug: failed to convert disk (%w)", err))
+	}
+	return disk
 }
 
 func (u *uploadImageProgress) UploadedBytes() uint64 {
@@ -197,43 +209,43 @@ func (u *uploadImageProgress) processUpload() error {
 	u.diskID = diskID
 
 	if err := u.waitForDiskOk(diskService); err != nil {
-		u.removeDisk(u.ctx)
+		u.removeDisk()
 		return err
 	}
 
 	transfer, transferService, err := u.setupImageTransfer(diskID, correlationID)
 	if err != nil {
-		u.removeDisk(u.ctx)
+		u.removeDisk()
 		return err
 	}
 
 	transferURL, err := u.findTransferURL(transfer)
 	if err != nil {
-		u.removeDisk(u.ctx)
+		u.removeDisk()
 		return err
 	}
 
 	if err := u.uploadImage(transferURL); err != nil {
-		u.removeDisk(u.ctx)
+		u.removeDisk()
 		return err
 	}
 
 	if err := u.finalizeUpload(transferService, correlationID); err != nil {
-		u.removeDisk(u.ctx)
+		u.removeDisk()
 		return err
 	}
 
 	if err := u.waitForDiskOk(diskService); err != nil {
-		u.removeDisk(u.ctx)
+		u.removeDisk()
 		return err
 	}
 
 	return nil
 }
 
-func (u *uploadImageProgress) removeDisk(ctx context.Context) {
+func (u *uploadImageProgress) removeDisk() {
 	if u.diskID != "" {
-		_ = u.client.RemoveDisk(ctx, u.diskID)
+		_ = u.client.RemoveDisk(u.diskID)
 	}
 }
 

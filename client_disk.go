@@ -2,7 +2,10 @@ package govirt
 
 import (
 	"context"
+	"fmt"
 	"io"
+
+	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
 type DiskClient interface {
@@ -50,16 +53,29 @@ type DiskClient interface {
 		sparse bool,
 		size uint64,
 		reader io.Reader,
-	) (string, error)
+	) (Disk, error)
 
+	// ListDisks lists all disks.
+	ListDisks() ([]Disk, error)
+	// GetDisk fetches a disk with a specific ID from the
+	GetDisk(diskID string) (Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
-	RemoveDisk(ctx context.Context, diskID string) error
+	RemoveDisk(diskID string) error
+}
+
+type Disk interface {
+	ID() string
+	Alias() string
+	ProvisionedSize() uint
+	Format() ImageFormat
+	StorageDomain() StorageDomain
 }
 
 // UploadImageProgress is a tracker for the upload progress happening in the background.
 type UploadImageProgress interface {
-	// DiskID returns the ID of the disk created as part of the upload process once the upload is complete.
-	DiskID() string
+	// Disk returns the disk created as part of the upload process once the upload is complete. Before the upload
+	// is complete it will return nil.
+	Disk() Disk
 	// UploadedBytes returns the number of bytes already uploaded.
 	UploadedBytes() uint64
 	// TotalBytes returns the total number of bytes to be uploaded.
@@ -73,6 +89,72 @@ type UploadImageProgress interface {
 // ImageFormat is a constant for representing the format that images can be in.
 type ImageFormat string
 
-// ImageFormatCow
-const ImageFormatCow ImageFormat = "cow"
-const ImageFormatRaw ImageFormat = "raw"
+const (
+	ImageFormatCow ImageFormat = "cow"
+	ImageFormatRaw ImageFormat = "raw"
+)
+
+func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
+	id, ok := sdkDisk.Id()
+	if !ok {
+		return nil, fmt.Errorf("disk does not contain an ID")
+	}
+	sdkStorageDomain, ok := sdkDisk.StorageDomain()
+	if !ok {
+		return nil, fmt.Errorf("disk %s does not contain a storage domain", id)
+	}
+	storageDomain, err := convertSDKStorageDomain(sdkStorageDomain)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert storage domain in disk %s (%w)", id, err)
+	}
+	alias, ok := sdkDisk.Alias()
+	if !ok {
+		return nil, fmt.Errorf("disk %s does not contain an alias", id)
+	}
+	provisionedSize, ok := sdkDisk.ProvisionedSize()
+	if !ok {
+		return nil, fmt.Errorf("disk %s does not contain a provisioned size", id)
+	}
+	format, ok := sdkDisk.Format()
+	if !ok {
+		return nil, fmt.Errorf("disk %s has no format field", id)
+	}
+	return &disk{
+		id:              id,
+		alias:           alias,
+		provisionedSize: uint(provisionedSize),
+		format:          ImageFormat(format),
+		storageDomain:   storageDomain,
+	}, nil
+}
+
+type disk struct {
+	id string
+	alias string
+	provisionedSize uint
+	format ImageFormat
+	storageDomain StorageDomain
+}
+
+func (d disk) ID() string {
+	return d.id
+}
+
+func (d disk) Alias() string {
+	return d.alias
+}
+
+func (d disk) ProvisionedSize() uint {
+	return d.provisionedSize
+}
+
+func (d disk) Format() ImageFormat {
+	return d.format
+}
+
+func (d disk) StorageDomain() StorageDomain {
+	return d.storageDomain
+}
+
+
+

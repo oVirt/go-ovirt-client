@@ -1,14 +1,12 @@
 package govirt
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
@@ -138,23 +136,6 @@ func (o *oVirtClient) GetURL() string {
 	return o.url
 }
 
-func (o *oVirtClient) RemoveDisk(ctx context.Context, diskID string) error {
-	var lastError error
-	for {
-		if _, err := o.conn.SystemService().DisksService().DiskService(diskID).Remove().Send(); err != nil {
-			lastError = fmt.Errorf("failed to remove disk %s (%w)", diskID, err)
-		} else {
-			return nil
-		}
-
-		select {
-		case <-time.After(5 * time.Second):
-		case <-ctx.Done():
-			return fmt.Errorf("timeout while tryint to remove disk %s (last error: %w)", diskID, lastError)
-		}
-	}
-}
-
 func validateUsername(username string) error {
 	usernameParts := strings.SplitN(username, "@", 2)
 	//nolint:gomnd
@@ -171,7 +152,7 @@ func validateUsername(username string) error {
 }
 
 func validateURL(url string) error {
-	if !strings.HasPrefix(url, "http://") && !strings.HasSuffix(url, "https://") {
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		return fmt.Errorf("URL must start with http:// or https://")
 	}
 	return nil

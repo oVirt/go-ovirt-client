@@ -35,9 +35,9 @@ type goTestLogger struct {
 }
 
 func (g *goTestLogger) Log(v ...interface{}) {
-	g.Log(v...)
+	g.t.Log(v...)
 }
 
 func (g *goTestLogger) Logf(format string, v ...interface{}) {
-	g.Logf(format, v...)
+	g.t.Logf(format, v...)
 }

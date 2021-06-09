@@ -22,4 +22,6 @@ type Client interface {
 	VMClient
 	ClusterClient
 	StorageDomainClient
+	HostClient
+	TemplateClient
 }

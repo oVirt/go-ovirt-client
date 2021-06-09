@@ -38,11 +38,13 @@ const (
 	StorageDomainStatusPreparingForMaintenance StorageDomainStatus = "preparing_for_maintenance"
 	StorageDomainStatusUnattached              StorageDomainStatus = "unattached"
 	StorageDomainStatusUnknown                 StorageDomainStatus = "unknown"
+	StorageDomainStatusNA                      StorageDomainStatus = ""
 )
 
 type StorageDomainExternalStatus string
 
 const (
+	StorageDomainExternalStatusNA      StorageDomainExternalStatus = ""
 	StorageDomainExternalStatusError   StorageDomainExternalStatus = "error"
 	StorageDomainExternalStatusFailure StorageDomainExternalStatus = "failure"
 	StorageDomainExternalStatusInfo    StorageDomainExternalStatus = "info"
@@ -61,18 +63,18 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (Storage
 	}
 	available, ok := sdkStorageDomain.Available()
 	if !ok {
-		return nil, fmt.Errorf("failed to fetch name of storage domain")
+		// If this is not OK the status probably doesn't allow for reading disk space (e.g. unattached), so we return 0.
+		available = 0
 	}
 	if available < 0 {
 		return nil, fmt.Errorf("invalid available bytes returned from storage domain: %d", available)
 	}
-	status, ok := sdkStorageDomain.Status()
-	if !ok {
-		return nil, fmt.Errorf("failed to fetch status of storage domain")
-	}
-	externalStatus, ok := sdkStorageDomain.ExternalStatus()
-	if !ok {
-		return nil, fmt.Errorf("failed to fetch external status of storage domain")
+	// It is OK for the storage domain status to not be present if the external status is present.
+	status, _ := sdkStorageDomain.Status()
+	// It is OK for the storage domain external status to not be present if the status is present.
+	externalStatus, _ := sdkStorageDomain.ExternalStatus()
+	if status == "" && externalStatus == "" {
+		return nil, fmt.Errorf("neither the status nor the external status is set for storage domain %s", id)
 	}
 
 	return &storageDomain{
