@@ -26,7 +26,7 @@ func (o *oVirtClient) UploadImage(
 	sparse bool,
 	size uint64,
 	reader io.Reader,
-) (Disk, error) {
+) (UploadImageResult, error) {
 	progress, err := o.StartImageUpload(ctx, alias, storageDomainID, sparse, size, reader)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (o *oVirtClient) UploadImage(
 	if err := progress.Err(); err != nil {
 		return nil, err
 	}
-	return progress.Disk(), nil
+	return progress, nil
 }
 
 func (o *oVirtClient) StartImageUpload(
@@ -89,6 +89,7 @@ func (o *oVirtClient) StartImageUpload(
 	}
 
 	progress := &uploadImageProgress{
+		correlationID:   fmt.Sprintf("image_transfer_%s", alias),
 		uploadedBytes:   0,
 		cowSize:         qcowSize,
 		size:            size,
@@ -137,7 +138,13 @@ type uploadImageProgress struct {
 	// disk is the oVirt disk that will be provisioned during the upload.
 	disk *ovirtsdk4.Disk
 	// client is the Client instance that created this image upload.
-	client *oVirtClient
+	client        *oVirtClient
+	// correlationID is an identifier for the upload process.
+	correlationID string
+}
+
+func (u *uploadImageProgress) CorrelationID() string {
+	return u.correlationID
 }
 
 func (u *uploadImageProgress) Disk() Disk {
@@ -202,8 +209,7 @@ func (u *uploadImageProgress) upload() {
 }
 
 func (u *uploadImageProgress) processUpload() error {
-	correlationID := fmt.Sprintf("image_transfer_%s", u.alias)
-	diskID, diskService, err := u.createDisk(correlationID)
+	diskID, diskService, err := u.createDisk()
 	if err != nil {
 		return err
 	}
@@ -213,7 +219,7 @@ func (u *uploadImageProgress) processUpload() error {
 		return err
 	}
 
-	transfer, transferService, err := u.setupImageTransfer(diskID, correlationID)
+	transfer, transferService, err := u.setupImageTransfer(diskID)
 	if err != nil {
 		u.removeDisk()
 		return err
@@ -230,7 +236,7 @@ func (u *uploadImageProgress) processUpload() error {
 		return err
 	}
 
-	if err := u.finalizeUpload(transferService, correlationID); err != nil {
+	if err := u.finalizeUpload(transferService); err != nil {
 		u.removeDisk()
 		return err
 	}
@@ -254,10 +260,9 @@ func (u *uploadImageProgress) removeDisk() {
 
 func (u *uploadImageProgress) finalizeUpload(
 	transferService *ovirtsdk4.ImageTransferService,
-	correlationID string,
 ) error {
 	finalizeRequest := transferService.Finalize()
-	finalizeRequest.Query("correlation_id", correlationID)
+	finalizeRequest.Query("correlation_id", u.correlationID)
 	_, err := finalizeRequest.Send()
 	if err != nil {
 		return fmt.Errorf("failed to finalize image upload (%w)", err)
@@ -330,9 +335,9 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 	return foundTransferURL, nil
 }
 
-func (u *uploadImageProgress) createDisk(correlationID string) (string, *ovirtsdk4.DiskService, error) {
+func (u *uploadImageProgress) createDisk() (string, *ovirtsdk4.DiskService, error) {
 	addDiskRequest := u.conn.SystemService().DisksService().Add().Disk(u.disk)
-	addDiskRequest.Query("correlation_id", correlationID)
+	addDiskRequest.Query("correlation_id", u.correlationID)
 	addResp, err := addDiskRequest.Send()
 	if err != nil {
 		diskAlias, _ := u.disk.Alias()
@@ -343,7 +348,7 @@ func (u *uploadImageProgress) createDisk(correlationID string) (string, *ovirtsd
 	return diskID, diskService, nil
 }
 
-func (u *uploadImageProgress) setupImageTransfer(diskID string, correlationID string) (
+func (u *uploadImageProgress) setupImageTransfer(diskID string) (
 	*ovirtsdk4.ImageTransfer,
 	*ovirtsdk4.ImageTransferService,
 	error,
@@ -357,7 +362,7 @@ func (u *uploadImageProgress) setupImageTransfer(diskID string, correlationID st
 	transferReq := imageTransfersService.
 		Add().
 		ImageTransfer(transfer).
-		Query("correlation_id", correlationID)
+		Query("correlation_id", u.correlationID)
 	transferRes, err := transferReq.Send()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start image transfer (%w)", err)

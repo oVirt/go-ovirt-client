@@ -31,7 +31,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	disk, err := client.UploadImage(
+	uploadResult, err := client.UploadImage(
 		ctx,
 		imageName,
 		helper.GetStorageDomainID(),
@@ -42,7 +42,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to upload image (%w)", err))
 	}
-	disk, err = client.GetDisk(disk.ID())
+	disk, err := client.GetDisk(uploadResult.Disk().ID())
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to fetch disk after image upload (%w)", err))
 	}
