@@ -7,7 +7,6 @@ package ovirtclient
 import (
 	"bufio"
 	"context"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,18 +47,9 @@ func (o *oVirtClient) StartImageUpload(
 ) (UploadImageProgress, error) {
 	bufReader := bufio.NewReaderSize(reader, qcowHeaderSize)
 
-	format := ImageFormatCow
-	qcowSize := size
-	header, err := bufReader.Peek(qcowHeaderSize)
+	format, qcowSize, err := extractQCOWParameters(size, bufReader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read QCOW header (%w)", err)
-	}
-	isQCOW := string(header[0:len(qcowMagicBytes)]) == qcowMagicBytes
-	if !isQCOW {
-		format = ImageFormatRaw
-	} else {
-		// See https://people.gnome.org/~markmc/qcow-image-format.html
-		qcowSize = binary.BigEndian.Uint64(header[qcowSizeStartByte : qcowSizeStartByte+8])
+		return nil, err
 	}
 
 	newCtx, cancel := context.WithCancel(ctx) //nolint:govet
@@ -89,23 +79,23 @@ func (o *oVirtClient) StartImageUpload(
 	}
 
 	progress := &uploadImageProgress{
-		correlationID:   fmt.Sprintf("image_transfer_%s", alias),
-		uploadedBytes:   0,
-		cowSize:         qcowSize,
-		size:            size,
-		reader:          bufReader,
+		correlationID: fmt.Sprintf("image_transfer_%s", alias),
+		uploadedBytes: 0,
+		cowSize: qcowSize,
+		size: size,
+		reader: bufReader,
 		storageDomainID: storageDomainID,
-		sparse:          sparse,
-		alias:           alias,
-		ctx:             newCtx,
-		done:            make(chan struct{}),
-		lock:            &sync.Mutex{},
-		cancel:          cancel,
-		err:             nil,
-		conn:            o.conn,
-		httpClient:      o.httpClient,
-		disk:            disk,
-		client:          o,
+		sparse: sparse,
+		alias: alias,
+		ctx: newCtx,
+		done: make(chan struct{}),
+		lock: &sync.Mutex{},
+		cancel: cancel,
+		err: nil,
+		conn: o.conn,
+		httpClient: o.httpClient,
+		disk: disk,
+		client: o,
 	}
 	go progress.upload()
 	return progress, nil

@@ -11,5 +11,6 @@ func (o *oVirtClient) CreateVM(
 	templateID string,
 	blockDevices []VMBlockDevice,
 ) {
+	// TODO implement create VM
 	panic("implement me")
 }

@@ -5,8 +5,6 @@ import (
 	"math/rand"
 	"strings"
 	"time"
-
-	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
 // TestHelper is a helper to run tests against an oVirt engine. When created it scans the oVirt Engine and tries to find
@@ -14,9 +12,6 @@ import (
 type TestHelper interface {
 	// GetClient returns the goVirt client.
 	GetClient() Client
-
-	// GetSDKClient returns the oVirt SDK client.
-	GetSDKClient() *ovirtsdk4.Connection
 
 	// GetClusterID returns the ID for the cluster.
 	GetClusterID() string
@@ -41,6 +36,7 @@ func MustNewTestHelper(
 	clusterID string,
 	blankTemplateID string,
 	storageDomainID string,
+	mock bool,
 	logger Logger,
 ) TestHelper {
 	helper, err := NewTestHelper(
@@ -53,6 +49,7 @@ func MustNewTestHelper(
 		clusterID,
 		blankTemplateID,
 		storageDomainID,
+		mock,
 		logger,
 	)
 	if err != nil {
@@ -71,20 +68,27 @@ func NewTestHelper(
 	clusterID string,
 	blankTemplateID string,
 	storageDomainID string,
+	mock bool,
 	logger Logger,
 ) (TestHelper, error) {
-	client, err := New(
-		url,
-		username,
-		password,
-		caFile,
-		caBundle,
-		insecure,
-		nil,
-		logger,
-	)
-	if err != nil {
-		return nil, err
+	var client Client
+	var err error
+	if mock {
+		client = NewMock()
+	} else {
+		client, err = New(
+			url,
+			username,
+			password,
+			caFile,
+			caBundle,
+			insecure,
+			nil,
+			logger,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if clusterID == "" {
@@ -135,7 +139,8 @@ func findBlankTemplateID(client Client) (string, error) {
 		return "", fmt.Errorf("failed to list templates (%w)", err)
 	}
 	for _, template := range templates {
-		if strings.Contains(template.Description(), "Blank template") {
+		if template.ID() == BlankTemplateID ||
+			strings.Contains(template.Description(), "Blank template") {
 			return template.ID(), nil
 		}
 	}
@@ -205,10 +210,6 @@ type testHelper struct {
 
 func (t *testHelper) GetClient() Client {
 	return t.client
-}
-
-func (t *testHelper) GetSDKClient() *ovirtsdk4.Connection {
-	return t.client.GetSDKClient()
 }
 
 func (t *testHelper) GetClusterID() string {
