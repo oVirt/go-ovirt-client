@@ -2,17 +2,17 @@
 // This file implements The basic test suite for the oVirt client.
 //
 
-package govirt_test
+package ovirtclient_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/janoszen/govirt"
+	"github.com/oVirt/go-ovirt-client"
 )
 
-func getHelper(t *testing.T) govirt.TestHelper {
+func getHelper(t *testing.T) ovirtclient.TestHelper {
 	url := os.Getenv("OVIRT_URL")
 	if url == "" {
 		t.Fatal(fmt.Errorf("the OVIRT_URL environment variable must not be empty"))
@@ -32,7 +32,7 @@ func getHelper(t *testing.T) govirt.TestHelper {
 	blankTemplateID := os.Getenv("OVIRT_BLANK_TEMPLATE_ID")
 	storageDomainID := os.Getenv("OVIRT_STORAGE_DOMAIN_ID")
 
-	helper, err := govirt.NewTestHelper(
+	helper, err := ovirtclient.NewTestHelper(
 		url,
 		user,
 		password,
@@ -42,7 +42,7 @@ func getHelper(t *testing.T) govirt.TestHelper {
 		clusterID,
 		blankTemplateID,
 		storageDomainID,
-		govirt.NewGoTestLogger(t),
+		ovirtclient.NewGoTestLogger(t),
 	)
 	if err != nil {
 		t.Fatal(err)

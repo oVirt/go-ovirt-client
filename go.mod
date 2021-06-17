@@ -1,4 +1,4 @@
-module github.com/janoszen/govirt
+module github.com/oVirt/go-ovirt-client
 
 go 1.14
 

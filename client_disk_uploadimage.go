@@ -2,7 +2,7 @@
 // This file implements the image upload-related functions of the oVirt client.
 //
 
-package govirt
+package ovirtclient
 
 import (
 	"bufio"

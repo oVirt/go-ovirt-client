@@ -1,4 +1,4 @@
-package govirt_test
+package ovirtclient_test
 
 import (
 	"context"
