@@ -42,11 +42,11 @@ func (m *mockClient) StartImageUpload(
 			storageDomainID: storageDomainID,
 		},
 		correlationID: fmt.Sprintf("image_transfer_%s", alias),
-		client: m,
-		reader: bufReader,
-		size: size,
-		done: make(chan struct{}),
-		sparse: sparse,
+		client:        m,
+		reader:        bufReader,
+		size:          size,
+		done:          make(chan struct{}),
+		sparse:        sparse,
 	}
 
 	go progress.do()
@@ -128,4 +128,3 @@ func (m *mockImageUploadProgress) do() {
 	}
 	close(m.done)
 }
-

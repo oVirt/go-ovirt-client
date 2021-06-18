@@ -18,13 +18,13 @@ type MockClient interface {
 }
 
 type mockClient struct {
-	url string
-	lock *sync.Mutex
+	url            string
+	lock           *sync.Mutex
 	storageDomains map[string]storageDomain
-	disks map[string]disk
-	clusters map[string]cluster
-	hosts map[string]host
-	templates map[string]template
+	disks          map[string]disk
+	clusters       map[string]cluster
+	hosts          map[string]host
+	templates      map[string]template
 }
 
 func (m *mockClient) GetURL() string {
@@ -168,4 +168,3 @@ func (m *mockClient) GetTemplate(id string) (Template, error) {
 	}
 	return nil, fmt.Errorf("template with ID %s not found", id)
 }
-

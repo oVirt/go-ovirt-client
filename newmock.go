@@ -14,19 +14,19 @@ func NewMock() MockClient {
 	testStorageDomain := generateTestStorageDomain()
 
 	return &mockClient{
-		url:            "https://localhost/ovirt-engine/api",
-		lock:           &sync.Mutex{},
+		url:  "https://localhost/ovirt-engine/api",
+		lock: &sync.Mutex{},
 		storageDomains: map[string]storageDomain{
 			testStorageDomain.ID(): testStorageDomain,
 		},
-		disks:          map[string]disk{},
-		clusters:       map[string]cluster{
+		disks: map[string]disk{},
+		clusters: map[string]cluster{
 			testCluster.ID(): testCluster,
 		},
-		hosts:          map[string]host{
+		hosts: map[string]host{
 			testHost.ID(): testHost,
 		},
-		templates:      map[string]template{
+		templates: map[string]template{
 			BlankTemplateID: {
 				id:          BlankTemplateID,
 				name:        "Blank",

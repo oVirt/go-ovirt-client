@@ -79,23 +79,23 @@ func (o *oVirtClient) StartImageUpload(
 	}
 
 	progress := &uploadImageProgress{
-		correlationID: fmt.Sprintf("image_transfer_%s", alias),
-		uploadedBytes: 0,
-		cowSize: qcowSize,
-		size: size,
-		reader: bufReader,
+		correlationID:   fmt.Sprintf("image_transfer_%s", alias),
+		uploadedBytes:   0,
+		cowSize:         qcowSize,
+		size:            size,
+		reader:          bufReader,
 		storageDomainID: storageDomainID,
-		sparse: sparse,
-		alias: alias,
-		ctx: newCtx,
-		done: make(chan struct{}),
-		lock: &sync.Mutex{},
-		cancel: cancel,
-		err: nil,
-		conn: o.conn,
-		httpClient: o.httpClient,
-		disk: disk,
-		client: o,
+		sparse:          sparse,
+		alias:           alias,
+		ctx:             newCtx,
+		done:            make(chan struct{}),
+		lock:            &sync.Mutex{},
+		cancel:          cancel,
+		err:             nil,
+		conn:            o.conn,
+		httpClient:      o.httpClient,
+		disk:            disk,
+		client:          o,
 	}
 	go progress.upload()
 	return progress, nil
@@ -128,7 +128,7 @@ type uploadImageProgress struct {
 	// disk is the oVirt disk that will be provisioned during the upload.
 	disk *ovirtsdk4.Disk
 	// client is the Client instance that created this image upload.
-	client        *oVirtClient
+	client *oVirtClient
 	// correlationID is an identifier for the upload process.
 	correlationID string
 }
