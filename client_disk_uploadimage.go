@@ -54,6 +54,22 @@ func (o *oVirtClient) StartImageUpload(
 
 	newCtx, cancel := context.WithCancel(ctx) //nolint:govet
 
+	disk, err := o.createDiskForUpload(storageDomainID, alias, format, qcowSize, sparse, cancel)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.createProgress(alias, qcowSize, size, bufReader, storageDomainID, sparse, newCtx, cancel, disk)
+}
+
+func (o *oVirtClient) createDiskForUpload(
+	storageDomainID string,
+	alias string,
+	format ImageFormat,
+	qcowSize uint64,
+	sparse bool,
+	cancel context.CancelFunc,
+) (*ovirtsdk4.Disk, error) {
 	storageDomain, err := ovirtsdk4.NewStorageDomainBuilder().Id(storageDomainID).Build()
 	if err != nil {
 		panic(fmt.Errorf("bug: failed to build storage domain object from storage domain ID: %s", storageDomainID))
@@ -77,7 +93,20 @@ func (o *oVirtClient) StartImageUpload(
 			err,
 		)
 	}
+	return disk, nil
+}
 
+func (o *oVirtClient) createProgress(
+	alias string,
+	qcowSize uint64,
+	size uint64,
+	bufReader *bufio.Reader,
+	storageDomainID string,
+	sparse bool,
+	newCtx context.Context,
+	cancel context.CancelFunc,
+	disk *ovirtsdk4.Disk,
+) (UploadImageProgress, error) {
 	progress := &uploadImageProgress{
 		correlationID:   fmt.Sprintf("image_transfer_%s", alias),
 		uploadedBytes:   0,
@@ -267,9 +296,12 @@ func (u *uploadImageProgress) uploadImage(transferURL *url.URL) error {
 	}
 	putRequest.Header.Add("content-type", "application/octet-stream")
 	putRequest.ContentLength = int64(u.size)
-	_, err = u.httpClient.Do(putRequest)
+	response, err := u.httpClient.Do(putRequest)
 	if err != nil {
 		return fmt.Errorf("failed to upload image (%w)", err)
+	}
+	if err := response.Body.Close(); err != nil {
+		return fmt.Errorf("failed to close response body while uploading image (%w)", err)
 	}
 	return nil
 }
@@ -305,12 +337,17 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 			}
 			res, err := u.httpClient.Do(optionsReq)
 			if err == nil {
-				if res.StatusCode == 200 {
-					foundTransferURL = transferURL
-					lastError = nil
-					break
+				statusCode := res.StatusCode
+				if err := res.Body.Close(); err != nil {
+					lastError = fmt.Errorf("failed to close response body in options request (%w)", err)
 				} else {
-					lastError = fmt.Errorf("non-200 status code returned from URL %s (%d)", hostUrl, res.StatusCode)
+					if statusCode == 200 {
+						foundTransferURL = transferURL
+						lastError = nil
+						break
+					} else {
+						lastError = fmt.Errorf("non-200 status code returned from URL %s (%d)", hostUrl, res.StatusCode)
+					}
 				}
 			} else {
 				lastError = err
