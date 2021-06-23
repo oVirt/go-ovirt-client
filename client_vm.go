@@ -17,7 +17,7 @@ type VMClient interface {
 
 // NewVMCPUTopo creates a new CPU topology with the given parameters. It returns an error if cores, threads, or sockets
 // is 0. If the parameters are guaranteed to be non-zero MustNewVMCPUTopo should be used.
-func NewVMCPUTopo(cores uint, threads uint, sockets uint) (VMCPUTopo, error) {
+func NewVMCPUTopo(cores int64, threads int64, sockets int64) (VMCPUTopo, error) {
 	if cores == 0 {
 		return nil, fmt.Errorf("BUG: cores cannot be zero")
 	}
@@ -36,7 +36,7 @@ func NewVMCPUTopo(cores uint, threads uint, sockets uint) (VMCPUTopo, error) {
 
 // MustNewVMCPUTopo is identical to NewVMCPUTopo, but panics instead of returning an error if cores, threads, or
 // sockets is zero.
-func MustNewVMCPUTopo(cores uint, threads uint, sockets uint) VMCPUTopo {
+func MustNewVMCPUTopo(cores int64, threads int64, sockets int64) VMCPUTopo {
 	topo, err := NewVMCPUTopo(cores, threads, sockets)
 	if err != nil {
 		panic(err)
@@ -45,26 +45,26 @@ func MustNewVMCPUTopo(cores uint, threads uint, sockets uint) VMCPUTopo {
 }
 
 type VMCPUTopo interface {
-	Cores() uint
-	Threads() uint
-	Sockets() uint
+	Cores() int64
+	Threads() int64
+	Sockets() int64
 }
 
 type vmCPUTopo struct {
-	cores   uint
-	threads uint
-	sockets uint
+	cores   int64
+	threads int64
+	sockets int64
 }
 
-func (v *vmCPUTopo) Cores() uint {
+func (v *vmCPUTopo) Cores() int64 {
 	return v.cores
 }
 
-func (v *vmCPUTopo) Threads() uint {
+func (v *vmCPUTopo) Threads() int64 {
 	return v.threads
 }
 
-func (v *vmCPUTopo) Sockets() uint {
+func (v *vmCPUTopo) Sockets() int64 {
 	return v.sockets
 }
 
@@ -73,4 +73,22 @@ type VMBlockDevice interface {
 	Bootable() bool
 
 	StorageDomainID() string
+}
+
+type VMInitialization interface {
+	CustomScript() string
+	HostName() string
+}
+
+type vmInitialization struct {
+	customScript string
+	hostName string
+}
+
+func (v *vmInitialization) CustomScript() string {
+	return v.customScript
+}
+
+func (v *vmInitialization) HostName() string {
+	return v.hostName
 }
