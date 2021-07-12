@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/oVirt/go-ovirt-client"
+	"github.com/ovirt/go-ovirt-client"
 )
 
 func getHelper(t *testing.T) ovirtclient.TestHelper {
