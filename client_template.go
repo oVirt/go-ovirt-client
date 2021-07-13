@@ -20,11 +20,11 @@ type Template interface {
 func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template) (Template, error) {
 	id, ok := sdkTemplate.Id()
 	if !ok {
-		return nil, fmt.Errorf("template does not contain ID")
+		return nil, newError(EFieldMissing, "template does not contain ID")
 	}
 	name, ok := sdkTemplate.Name()
 	if !ok {
-		return nil, fmt.Errorf("template does not contain a name")
+		return nil, newError(EFieldMissing, "template does not contain a name")
 	}
 	description, ok := sdkTemplate.Description()
 	if !ok {

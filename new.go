@@ -1,12 +1,15 @@
 package ovirtclient
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
@@ -21,6 +24,22 @@ func New(
 	insecure bool,
 	extraHeaders map[string]string,
 	logger Logger,
+) (ClientWithLegacySupport, error) {
+	return NewWithVerify(url, username, password, caFile, caCert, insecure, extraHeaders, logger, testConnection)
+}
+
+// NewWithVerify allows customizing the verification function for the connection. Alternatively, a nil can be passed to
+// disable connection verification.
+func NewWithVerify(
+	url string,
+	username string,
+	password string,
+	caFile string,
+	caCert []byte,
+	insecure bool,
+	extraHeaders map[string]string,
+	logger Logger,
+	verify func(connection *ovirtsdk4.Connection) error,
 ) (ClientWithLegacySupport, error) {
 	if err := validateURL(url); err != nil {
 		return nil, fmt.Errorf("invalid URL: %s (%w)", url, err)
@@ -59,12 +78,48 @@ func New(
 		},
 	}
 
+	if verify != nil {
+		if err := verify(conn); err != nil {
+			return nil, err
+		}
+	}
+
 	return &oVirtClient{
 		conn:       conn,
 		httpClient: httpClient,
 		logger:     logger,
 		url:        url,
 	}, nil
+}
+
+func testConnection(conn *ovirtsdk4.Connection) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	for {
+		lastError := conn.SystemService().Connection().Test()
+		if lastError == nil {
+			break
+		}
+		if err := identify(lastError); err != nil {
+			var realErr EngineError
+			// This will always be an engine error
+			_ = errors.As(err, &realErr)
+			if realErr.IsPermanent() {
+				return err
+			}
+			lastError = err
+		}
+		select {
+		case <-time.After(time.Second):
+		case <-ctx.Done():
+			return wrap(
+				lastError,
+				ETimeout,
+				"timeout while attempting to create connection",
+			)
+		}
+	}
+	return nil
 }
 
 func createTLSConfig(

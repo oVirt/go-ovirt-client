@@ -1,20 +1,22 @@
 package ovirtclient
 
 import (
-	"fmt"
-
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
 // StorageDomainClient contains the portion of the goVirt API that deals with storage domains.
 type StorageDomainClient interface {
+	// ListStorageDomains lists all storage domains.
 	ListStorageDomains() ([]StorageDomain, error)
+	// GetStorageDomain returns a single storage domain, or an error if the storage domain could not be found.
 	GetStorageDomain(id string) (StorageDomain, error)
 }
 
 // StorageDomain represents a storage domain returned from the oVirt Engine API.
 type StorageDomain interface {
+	// ID is the unique identified for the storage system connected to oVirt.
 	ID() string
+	// Name is the user-given name for the storage domain.
 	Name() string
 	// Available returns the number of available bytes on the storage domain
 	Available() uint64
@@ -55,11 +57,11 @@ const (
 func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (StorageDomain, error) {
 	id, ok := sdkStorageDomain.Id()
 	if !ok {
-		return nil, fmt.Errorf("failed to fetch ID of storage domain")
+		return nil, newError(EFieldMissing, "failed to fetch ID of storage domain")
 	}
 	name, ok := sdkStorageDomain.Name()
 	if !ok {
-		return nil, fmt.Errorf("failed to fetch name of storage domain")
+		return nil, newError(EFieldMissing, "failed to fetch name of storage domain")
 	}
 	available, ok := sdkStorageDomain.Available()
 	if !ok {
@@ -67,14 +69,14 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (Storage
 		available = 0
 	}
 	if available < 0 {
-		return nil, fmt.Errorf("invalid available bytes returned from storage domain: %d", available)
+		return nil, newError(EBug, "invalid available bytes returned from storage domain: %d", available)
 	}
 	// It is OK for the storage domain status to not be present if the external status is present.
 	status, _ := sdkStorageDomain.Status()
 	// It is OK for the storage domain external status to not be present if the status is present.
 	externalStatus, _ := sdkStorageDomain.ExternalStatus()
 	if status == "" && externalStatus == "" {
-		return nil, fmt.Errorf("neither the status nor the external status is set for storage domain %s", id)
+		return nil, newError(EFieldMissing, "neither the status nor the external status is set for storage domain %s", id)
 	}
 
 	return &storageDomain{

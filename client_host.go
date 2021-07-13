@@ -1,8 +1,6 @@
 package ovirtclient
 
 import (
-	"fmt"
-
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
@@ -43,19 +41,19 @@ const (
 func convertSDKHost(sdkHost *ovirtsdk4.Host) (Host, error) {
 	id, ok := sdkHost.Id()
 	if !ok {
-		return nil, fmt.Errorf("returned host did not contain an ID")
+		return nil, newError(EFieldMissing, "returned host did not contain an ID")
 	}
 	status, ok := sdkHost.Status()
 	if !ok {
-		return nil, fmt.Errorf("returned host did not contain a status")
+		return nil, newError(EFieldMissing, "returned host did not contain a status")
 	}
 	sdkCluster, ok := sdkHost.Cluster()
 	if !ok {
-		return nil, fmt.Errorf("returned host did not contain a cluster")
+		return nil, newError(EFieldMissing, "returned host did not contain a cluster")
 	}
 	clusterID, ok := sdkCluster.Id()
 	if !ok {
-		return nil, fmt.Errorf("failed to fetch cluster ID from host %s", id)
+		return nil, newError(EFieldMissing, "failed to fetch cluster ID from host %s", id)
 	}
 	return &host{
 		id:        id,

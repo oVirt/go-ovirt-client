@@ -9,7 +9,7 @@ import (
 )
 
 type DiskClient interface {
-	// UploadImage uploads an image file into a disk. The actual upload takes place in the
+	// StartImageUpload uploads an image file into a disk. The actual upload takes place in the
 	// background and can be tracked using the returned UploadImageProgress object.
 	//
 	// Parameters are as follows:
@@ -57,22 +57,31 @@ type DiskClient interface {
 
 	// ListDisks lists all disks.
 	ListDisks() ([]Disk, error)
-	// GetDisk fetches a disk with a specific ID from the
+	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
 	GetDisk(diskID string) (Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
 	RemoveDisk(diskID string) error
 }
 
+// UploadImageResult represents the completed image upload.
 type UploadImageResult interface {
+	// Disk returns the disk that has been created as the result of the image upload.
 	Disk() Disk
+	// CorrelationID returns the opaque correlation ID for the upload.
 	CorrelationID() string
 }
 
+// Disk is a disk in oVirt.
 type Disk interface {
+	// ID is the unique ID for this disk.
 	ID() string
+	// Alias is the name for this disk set by the user.
 	Alias() string
+	// ProvisionedSize is the size visible to the virtual machine.
 	ProvisionedSize() uint64
+	// Format is the format of the image.
 	Format() ImageFormat
+	// StorageDomainID is the ID of the storage system used for this disk.
 	StorageDomainID() string
 }
 
