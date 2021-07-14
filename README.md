@@ -1,6 +1,8 @@
 # goVirt: an easy-to-use overlay for the oVirt Go SDK
 
-<p align="center"><strong>⚠⚠⚠ This library is work-in-progress. Do not use. ⚠⚠⚠</strong></p>
+<p align="center"><strong>⚠⚠⚠ This library is early in development. ⚠⚠⚠</strong></p>
+
+This library is early in development, and the API may change at any time until version 1.0.0. We hope to stabilize the API soon, providing the core functionality on an as-needed basis. If you need an API integrated, please open an issue. 
 
 This library provides an easy-to-use overlay for the automatically generated [Go SDK for oVirt](https://github.com/ovirt/go-ovirt). It does *not* replace the Go SDK. It implements the functions of the SDK only partially and is primarily used by the [oVirt Terraform provider](https://github.com/ovirt/terraform-provider-ovirt/).
 
