@@ -11,7 +11,7 @@ func (o *oVirtClient) ListClusters() ([]Cluster, error) {
 	}
 	sdkClusters, ok := clustersResponse.Clusters()
 	if !ok {
-		return nil, nil
+		return []Cluster{}, nil
 	}
 	clusters := make([]Cluster, len(sdkClusters.Slice()))
 	for i, sdkCluster := range sdkClusters.Slice() {

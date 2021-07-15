@@ -1,8 +1,6 @@
 package ovirtclient
 
 import (
-	"fmt"
-
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
@@ -28,7 +26,7 @@ func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template) (Template, error) {
 	}
 	description, ok := sdkTemplate.Description()
 	if !ok {
-		return nil, fmt.Errorf("template does not contain a description")
+		return nil, newError(EFieldMissing, "template does not contain a description")
 	}
 	return &template{
 		id:          id,

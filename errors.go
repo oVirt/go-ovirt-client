@@ -41,37 +41,41 @@ const ETimeout ErrorCode = "timeout"
 // it.
 const EFieldMissing ErrorCode = "field_missing"
 
-// EUnidentified is an unidentified oVirt error. Please report this error so we can add an error code for it.
+// EBadArgument indicates that an input parameter was incorrect.
+const EBadArgument ErrorCode = "bad_argument"
+
+// EFileReadFailed indicates that reading a local file failed.
+const EFileReadFailed ErrorCode = "file_read_failed"
+
+// EUnidentified is an unidentified oVirt error. When passed to the wrap() function this error code will cause the
+// wrap function to look at the wrapped error and either fetch the error code from that error, or identify the error
+// from its text.
+//
+// If you see this error type in a log please report this error so we can add an error code for it.
 const EUnidentified ErrorCode = "generic_error"
 
 // EUnsupported signals that an action is not supported. This can indicate a disk format or a combination of parameters.
 const EUnsupported ErrorCode = "unsupported"
 
-// IsPermanent returns true if the given error code is permanent and a retry should not be attempted.
-func (e ErrorCode) IsPermanent() bool {
+// CanAutoRetry returns false if the given error code is permanent and an automatic retry should not be attempted.
+func (e ErrorCode) CanAutoRetry() bool {
 	switch e {
 	case EAccessDenied:
-		return true
+		return false
 	case ENotAnOVirtEngine:
-		return true
+		return false
 	case ETLSError:
-		return true
+		return false
 	case ENotFound:
-		return true
+		return false
 	case EBug:
-		return true
-	case EConnection:
-		return false
-	case EPending:
-		return false
-	case ETimeout:
 		return false
 	case EUnsupported:
-		return true
-	case EFieldMissing:
-		return true
-	default:
 		return false
+	case EFieldMissing:
+		return false
+	default:
+		return true
 	}
 }
 
@@ -90,14 +94,16 @@ func (e ErrorCode) IsPermanent() bool {
 type EngineError interface {
 	error
 
-	// Is returns true if the current error, or any preceding error has the specified error code.
-	Is(ErrorCode) bool
+	// String returns the string representation for this error.
+	String() string
+	// HasCode returns true if the current error, or any preceding error has the specified error code.
+	HasCode(ErrorCode) bool
 	// Code returns an error code for the failure.
 	Code() ErrorCode
 	// Unwrap returns the underlying error
 	Unwrap() error
-	// IsPermanent returns if a retry should be attempted or not.
-	IsPermanent() bool
+	// CanAutoRetry returns false if an automatic retry should not be attempted.
+	CanAutoRetry() bool
 }
 
 type engineError struct {
@@ -106,17 +112,21 @@ type engineError struct {
 	cause   error
 }
 
-func (e *engineError) Is(code ErrorCode) bool {
+func (e *engineError) HasCode(code ErrorCode) bool {
 	if e.code == code {
 		return true
 	}
 	if cause := e.Unwrap(); cause != nil {
 		var causeE EngineError
 		if errors.As(cause, &causeE) {
-			return causeE.Is(code)
+			return causeE.HasCode(code)
 		}
 	}
 	return false
+}
+
+func (e *engineError) String() string {
+	return fmt.Sprintf("%s: %s", e.code, e.message)
 }
 
 func (e *engineError) Error() string {
@@ -131,13 +141,13 @@ func (e *engineError) Unwrap() error {
 	return e.cause
 }
 
-func (e *engineError) IsPermanent() bool {
-	return e.code.IsPermanent()
+func (e *engineError) CanAutoRetry() bool {
+	return e.code.CanAutoRetry()
 }
 
-func newError(code ErrorCode, message string, args ...interface{}) EngineError {
+func newError(code ErrorCode, format string, args ...interface{}) EngineError {
 	return &engineError{
-		message: fmt.Sprintf(message, args...),
+		message: fmt.Sprintf(format, args...),
 		code:    code,
 	}
 }
@@ -145,10 +155,8 @@ func newError(code ErrorCode, message string, args ...interface{}) EngineError {
 // wrap wraps an error, adding an error code and message in the process. The wrapped error is added
 // to the message automatically in Go style. If the passed error code is EUnidentified or not an EngineError
 // this function will attempt to identify the error deeper.
-func wrap(err error, code ErrorCode, message string, args ...interface{}) EngineError {
-	realArgs := make([]interface{}, len(args)+1)
-	realArgs[len(args)] = err
-	copy(realArgs[0:len(args)], args)
+func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineError {
+	realArgs := append(args, err)
 	if code == EUnidentified {
 		var realErr EngineError
 		if errors.As(err, &realErr) {
@@ -160,7 +168,7 @@ func wrap(err error, code ErrorCode, message string, args ...interface{}) Engine
 			}
 		}
 	}
-	realMessage := fmt.Sprintf(fmt.Sprintf("%s %s", message, "(%v)"), realArgs...)
+	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "(%v)"), realArgs...)
 	return &engineError{
 		message: realMessage,
 		code:    code,

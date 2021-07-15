@@ -7,7 +7,7 @@ func (o *oVirtClient) ListStorageDomains() (storageDomains []StorageDomain, err 
 	}
 	sdkStorageDomains, ok := response.StorageDomains()
 	if !ok {
-		return nil, nil
+		return []StorageDomain{}, nil
 	}
 	storageDomains = make([]StorageDomain, len(sdkStorageDomains.Slice()))
 	for i, sdkStorageDomain := range sdkStorageDomains.Slice() {

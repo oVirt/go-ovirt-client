@@ -7,7 +7,7 @@ func (o *oVirtClient) ListTemplates() ([]Template, error) {
 	}
 	sdkTemplates, ok := response.Templates()
 	if !ok {
-		return nil, newError(ENotFound, "host list response didn't contain hosts")
+		return []Template{}, nil
 	}
 	result := make([]Template, len(sdkTemplates.Slice()))
 	for i, sdkTemplate := range sdkTemplates.Slice() {

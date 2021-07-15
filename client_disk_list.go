@@ -11,7 +11,7 @@ func (o *oVirtClient) ListDisks() ([]Disk, error) {
 	}
 	sdkDisks, ok := response.Disks()
 	if !ok {
-		return nil, nil
+		return []Disk{}, nil
 	}
 	result := make([]Disk, len(sdkDisks.Slice()))
 	for i, sdkDisk := range sdkDisks.Slice() {

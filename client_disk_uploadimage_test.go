@@ -46,7 +46,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to fetch disk after image upload (%w)", err))
 	}
-	if err := client.RemoveDisk(disk.ID()); err != nil {
-		t.Fatal(fmt.Errorf("failed to remove disk (%w)", err))
+	if err := client.RemoveDisk(context.Background(), disk.ID()); err != nil {
+		t.Fatal(err)
 	}
 }

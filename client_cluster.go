@@ -1,8 +1,6 @@
 package ovirtclient
 
 import (
-	"fmt"
-
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
@@ -25,12 +23,12 @@ type Cluster interface {
 func convertSDKCluster(sdkCluster *ovirtsdk4.Cluster) (Cluster, error) {
 	id, ok := sdkCluster.Id()
 	if !ok {
-		return nil, fmt.Errorf("failed to fetch ID for cluster")
+		return nil, newError(EFieldMissing, "failed to fetch ID for cluster")
 	}
 
 	name, ok := sdkCluster.Name()
 	if !ok {
-		return nil, fmt.Errorf("failed to fetch name for cluster %s", id)
+		return nil, newError(EFieldMissing, "failed to fetch name for cluster %s", id)
 	}
 	return &cluster{
 		id:   id,

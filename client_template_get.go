@@ -11,7 +11,7 @@ func (o *oVirtClient) GetTemplate(id string) (Template, error) {
 	}
 	template, err := convertSDKTemplate(sdkTemplate)
 	if err != nil {
-		return nil, wrap(err, EUnidentified, "failed to convert template object")
+		return nil, wrap(err, EBug, "failed to convert template object")
 	}
 	return template, nil
 }

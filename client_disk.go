@@ -2,7 +2,6 @@ package ovirtclient
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
@@ -60,7 +59,7 @@ type DiskClient interface {
 	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
 	GetDisk(diskID string) (Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
-	RemoveDisk(diskID string) error
+	RemoveDisk(ctx context.Context, diskID string) error
 }
 
 // UploadImageResult represents the completed image upload.
@@ -113,7 +112,7 @@ const (
 func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 	id, ok := sdkDisk.Id()
 	if !ok {
-		return nil, fmt.Errorf("disk does not contain an ID")
+		return nil, newError(EFieldMissing, "disk does not contain an ID")
 	}
 	var storageDomainID string
 	if sdkStorageDomain, ok := sdkDisk.StorageDomain(); ok {
@@ -127,19 +126,19 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 		}
 	}
 	if storageDomainID == "" {
-		return nil, fmt.Errorf("failed to find a valid storage domain ID for disk %s", id)
+		return nil, newError(EFieldMissing, "failed to find a valid storage domain ID for disk %s", id)
 	}
 	alias, ok := sdkDisk.Alias()
 	if !ok {
-		return nil, fmt.Errorf("disk %s does not contain an alias", id)
+		return nil, newError(EFieldMissing, "disk %s does not contain an alias", id)
 	}
 	provisionedSize, ok := sdkDisk.ProvisionedSize()
 	if !ok {
-		return nil, fmt.Errorf("disk %s does not contain a provisioned size", id)
+		return nil, newError(EFieldMissing, "disk %s does not contain a provisioned size", id)
 	}
 	format, ok := sdkDisk.Format()
 	if !ok {
-		return nil, fmt.Errorf("disk %s has no format field", id)
+		return nil, newError(EFieldMissing, "disk %s has no format field", id)
 	}
 	return &disk{
 		id:              id,

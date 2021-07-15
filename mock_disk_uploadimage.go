@@ -19,10 +19,10 @@ func (m *mockClient) StartImageUpload(
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if alias == "" {
-		return nil, fmt.Errorf("alias cannot be empty")
+		return nil, newError(EBadArgument, "alias cannot be empty")
 	}
 	if _, ok := m.storageDomains[storageDomainID]; !ok {
-		return nil, fmt.Errorf("storage domain with ID %s not found", storageDomainID)
+		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
 	}
 
 	bufReader := bufio.NewReaderSize(reader, qcowHeaderSize)

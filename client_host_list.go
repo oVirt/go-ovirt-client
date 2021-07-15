@@ -7,7 +7,7 @@ func (o *oVirtClient) ListHosts() ([]Host, error) {
 	}
 	sdkHosts, ok := response.Hosts()
 	if !ok {
-		return nil, nil
+		return []Host{}, nil
 	}
 	result := make([]Host, len(sdkHosts.Slice()))
 	for i, sdkHost := range sdkHosts.Slice() {

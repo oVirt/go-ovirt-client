@@ -3,7 +3,6 @@ package ovirtclient
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 )
 
 func extractQCOWParameters(fileSize uint64, bufReader *bufio.Reader) (
@@ -15,7 +14,7 @@ func extractQCOWParameters(fileSize uint64, bufReader *bufio.Reader) (
 	qcowSize := fileSize
 	header, err := bufReader.Peek(qcowHeaderSize)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to read QCOW header (%w)", err)
+		return "", 0, wrap(err, EBadArgument, "failed to read QCOW header")
 	}
 	isQCOW := string(header[0:len(qcowMagicBytes)]) == qcowMagicBytes
 	if !isQCOW {

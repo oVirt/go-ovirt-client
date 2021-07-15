@@ -76,7 +76,12 @@ func (o *oVirtClient) createDiskForUpload(
 ) (*ovirtsdk4.Disk, error) {
 	storageDomain, err := ovirtsdk4.NewStorageDomainBuilder().Id(storageDomainID).Build()
 	if err != nil {
-		panic(fmt.Errorf("bug: failed to build storage domain object from storage domain ID: %s", storageDomainID))
+		return nil, wrap(
+			err,
+			EBug,
+			"failed to build storage domain object from storage domain ID: %s",
+			storageDomainID,
+		)
 	}
 	diskBuilder := ovirtsdk4.NewDiskBuilder().
 		Alias(alias).
@@ -112,6 +117,7 @@ func (o *oVirtClient) createProgress(
 	disk *ovirtsdk4.Disk,
 ) (UploadImageProgress, error) {
 	progress := &uploadImageProgress{
+		cli:             o,
 		correlationID:   fmt.Sprintf("image_transfer_%s", alias),
 		uploadedBytes:   0,
 		cowSize:         qcowSize,
@@ -135,6 +141,7 @@ func (o *oVirtClient) createProgress(
 }
 
 type uploadImageProgress struct {
+	cli             *oVirtClient
 	uploadedBytes   uint64
 	cowSize         uint64
 	size            uint64
@@ -150,7 +157,7 @@ type uploadImageProgress struct {
 	done chan struct{}
 	// lock is a lock that prevents race conditions during the upload process.
 	lock *sync.Mutex
-	// cancel is the cancel function for the context. Is is called to ensure that the context is properly canceled.
+	// cancel is the cancel function for the context. HasCode is called to ensure that the context is properly canceled.
 	cancel context.CancelFunc
 	// err holds the error that happened during the upload. It can be queried using the Err() method.
 	err error
@@ -276,7 +283,7 @@ func (u *uploadImageProgress) removeDisk() {
 	disk := u.disk
 	if disk != nil {
 		if id, ok := u.disk.Id(); ok {
-			_ = u.client.RemoveDisk(id)
+			_ = u.client.RemoveDisk(u.ctx, id)
 		}
 	}
 }
@@ -384,6 +391,7 @@ func (u *uploadImageProgress) setupImageTransfer(diskID string) (
 	*ovirtsdk4.ImageTransferService,
 	error,
 ) {
+	var lastError EngineError
 	imageTransfersService := u.conn.SystemService().ImageTransfersService()
 	image := ovirtsdk4.NewImageBuilder().Id(diskID).MustBuild()
 	transfer := ovirtsdk4.
@@ -402,8 +410,8 @@ func (u *uploadImageProgress) setupImageTransfer(diskID string) (
 	transferService := imageTransfersService.ImageTransferService(transfer.MustId())
 
 	for {
-		req, lastError := transferService.Get().Send()
-		if lastError == nil {
+		req, err := transferService.Get().Send()
+		if err == nil {
 			if req.MustImageTransfer().MustPhase() == ovirtsdk4.IMAGETRANSFERPHASE_TRANSFERRING {
 				break
 			} else {
@@ -412,6 +420,11 @@ func (u *uploadImageProgress) setupImageTransfer(diskID string) (
 					"image transfer is in phase %s instead of transferring",
 					req.MustImageTransfer().MustPhase(),
 				)
+			}
+		} else {
+			lastError = wrap(err, EUnidentified, "failed to get image transfer for disk %s", diskID)
+			if !lastError.CanAutoRetry() {
+				return nil, nil, lastError
 			}
 		}
 		select {
@@ -433,7 +446,7 @@ func (u *uploadImageProgress) waitForDiskOk(diskService *ovirtsdk4.DiskService) 
 				return newError(EUnsupported, "the disk was removed after upload, probably not supported")
 			}
 			if disk.MustStatus() == ovirtsdk4.DISKSTATUS_OK {
-				return nil
+				return u.cli.waitForJobFinished(u.ctx, u.correlationID)
 			} else {
 				lastError = newError(EPending, "disk status is %s, not ok", disk.MustStatus())
 			}

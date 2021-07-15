@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -42,13 +41,13 @@ func NewWithVerify(
 	verify func(connection *ovirtsdk4.Connection) error,
 ) (ClientWithLegacySupport, error) {
 	if err := validateURL(url); err != nil {
-		return nil, fmt.Errorf("invalid URL: %s (%w)", url, err)
+		return nil, wrap(err, EBadArgument, "invalid URL: %s", url)
 	}
 	if err := validateUsername(username); err != nil {
-		return nil, fmt.Errorf("invalid username: %s (%w)", username, err)
+		return nil, wrap(err, "invalid username: %s", username)
 	}
 	if caFile == "" && len(caCert) == 0 && !insecure {
-		return nil, fmt.Errorf("one of caFile, caCert, or insecure must be provided")
+		return nil, newError(EBadArgument, "one of caFile, caCert, or insecure must be provided")
 	}
 
 	connBuilder := ovirtsdk4.NewConnectionBuilder().
@@ -64,12 +63,12 @@ func NewWithVerify(
 
 	conn, err := connBuilder.Build()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create underlying oVirt connection (%w)", err)
+		return nil, wrap(err, EUnidentified, "failed to create underlying oVirt connection")
 	}
 
 	tlsConfig, err := createTLSConfig(caFile, caCert, insecure)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TLS configuration (%w)", err)
+		return nil, wrap(err, ETLSError, "failed to create TLS configuration")
 	}
 
 	httpClient := http.Client{
@@ -104,7 +103,7 @@ func testConnection(conn *ovirtsdk4.Connection) error {
 			var realErr EngineError
 			// This will always be an engine error
 			_ = errors.As(err, &realErr)
-			if realErr.IsPermanent() {
+			if !realErr.CanAutoRetry() {
 				return err
 			}
 			lastError = err
@@ -153,16 +152,17 @@ func createTLSConfig(
 	}
 	if len(caCert) != 0 {
 		if ok := certPool.AppendCertsFromPEM(caCert); !ok {
-			return nil, fmt.Errorf("the provided CA certificate is not a valid certificate in PEM format")
+			return nil, newError(EBadArgument, "the provided CA certificate is not a valid certificate in PEM format")
 		}
 	}
 	if caFile != "" {
 		pemData, err := ioutil.ReadFile(caFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read CA certificate from file %s (%w)", caFile, err)
+			return nil, wrap(err, EFileReadFailed, "failed to read CA certificate from file %s", caFile)
 		}
 		if ok := certPool.AppendCertsFromPEM(pemData); !ok {
-			return nil, fmt.Errorf(
+			return nil, newError(
+				ETLSError,
 				"the provided CA certificate is not a valid certificate in PEM format in file %s",
 				caFile,
 			)
@@ -176,20 +176,20 @@ func validateUsername(username string) error {
 	usernameParts := strings.SplitN(username, "@", 2)
 	//nolint:gomnd
 	if len(usernameParts) != 2 {
-		return fmt.Errorf("username must contain exactly one @ sign (format should be admin@internal)")
+		return newError(EBadArgument, "username must contain exactly one @ sign (format should be admin@internal)")
 	}
 	if len(usernameParts[0]) == 0 {
-		return fmt.Errorf("no user supplied before @ sign in username (format should be admin@internal)")
+		return newError(EBadArgument, "no user supplied before @ sign in username (format should be admin@internal)")
 	}
 	if len(usernameParts[1]) == 0 {
-		return fmt.Errorf("no scope supplied after @ sign in username (format should be admin@internal)")
+		return newError(EBadArgument, "no scope supplied after @ sign in username (format should be admin@internal)")
 	}
 	return nil
 }
 
 func validateURL(url string) error {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return fmt.Errorf("URL must start with http:// or https://")
+		return newError(EBadArgument, "URL must start with http:// or https://")
 	}
 	return nil
 }
