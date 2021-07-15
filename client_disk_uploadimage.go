@@ -322,35 +322,30 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 	var foundTransferURL *url.URL
 	var lastError error
 	for _, transferURL := range tryURLs {
-		transferURL, err := url.Parse(transferURL)
+		parsedTransferURL, err := url.Parse(transferURL)
 		if err != nil {
 			lastError = fmt.Errorf("failer to parse transfer URL %s (%w)", transferURL, err)
 			continue
 		}
 
-		hostUrl, err := url.Parse(transfer.MustTransferUrl())
+		optionsReq, err := http.NewRequest(http.MethodOptions, parsedTransferURL.String(), strings.NewReader(""))
+		if err != nil {
+			lastError = err
+			continue
+		}
+		res, err := u.httpClient.Do(optionsReq)
 		if err == nil {
-			optionsReq, err := http.NewRequest(http.MethodOptions, hostUrl.String(), strings.NewReader(""))
-			if err != nil {
-				lastError = err
-				continue
-			}
-			res, err := u.httpClient.Do(optionsReq)
-			if err == nil {
-				statusCode := res.StatusCode
-				if err := res.Body.Close(); err != nil {
-					lastError = fmt.Errorf("failed to close response body in options request (%w)", err)
-				} else {
-					if statusCode == 200 {
-						foundTransferURL = transferURL
-						lastError = nil
-						break
-					} else {
-						lastError = fmt.Errorf("non-200 status code returned from URL %s (%d)", hostUrl, res.StatusCode)
-					}
-				}
+			statusCode := res.StatusCode
+			if err := res.Body.Close(); err != nil {
+				lastError = fmt.Errorf("failed to close response body in options request (%w)", err)
 			} else {
-				lastError = err
+				if statusCode == 200 {
+					foundTransferURL = parsedTransferURL
+					lastError = nil
+					break
+				} else {
+					lastError = fmt.Errorf("non-200 status code returned from URL %s (%d)", parsedTransferURL, res.StatusCode)
+				}
 			}
 		} else {
 			lastError = err
