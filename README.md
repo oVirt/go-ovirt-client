@@ -103,6 +103,17 @@ func TestSomething(t *testing.T) {
 
 **Tip:** You can use any logger that satisfies the `Logger` interface described in [go-ovirt-client-log](https://github.com/oVirt/go-ovirt-client-log)
 
+## Retries
+
+This library attempts to retry API calls that can be retried if possible. Each function has a sensible retry policy. However, you may want to customize the retries by passing one or more retry flags. The following retry flags are supported:
+
+- `ovirtclient.ContextStrategy(ctx)`: this strategy will stop retries when the context parameter is canceled.
+- `ovirtclient.ExponentialBackoff(factor)`: this strategy adds a wait time after each time, which is increased by the given factor on each try. The default is a backoff with a factor of 2.
+- `ovirtclient.AutoRetry()`: this strategy will cancel retries if the error in question is a permanent error. This is enabled by default.
+- `ovirtclient.MaxTries(tries)`: this strategy will abort retries if a maximum number of tries is reached. On complex calls the retries are counted per underlying API call.
+- `ovirtclient.Timeout(duration)`: this strategy will abort retries if a certain time has been elapsed for the higher level call.
+- `ovirtclient.CallTimeout(duration)`: this strategy will abort retries if a certain underlying API call takes longer than the specified duration. 
+
 ## Mock client
 
 This library also provides a mock oVirt client that doesn't need working oVirt engine to function. It stores all information in-memory and simulates a working oVirt system. You can instantiate the mock client like so:

@@ -1,20 +1,31 @@
+// Code generated automatically using go:generate. DO NOT EDIT.
+
 package ovirtclient
 
-func (o *oVirtClient) ListHosts() ([]Host, error) {
-	response, err := o.conn.SystemService().HostsService().List().Send()
-	if err != nil {
-		return nil, wrap(err, EUnidentified, "failed to list hosts")
-	}
-	sdkHosts, ok := response.Hosts()
-	if !ok {
-		return []Host{}, nil
-	}
-	result := make([]Host, len(sdkHosts.Slice()))
-	for i, sdkHost := range sdkHosts.Slice() {
-		result[i], err = convertSDKHost(sdkHost)
-		if err != nil {
-			return nil, wrap(err, EBug, "failed to convert host item %d", i)
-		}
-	}
-	return result, nil
+func (o *oVirtClient) ListHosts(retries ...RetryStrategy) (result []Host, err error) {
+	retries = defaultRetries(retries, defaultReadTimeouts())
+	result = []Host{}
+	err = retry(
+		"listing hosts",
+		o.logger,
+		retries,
+		func() error {
+			response, e := o.conn.SystemService().HostsService().List().Send()
+			if e != nil {
+				return e
+			}
+			sdkObjects, ok := response.Hosts()
+			if !ok {
+				return nil
+			}
+			result = make([]Host, len(sdkObjects.Slice()))
+			for i, sdkObject := range sdkObjects.Slice() {
+				result[i], e = convertSDKHost(sdkObject)
+				if e != nil {
+					return wrap(e, EBug, "failed to convert host during listing item #%d", i)
+				}
+			}
+			return nil
+		})
+	return
 }

@@ -1,17 +1,40 @@
+// Code generated automatically using go:generate. DO NOT EDIT.
+
 package ovirtclient
 
-func (o *oVirtClient) GetStorageDomain(id string) (storageDomain StorageDomain, err error) {
-	response, err := o.conn.SystemService().StorageDomainsService().StorageDomainService(id).Get().Send()
-	if err != nil {
-		return nil, wrap(err, EUnidentified, "failed to get storage domain %s", id)
-	}
-	sdkStorageDomain, ok := response.StorageDomain()
-	if !ok {
-		return nil, newError(ENotFound, "response did not contain a storage domain")
-	}
-	storageDomain, err = convertSDKStorageDomain(sdkStorageDomain)
-	if err != nil {
-		return nil, wrap(err, EUnidentified, "failed to convert storage domain")
-	}
-	return storageDomain, nil
+import (
+	"fmt"
+)
+
+func (o *oVirtClient) GetStorageDomain(id string, retries ...RetryStrategy) (result StorageDomain, err error) {
+	retries = defaultRetries(retries, defaultReadTimeouts())
+	err = retry(
+		fmt.Sprintf("getting storage domain %s", id),
+		o.logger,
+		retries,
+		func() error {
+			response, err := o.conn.SystemService().StorageDomainsService().StorageDomainService(id).Get().Send()
+			if err != nil {
+				return err
+			}
+			sdkObject, ok := response.StorageDomain()
+			if !ok {
+				return newError(
+					ENotFound,
+					"no storage domain returned when getting storageDomain ID %s",
+					id,
+				)
+			}
+			result, err = convertSDKStorageDomain(sdkObject)
+			if err != nil {
+				return wrap(
+					err,
+					EBug,
+					"failed to convert storage domain %s",
+					id,
+				)
+			}
+			return nil
+		})
+	return
 }

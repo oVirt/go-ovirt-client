@@ -31,6 +31,12 @@ const EBug ErrorCode = "bug"
 // EConnection signals a problem with the connection.
 const EConnection ErrorCode = "connection"
 
+// EPermanentHTTPError indicates a HTTP 400 error code
+const EPermanentHTTPError ErrorCode = "permanent_http_error"
+
+// ETemporaryHTTPError indicates a HTTP 500 error code
+const ETemporaryHTTPError ErrorCode = "temporary_http_error"
+
 // EPending signals that the client library is still waiting for an action to be completed.
 const EPending ErrorCode = "pending"
 
@@ -46,6 +52,9 @@ const EBadArgument ErrorCode = "bad_argument"
 
 // EFileReadFailed indicates that reading a local file failed.
 const EFileReadFailed ErrorCode = "file_read_failed"
+
+// EUnexpectedImageTransferPhase indicates that an image transfer was in an unexpected phase.
+const EUnexpectedImageTransferPhase ErrorCode = "unexpected_image_transfer_phase"
 
 // EUnidentified is an unidentified oVirt error. When passed to the wrap() function this error code will cause the
 // wrap function to look at the wrapped error and either fetch the error code from that error, or identify the error
@@ -73,6 +82,8 @@ func (e ErrorCode) CanAutoRetry() bool {
 	case EUnsupported:
 		return false
 	case EFieldMissing:
+		return false
+	case EPermanentHTTPError:
 		return false
 	default:
 		return true

@@ -2,19 +2,18 @@ package ovirtclient
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 )
 
 func (m *mockClient) StartImageUpload(
-	_ context.Context,
 	alias string,
 	storageDomainID string,
 	sparse bool,
 	size uint64,
 	reader io.Reader,
+	_ ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -55,14 +54,14 @@ func (m *mockClient) StartImageUpload(
 }
 
 func (m *mockClient) UploadImage(
-	ctx context.Context,
 	alias string,
 	storageDomainID string,
 	sparse bool,
 	size uint64,
 	reader io.Reader,
+	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
-	progress, err := m.StartImageUpload(ctx, alias, storageDomainID, sparse, size, reader)
+	progress, err := m.StartImageUpload(alias, storageDomainID, sparse, size, reader, retries...)
 	if err != nil {
 		return nil, err
 	}

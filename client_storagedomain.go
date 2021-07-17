@@ -4,12 +4,14 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
+//go:generate go run scripts/rest.go -i "StorageDomain" -n "storage domain"
+
 // StorageDomainClient contains the portion of the goVirt API that deals with storage domains.
 type StorageDomainClient interface {
 	// ListStorageDomains lists all storage domains.
-	ListStorageDomains() ([]StorageDomain, error)
+	ListStorageDomains(retries ...RetryStrategy) ([]StorageDomain, error)
 	// GetStorageDomain returns a single storage domain, or an error if the storage domain could not be found.
-	GetStorageDomain(id string) (StorageDomain, error)
+	GetStorageDomain(id string, retries ...RetryStrategy) (StorageDomain, error)
 }
 
 // StorageDomain represents a storage domain returned from the oVirt Engine API.
@@ -27,6 +29,8 @@ type StorageDomain interface {
 	ExternalStatus() StorageDomainExternalStatus
 }
 
+// StorageDomainStatus represents the status a domain can be in. Either this status field, or the
+// StorageDomainExternalStatus must be set.
 type StorageDomainStatus string
 
 const (
@@ -43,6 +47,7 @@ const (
 	StorageDomainStatusNA                      StorageDomainStatus = ""
 )
 
+// StorageDomainExternalStatus represents the status of an external storage domain.
 type StorageDomainExternalStatus string
 
 const (

@@ -13,20 +13,20 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
 func (o *oVirtClient) UploadImage(
-	ctx context.Context,
 	alias string,
 	storageDomainID string,
 	sparse bool,
 	size uint64,
 	reader io.Reader,
+	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
-	progress, err := o.StartImageUpload(ctx, alias, storageDomainID, sparse, size, reader)
+	retries = defaultRetries(retries, defaultLongTimeouts())
+	progress, err := o.StartImageUpload(alias, storageDomainID, sparse, size, reader, retries...)
 	if err != nil {
 		return nil, err
 	}
@@ -38,13 +38,15 @@ func (o *oVirtClient) UploadImage(
 }
 
 func (o *oVirtClient) StartImageUpload(
-	ctx context.Context,
 	alias string,
 	storageDomainID string,
 	sparse bool,
 	size uint64,
 	reader io.Reader,
+	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
+	retries = defaultRetries(retries, defaultLongTimeouts())
+
 	o.logger.Infof("Starting disk image upload...")
 	bufReader := bufio.NewReaderSize(reader, qcowHeaderSize)
 
@@ -53,7 +55,7 @@ func (o *oVirtClient) StartImageUpload(
 		return nil, err
 	}
 
-	newCtx, cancel := context.WithCancel(ctx) //nolint:govet
+	newCtx, cancel := context.WithCancel(context.Background()) //nolint:govet
 
 	disk, err := o.createDiskForUpload(storageDomainID, alias, format, qcowSize, sparse, cancel)
 	if err != nil {
@@ -64,7 +66,7 @@ func (o *oVirtClient) StartImageUpload(
 		)
 	}
 
-	return o.createProgress(alias, qcowSize, size, bufReader, storageDomainID, sparse, newCtx, cancel, disk)
+	return o.createProgress(alias, qcowSize, size, bufReader, storageDomainID, sparse, newCtx, cancel, disk, retries)
 }
 
 func (o *oVirtClient) createDiskForUpload(
@@ -116,6 +118,7 @@ func (o *oVirtClient) createProgress(
 	newCtx context.Context,
 	cancel context.CancelFunc,
 	disk *ovirtsdk4.Disk,
+	retries []RetryStrategy,
 ) (UploadImageProgress, error) {
 	progress := &uploadImageProgress{
 		cli:             o,
@@ -137,6 +140,7 @@ func (o *oVirtClient) createProgress(
 		disk:            disk,
 		client:          o,
 		logger:          o.logger,
+		retries:         retries,
 	}
 	go progress.upload()
 	return progress, nil
@@ -175,6 +179,17 @@ type uploadImageProgress struct {
 	client *oVirtClient
 	// correlationID is an identifier for the upload process.
 	correlationID string
+	// retries contains the retry configuration
+	retries []RetryStrategy
+	// diskID contains the ID of the disk after it has been created.
+	diskID string
+	// diskService is the disk service related to the disk created.
+	diskService *ovirtsdk4.DiskService
+	// transfer is the set up image transfer
+	transfer *ovirtsdk4.ImageTransfer
+	// transferService is the transfer service related to the transfer
+	transferService *ovirtsdk4.ImageTransferService
+	transferURL     *url.URL
 }
 
 func (u *uploadImageProgress) CorrelationID() string {
@@ -243,72 +258,68 @@ func (u *uploadImageProgress) upload() {
 }
 
 func (u *uploadImageProgress) processUpload() error {
-	diskID, diskService, err := u.createDisk()
-	if err != nil {
-		return err
+
+	steps := []func() error{
+		u.createDisk,
+		u.waitForDiskOk,
+		u.createImageTransfer,
+		u.waitForImageTransferReady,
+		u.findTransferURL,
+		u.uploadImage,
+		u.finalizeUpload,
+		u.waitForDiskOk,
 	}
 
-	if err := u.waitForDiskOk(diskService); err != nil {
-		u.removeDisk()
-		return err
+	for _, step := range steps {
+		if err := step(); err != nil {
+			u.abortTransfer()
+			u.removeDisk()
+			return err
+		}
 	}
-
-	transfer, transferService, err := u.setupImageTransfer(diskID)
-	if err != nil {
-		u.removeDisk()
-		return err
-	}
-
-	transferURL, err := u.findTransferURL(transfer)
-	if err != nil {
-		u.removeDisk()
-		return err
-	}
-
-	if err := u.uploadImage(transferURL); err != nil {
-		u.removeDisk()
-		return err
-	}
-
-	if err := u.finalizeUpload(transferService); err != nil {
-		u.removeDisk()
-		return err
-	}
-
-	if err := u.waitForDiskOk(diskService); err != nil {
-		u.removeDisk()
-		return err
-	}
-
 	return nil
 }
 
-func (u *uploadImageProgress) removeDisk() {
-	disk := u.disk
-	if disk != nil {
-		if id, ok := u.disk.Id(); ok {
-			_ = u.client.RemoveDisk(u.ctx, id)
+func (u *uploadImageProgress) abortTransfer() {
+	if u.transfer != nil {
+		if err := retry(
+			fmt.Sprintf("canceling transfer for disk %s", u.diskID),
+			u.logger,
+			u.retries,
+			func() error {
+				_, err := u.transferService.Cancel().Send()
+				return err
+			},
+		); err != nil {
+			u.logger.Warningf("failed to cancel transfer for disk %s, may not be able to remove disk", u.diskID)
 		}
 	}
 }
 
-func (u *uploadImageProgress) finalizeUpload(
-	transferService *ovirtsdk4.ImageTransferService,
-) error {
-	u.logger.Debugf("Finalizing image upload for disk %s...", u.Disk().ID())
-	finalizeRequest := transferService.Finalize()
-	finalizeRequest.Query("correlation_id", u.correlationID)
-	_, err := finalizeRequest.Send()
-	if err != nil {
-		u.logger.Debugf("Failed to finalize image upload for disk %s. (%v)", u.Disk().ID(), err)
-		return wrap(err, EUnidentified, "failed to finalize image upload")
+func (u *uploadImageProgress) removeDisk() {
+	if u.diskID != "" {
+		if err := u.client.RemoveDisk(u.diskID, u.retries...); err != nil {
+			u.logger.Warningf("failed to remove disk %s after failed image upload, please remove manually (%w)", u.diskID, err)
+		}
 	}
-	return nil
 }
 
-func (u *uploadImageProgress) uploadImage(transferURL *url.URL) error {
-	u.logger.Debugf("Uploading image for disk %s via HTTP request to %s...", u.Disk().ID(), transferURL.String())
-	putRequest, err := http.NewRequest(http.MethodPut, transferURL.String(), u)
+func (u *uploadImageProgress) finalizeUpload() error {
+	return retry(
+		fmt.Sprintf("finalizing image for disk %s", u.Disk()),
+		u.logger,
+		u.retries,
+		func() error {
+			finalizeRequest := u.transferService.Finalize()
+			finalizeRequest.Query("correlation_id", u.correlationID)
+			_, err := finalizeRequest.Send()
+			return err
+		})
+}
+
+func (u *uploadImageProgress) uploadImage() error {
+	u.logger.Debugf("Uploading image for disk %s via HTTP request to %s...", u.Disk().ID(), u.transferURL.String())
+	putRequest, err := http.NewRequest(http.MethodPut, u.transferURL.String(), u)
 	if err != nil {
 		return wrap(err, EUnidentified, "failed to create HTTP request")
 	}
@@ -316,157 +327,150 @@ func (u *uploadImageProgress) uploadImage(transferURL *url.URL) error {
 	putRequest.ContentLength = int64(u.size)
 	response, err := u.httpClient.Do(putRequest)
 	if err != nil {
-		u.logger.Debugf("Failed to upload image to disk %s via HTTP request to %s. (%v)", u.Disk().ID(), transferURL.String(), err)
+		u.logger.Debugf("Failed to upload image to disk %s via HTTP request to %s. (%v)", u.Disk().ID(), u.transferURL.String(), err)
 		return wrap(err, EUnidentified, "failed to upload image")
 	}
 	if err := response.Body.Close(); err != nil {
-		u.logger.Debugf("Failed to close response body for image transfer to disk %s via HTTP request to %s. (%v)", u.Disk().ID(), transferURL.String(), err)
+		u.logger.Debugf("Failed to close response body for image transfer to disk %s via HTTP request to %s. (%v)", u.Disk().ID(), u.transferURL.String(), err)
 		return wrap(err, EUnidentified, "failed to close response body while uploading image")
 	}
 	return nil
 }
 
-func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer) (*url.URL, error) {
+func (u *uploadImageProgress) findTransferURL() (err error) {
 	u.logger.Debugf("Attempting to determine image transfer URL for disk %s...", u.Disk().ID())
 	var tryURLs []string
-	if transferURL, ok := transfer.TransferUrl(); ok && transferURL != "" {
+	if transferURL, ok := u.transfer.TransferUrl(); ok && transferURL != "" {
 		tryURLs = append(tryURLs, transferURL)
 	}
-	if proxyURL, ok := transfer.ProxyUrl(); ok && proxyURL != "" {
+	if proxyURL, ok := u.transfer.ProxyUrl(); ok && proxyURL != "" {
 		tryURLs = append(tryURLs, proxyURL)
 	}
 
 	if len(tryURLs) == 0 {
-		u.logger.Errorf("Bug: neither a transfer URL nor a proxy URL was returned from the oVirt Engine. (%v)", transfer)
-		return nil, newError(EBug, "neither a transfer URL nor a proxy URL was returned from the oVirt Engine")
+		u.logger.Errorf("Bug: neither a transfer URL nor a proxy URL was returned from the oVirt Engine. (%v)", u.transfer)
+		return newError(EBug, "neither a transfer URL nor a proxy URL was returned from the oVirt Engine")
 	}
 
-	var foundTransferURL *url.URL
 	var lastError error
 	for _, transferURL := range tryURLs {
-		transferURL, err := url.Parse(transferURL)
-		if err != nil {
-			lastError = wrap(err, EUnidentified, "failed to parse transfer URL %s", transferURL)
-			continue
-		}
-
-		hostUrl, err := url.Parse(transfer.MustTransferUrl())
-		if err == nil {
-			optionsReq, err := http.NewRequest(http.MethodOptions, hostUrl.String(), strings.NewReader(""))
-			if err != nil {
-				lastError = err
-				continue
-			}
-			res, err := u.httpClient.Do(optionsReq)
-			if err == nil {
-				statusCode := res.StatusCode
-				if err := res.Body.Close(); err != nil {
-					lastError = wrap(err, EUnidentified, "failed to close response body in options request")
-				} else {
-					if statusCode == 200 {
-						foundTransferURL = transferURL
-						lastError = nil
-						break
-					} else {
-						lastError = newError(EConnection, "non-200 status code returned from URL %s (%d)", hostUrl, res.StatusCode)
-					}
-				}
-			}
-		} else {
-			lastError = err
-		}
+		lastError = u.verifyTransferURL(transferURL)
 	}
-	if foundTransferURL == nil {
-		return nil, wrap(lastError, EUnidentified, "failed to find transfer URL")
-	}
-	return foundTransferURL, nil
-}
-
-func (u *uploadImageProgress) createDisk() (string, *ovirtsdk4.DiskService, error) {
-	u.logger.Debugf("Creating disk for image upload...")
-	// TODO add retries for disk creation
-	addDiskRequest := u.conn.SystemService().DisksService().Add().Disk(u.disk)
-	addDiskRequest.Query("correlation_id", u.correlationID)
-	addResp, err := addDiskRequest.Send()
-	if err != nil {
-		diskAlias, _ := u.disk.Alias()
-		err = wrap(err, EUnidentified, "failed to create disk, alias: %s", diskAlias)
-		u.logger.Debugf(fmt.Sprintf("%v", err))
-		return "", nil, err
-	}
-	diskID := addResp.MustDisk().MustId()
-	diskService := u.conn.SystemService().DisksService().DiskService(diskID)
-	u.logger.Debugf("Disk ID %s created for image upload.", diskID)
-	return diskID, diskService, nil
-}
-
-func (u *uploadImageProgress) setupImageTransfer(diskID string) (
-	transfer *ovirtsdk4.ImageTransfer,
-	transferService *ovirtsdk4.ImageTransferService,
-	err error,
-) {
-	transfer, transferService, err = u.createImageTransfer()
-	if err != nil {
-		return transfer, transferService, err
-	}
-
-	if err := u.waitForImageTransferReady(diskID, transferService); err != nil {
-		return transfer, transferService, err
-	}
-	return transfer, transferService, nil
-}
-
-func (u *uploadImageProgress) waitForImageTransferReady(
-	diskID string,
-	transferService *ovirtsdk4.ImageTransferService,
-) error {
-	var lastError EngineError
-	u.logger.Debugf("Waiting for image transfer to become ready for disk ID %s...", diskID)
-	for {
-		req, err := transferService.Get().Send()
-		if err == nil {
-			if req.MustImageTransfer().MustPhase() == ovirtsdk4.IMAGETRANSFERPHASE_TRANSFERRING {
-				u.logger.Debugf("Image transfer for disk %s successfully created.", diskID)
-				break
-			} else {
-				u.logger.Debugf("Image transfer for disk %s is still pending, retrying in 5 seconds...", diskID)
-				lastError = newError(
-					EPending,
-					"image transfer is in phase %s instead of transferring",
-					req.MustImageTransfer().MustPhase(),
-				)
-			}
-		} else {
-			lastError = wrap(err, EUnidentified, "failed to get image transfer for disk %s", diskID)
-			if !lastError.CanAutoRetry() {
-				u.logger.Debugf("Error while creating image transfer for disk %s, giving up. (%v)", diskID, err)
-				return lastError
-			}
-			u.logger.Debugf(
-				"Error while creating image transfer for disk %s, retrying in 5 seconds... (%v)",
-				diskID,
-				err,
-			)
-		}
-		select {
-		case <-time.After(time.Second * 5):
-		case <-u.ctx.Done():
-			u.logger.Debugf("Timeout while waiting for image transfer for disk %s. (last error: %v)", diskID, lastError)
-			return wrap(lastError, ETimeout, "timeout while waiting for image transfer")
-		}
+	if lastError != nil {
+		return wrap(lastError, EConnection, "failed to find a valid transfer URL; check your network connectivity to the oVirt Engine ImageIO port")
 	}
 	return nil
 }
 
-func (u *uploadImageProgress) createImageTransfer() (
-	*ovirtsdk4.ImageTransfer,
-	*ovirtsdk4.ImageTransferService,
-	error,
-) {
-	diskID := u.Disk().ID()
-	u.logger.Debugf("Creating image transfer for image upload disk ID %s...", diskID)
+func (u *uploadImageProgress) verifyTransferURL(transferURL string) error {
+	parsedTransferURL, err := url.Parse(transferURL)
+	if err != nil {
+		return wrap(err, EUnidentified, "failed to parse transfer URL %s", transferURL)
+	}
+
+	return retry(
+		fmt.Sprintf("sending OPTIONS request to %s", transferURL),
+		u.logger,
+		append(u.retries, MaxTries(3)),
+		func() error {
+			optionsReq, e := http.NewRequest(http.MethodOptions, parsedTransferURL.String(), strings.NewReader(""))
+			if e != nil {
+				return wrap(e, EBug, "failed to create OPTIONS request to %s", parsedTransferURL.String())
+			}
+			res, e := u.httpClient.Do(optionsReq)
+			if e != nil {
+				return wrap(e, EConnection, "HTTP request to %s failed", parsedTransferURL.String())
+			}
+			defer func() {
+				_ = res.Body.Close()
+			}()
+			statusCode := res.StatusCode
+			if statusCode < 199 {
+				return newError(
+					EConnection,
+					"HTTP connection error while calling %s",
+					parsedTransferURL.String(),
+				)
+			} else if statusCode < 399 {
+				u.transferURL = parsedTransferURL
+				return nil
+			} else if statusCode < 499 {
+				return newError(
+					EPermanentHTTPError,
+					"HTTP 4xx status code returned from URL %s (%d)",
+					parsedTransferURL.String(),
+					res.StatusCode,
+				)
+			} else {
+				return newError(
+					EConnection,
+					"non-200 status code returned from URL %s (%d)",
+					parsedTransferURL.String(),
+					res.StatusCode,
+				)
+			}
+		},
+	)
+}
+
+func (u *uploadImageProgress) createDisk() (err error) {
+	// This will never fail because we set up the disk in the previous setp
+	diskAlias := u.disk.MustAlias()
+	err = retry(
+		fmt.Sprintf("creating disk with alias %s for image upload", diskAlias),
+		u.logger,
+		u.retries,
+		func() error {
+			addDiskRequest := u.conn.SystemService().DisksService().Add().Disk(u.disk)
+			addDiskRequest.Query("correlation_id", u.correlationID)
+			addResp, err := addDiskRequest.Send()
+			if err != nil {
+				return err
+			}
+			u.diskID = addResp.MustDisk().MustId()
+			u.diskService = u.conn.SystemService().DisksService().DiskService(u.diskID)
+			return nil
+		})
+	return
+}
+
+func (u *uploadImageProgress) waitForImageTransferReady() (err error) {
+	return retry(
+		fmt.Sprintf("waiting for image transfer to become ready for disk ID %s", u.diskID),
+		u.logger,
+		u.retries,
+		func() error {
+			req, e := u.transferService.Get().Send()
+			if e != nil {
+				return e
+			}
+			transfer, ok := req.ImageTransfer()
+			if !ok {
+				return newError(EFieldMissing, "fetching image transfer did not return an image transfer")
+			}
+			phase, ok := transfer.Phase()
+			if !ok {
+				return newError(EFieldMissing, "fetching image transfer did not contain a phase")
+			}
+			switch phase {
+			case ovirtsdk4.IMAGETRANSFERPHASE_INITIALIZING:
+				return newError(
+					EPending,
+					"image transfer is in phase %s instead of transferring",
+					phase,
+				)
+			case ovirtsdk4.IMAGETRANSFERPHASE_TRANSFERRING:
+				return nil
+			default:
+				return newError(EUnexpectedImageTransferPhase, "image transfer is in phase %s instead of transferring", phase)
+			}
+		})
+}
+
+func (u *uploadImageProgress) createImageTransfer() (err error) {
+	u.logger.Debugf("Creating image transfer for image upload disk ID %s...", u.diskID)
 	imageTransfersService := u.conn.SystemService().ImageTransfersService()
-	image := ovirtsdk4.NewImageBuilder().Id(diskID).MustBuild()
+	image := ovirtsdk4.NewImageBuilder().Id(u.diskID).MustBuild()
 	transfer := ovirtsdk4.
 		NewImageTransferBuilder().
 		Image(image).
@@ -476,68 +480,48 @@ func (u *uploadImageProgress) createImageTransfer() (
 		ImageTransfer(transfer).
 		Query("correlation_id", u.correlationID)
 
-	var lastError EngineError
-	var err error
-	var transferRes *ovirtsdk4.ImageTransfersServiceAddResponse
-	for {
-		transferRes, err = transferReq.Send()
-		if err != nil {
-			lastError = wrap(err, EUnidentified, "failed to start image transfer for disk %s", diskID)
-			if !lastError.CanAutoRetry() {
-				u.logger.Debugf("Failed to start image transfer for disk %s, giving up. (%v)", diskID, err)
-				return nil, nil, lastError
+	return retry(
+		fmt.Sprintf("starting image transfer for disk %s", u.diskID),
+		u.logger,
+		u.retries,
+		func() error {
+			transferRes, e := transferReq.Send()
+			if e != nil {
+				return e
 			}
-			u.logger.Debugf("Failed to start image transfer for disk %s, retrying in 5 seconds... (%v)", diskID, err)
-		} else {
-			break
-		}
-		select {
-		case <-u.ctx.Done():
-			u.logger.Debugf("Timeout while trying to create image transfer for disk %s (last error: %v)", lastError)
-			return nil, nil, wrap(err, ETimeout, "timeout while trying to create image transfer for disk %s")
-		case <-time.After(5 * time.Second):
-		}
-	}
-
-	transfer, ok := transferRes.ImageTransfer()
-	if !ok {
-		return nil, nil, newError(EFieldMissing, "missing image transfer as a response to image transfer create request")
-	}
-	transferID, ok := transfer.Id()
-	if !ok {
-		return nil, nil, newError(EFieldMissing, "missing image transfer ID in response to image transfer create request")
-	}
-	transferService := imageTransfersService.ImageTransferService(transferID)
-	return transfer, transferService, nil
+			var ok bool
+			u.transfer, ok = transferRes.ImageTransfer()
+			if !ok {
+				return newError(EFieldMissing, "missing image transfer as a response to image transfer create request")
+			}
+			transferID, ok := transfer.Id()
+			if !ok {
+				return newError(EFieldMissing, "missing image transfer ID in response to image transfer create request")
+			}
+			u.transferService = imageTransfersService.ImageTransferService(transferID)
+			return nil
+		},
+	)
 }
 
-func (u *uploadImageProgress) waitForDiskOk(diskService *ovirtsdk4.DiskService) error {
-	u.logger.Debugf("Waiting for disk %s to become ready after image upload...", u.Disk().ID())
-	var lastError error
-	for {
-		// TODO switch to cli.GetDisk to avoid Must* calls
-		req, err := diskService.Get().Send()
-		if err == nil {
-			disk, ok := req.Disk()
-			if !ok {
-				return newError(EUnsupported, "the disk was removed after upload, probably not supported")
+func (u *uploadImageProgress) waitForDiskOk() (err error) {
+	err = retry(
+		fmt.Sprintf("waiting for disk  %s to become OK", u.diskID),
+		u.logger,
+		u.retries,
+		func() error {
+			disk, e := u.cli.GetDisk(u.diskID)
+			if e != nil {
+				return err
 			}
-			status := disk.MustStatus()
-			if status == ovirtsdk4.DISKSTATUS_OK {
-				return u.cli.waitForJobFinished(u.ctx, u.correlationID)
-			} else {
-				u.logger.Debugf("Disk %s is still in status %s...", u.Disk().ID(), status)
-				lastError = newError(EPending, "disk status is %s, not ok", disk.MustStatus())
+			if disk.Status() != DiskStatusOK {
+				return newError(EPending, "disk status is %s, not ok", disk.Status())
 			}
-			u.disk = disk
-		} else {
-			lastError = err
-		}
-		select {
-		case <-time.After(5 * time.Second):
-		case <-u.ctx.Done():
-			u.logger.Debugf("Timeout while waiting for disk %s to become ok. (last error: %v)", u.Disk().ID(), lastError)
-			return wrap(lastError, ETimeout, "timeout while waiting for disk to be ok after upload")
-		}
+			return nil
+		},
+	)
+	if err != nil {
+		return err
 	}
+	return u.cli.waitForJobFinished(u.correlationID, u.retries)
 }

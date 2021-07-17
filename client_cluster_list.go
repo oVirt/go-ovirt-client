@@ -1,24 +1,31 @@
+// Code generated automatically using go:generate. DO NOT EDIT.
+
 package ovirtclient
 
-func (o *oVirtClient) ListClusters() ([]Cluster, error) {
-	clustersResponse, err := o.conn.SystemService().ClustersService().List().Send()
-	if err != nil {
-		return nil, wrap(
-			err,
-			EUnidentified,
-			"failed to list oVirt clusters",
-		)
-	}
-	sdkClusters, ok := clustersResponse.Clusters()
-	if !ok {
-		return []Cluster{}, nil
-	}
-	clusters := make([]Cluster, len(sdkClusters.Slice()))
-	for i, sdkCluster := range sdkClusters.Slice() {
-		clusters[i], err = convertSDKCluster(sdkCluster)
-		if err != nil {
-			return nil, wrap(err, EBug, "failed to convert cluster during cluster listing item %d", i)
-		}
-	}
-	return clusters, nil
+func (o *oVirtClient) ListClusters(retries ...RetryStrategy) (result []Cluster, err error) {
+	retries = defaultRetries(retries, defaultReadTimeouts())
+	result = []Cluster{}
+	err = retry(
+		"listing clusters",
+		o.logger,
+		retries,
+		func() error {
+			response, e := o.conn.SystemService().ClustersService().List().Send()
+			if e != nil {
+				return e
+			}
+			sdkObjects, ok := response.Clusters()
+			if !ok {
+				return nil
+			}
+			result = make([]Cluster, len(sdkObjects.Slice()))
+			for i, sdkObject := range sdkObjects.Slice() {
+				result[i], e = convertSDKCluster(sdkObject)
+				if e != nil {
+					return wrap(e, EBug, "failed to convert cluster during listing item #%d", i)
+				}
+			}
+			return nil
+		})
+	return
 }

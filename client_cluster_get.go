@@ -1,26 +1,40 @@
+// Code generated automatically using go:generate. DO NOT EDIT.
+
 package ovirtclient
 
-func (o *oVirtClient) GetCluster(id string) (cluster Cluster, err error) {
-	response, err := o.conn.SystemService().ClustersService().ClusterService(id).Get().Send()
-	if err != nil {
-		return nil, wrap(err, "failed to fetch cluster ID %s", id)
-	}
-	sdkCluster, ok := response.Cluster()
-	if !ok {
-		return nil, newError(
-			ENotFound,
-			"no cluster returned when getting cluster ID %s",
-			id,
-		)
-	}
-	cluster, err = convertSDKCluster(sdkCluster)
-	if err != nil {
-		return nil, wrap(
-			err,
-			EBug,
-			"failed to convert cluster %s",
-			id,
-		)
-	}
-	return cluster, nil
+import (
+	"fmt"
+)
+
+func (o *oVirtClient) GetCluster(id string, retries ...RetryStrategy) (result Cluster, err error) {
+	retries = defaultRetries(retries, defaultReadTimeouts())
+	err = retry(
+		fmt.Sprintf("getting cluster %s", id),
+		o.logger,
+		retries,
+		func() error {
+			response, err := o.conn.SystemService().ClustersService().ClusterService(id).Get().Send()
+			if err != nil {
+				return err
+			}
+			sdkObject, ok := response.Cluster()
+			if !ok {
+				return newError(
+					ENotFound,
+					"no cluster returned when getting cluster ID %s",
+					id,
+				)
+			}
+			result, err = convertSDKCluster(sdkObject)
+			if err != nil {
+				return wrap(
+					err,
+					EBug,
+					"failed to convert cluster %s",
+					id,
+				)
+			}
+			return nil
+		})
+	return
 }

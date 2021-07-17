@@ -4,14 +4,21 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
+//go:generate go run scripts/rest.go -i "Template" -n "template"
+
+// TemplateClient represents the portion of the client that deals with VM templates.
 type TemplateClient interface {
-	ListTemplates() ([]Template, error)
-	GetTemplate(id string) (Template, error)
+	ListTemplates(retries ...RetryStrategy) ([]Template, error)
+	GetTemplate(id string, retries ...RetryStrategy) (Template, error)
 }
 
+// Template is a set of prepared configurations for VMs.
 type Template interface {
+	// ID returns the identifier of the template. This is typically a UUID.
 	ID() string
+	// Name is the human-readable name for the template.
 	Name() string
+	// Description is a longer description for the template.
 	Description() string
 }
 
