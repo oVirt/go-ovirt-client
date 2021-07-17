@@ -1,32 +1,40 @@
+// Code generated automatically using go:generate. DO NOT EDIT.
+
 package ovirtclient
 
-func (o *oVirtClient) GetDisk(diskID string) (Disk, error) {
-	response, err := o.conn.SystemService().DisksService().DiskService(diskID).Get().Send()
-	if err != nil {
-		return nil, wrap(
-			err,
-			EUnidentified,
-			"failed to fetch disk %s",
-			diskID,
-		)
-	}
-	sdkDisk, ok := response.Disk()
-	if !ok {
-		return nil, wrap(
-			err,
-			ENotFound,
-			"disk %s response did not contain a disk",
-			diskID,
-		)
-	}
-	disk, err := convertSDKDisk(sdkDisk)
-	if err != nil {
-		return nil, wrap(
-			err,
-			EBug,
-			"failed to convert disk %s",
-			diskID,
-		)
-	}
-	return disk, nil
+import (
+	"fmt"
+)
+
+func (o *oVirtClient) GetDisk(id string, retries ...RetryStrategy) (result Disk, err error) {
+	retries = defaultRetries(retries, defaultReadTimeouts())
+	err = retry(
+		fmt.Sprintf("getting disk %s", id),
+		o.logger,
+		retries,
+		func() error {
+			response, err := o.conn.SystemService().DisksService().DiskService(id).Get().Send()
+			if err != nil {
+				return err
+			}
+			sdkObject, ok := response.Disk()
+			if !ok {
+				return newError(
+					ENotFound,
+					"no disk returned when getting disk ID %s",
+					id,
+				)
+			}
+			result, err = convertSDKDisk(sdkObject)
+			if err != nil {
+				return wrap(
+					err,
+					EBug,
+					"failed to convert disk %s",
+					id,
+				)
+			}
+			return nil
+		})
+	return
 }

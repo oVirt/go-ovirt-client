@@ -4,12 +4,14 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
+//go:generate go run scripts/rest.go -i "Cluster" -n "cluster"
+
 // ClusterClient is a part of the Client that deals with clusters in the oVirt Engine.
 type ClusterClient interface {
 	// ListClusters returns a list of all clusters in the oVirt engine.
-	ListClusters() ([]Cluster, error)
+	ListClusters(retries ...RetryStrategy) ([]Cluster, error)
 	// GetCluster returns a specific cluster based on the cluster ID. An error is returned if the cluster doesn't exist.
-	GetCluster(id string) (Cluster, error)
+	GetCluster(id string, retries ...RetryStrategy) (Cluster, error)
 }
 
 // Cluster represents a cluster returned from a ListClusters or GetCluster call.

@@ -1,24 +1,26 @@
 package ovirtclient
 
 import (
-	"context"
 	"io"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
+//go:generate go run scripts/rest.go -i "Disk" -n "disk"
+
+// DiskClient is the client interface part that deals with disks.
 type DiskClient interface {
 	// StartImageUpload uploads an image file into a disk. The actual upload takes place in the
 	// background and can be tracked using the returned UploadImageProgress object.
 	//
 	// Parameters are as follows:
 	//
-	// - ctx: this context can be used to abort the upload if it takes too long.
 	// - alias: this is the name used for the uploaded image.
 	// - storageDomainID: this is the UUID of the storage domain that the image should be uploaded to.
 	// - sparse: use sparse provisioning
 	// - size: this is the file size of the image. This must match the bytes read.
 	// - reader: this is the source of the image data.
+	// - retries: a set of optional retry options.
 	//
 	// You can wait for the upload to complete using the Done() method:
 	//
@@ -35,31 +37,31 @@ type DiskClient interface {
 	//     }
 	//
 	StartImageUpload(
-		ctx context.Context,
 		alias string,
 		storageDomainID string,
 		sparse bool,
 		size uint64,
 		reader io.Reader,
+		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
 	// UploadImage is identical to StartImageUpload, but waits until the upload is complete. It returns the disk ID
 	// as a result, or the error if one happened.
 	UploadImage(
-		ctx context.Context,
 		alias string,
 		storageDomainID string,
 		sparse bool,
 		size uint64,
 		reader io.Reader,
+		retry ...RetryStrategy,
 	) (UploadImageResult, error)
 
 	// ListDisks lists all disks.
-	ListDisks() ([]Disk, error)
+	ListDisks(retries ...RetryStrategy) ([]Disk, error)
 	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
-	GetDisk(diskID string) (Disk, error)
+	GetDisk(diskID string, retries ...RetryStrategy) (Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
-	RemoveDisk(ctx context.Context, diskID string) error
+	RemoveDisk(diskID string, retries ...RetryStrategy) error
 }
 
 // UploadImageResult represents the completed image upload.
@@ -82,7 +84,19 @@ type Disk interface {
 	Format() ImageFormat
 	// StorageDomainID is the ID of the storage system used for this disk.
 	StorageDomainID() string
+	// Status returns the status the disk is in.
+	Status() DiskStatus
 }
+
+// DiskStatus shows the status of a disk. Certain operations lock a disk, which is important because the disk can then
+// not be changed.
+type DiskStatus string
+
+const (
+	DiskStatusOK      DiskStatus = "ok"
+	DiskStatusLocked  DiskStatus = "locked"
+	DiskStatusIllegal DiskStatus = "illegal"
+)
 
 // UploadImageProgress is a tracker for the upload progress happening in the background.
 type UploadImageProgress interface {
@@ -140,12 +154,17 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 	if !ok {
 		return nil, newError(EFieldMissing, "disk %s has no format field", id)
 	}
+	status, ok := sdkDisk.Status()
+	if !ok {
+		return nil, newError(EFieldMissing, "disk %s has no status field", id)
+	}
 	return &disk{
 		id:              id,
 		alias:           alias,
 		provisionedSize: uint64(provisionedSize),
 		format:          ImageFormat(format),
 		storageDomainID: storageDomainID,
+		status:          DiskStatus(status),
 	}, nil
 }
 
@@ -155,6 +174,11 @@ type disk struct {
 	provisionedSize uint64
 	format          ImageFormat
 	storageDomainID string
+	status          DiskStatus
+}
+
+func (d disk) Status() DiskStatus {
+	return d.status
 }
 
 func (d disk) ID() string {

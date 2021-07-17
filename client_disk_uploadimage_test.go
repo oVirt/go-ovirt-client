@@ -1,11 +1,9 @@
 package ovirtclient_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestImageUploadDiskCreated(t *testing.T) {
@@ -28,11 +26,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-
 	uploadResult, err := client.UploadImage(
-		ctx,
 		imageName,
 		helper.GetStorageDomainID(),
 		true,
@@ -46,7 +40,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to fetch disk after image upload (%w)", err))
 	}
-	if err := client.RemoveDisk(context.Background(), disk.ID()); err != nil {
+	if err := client.RemoveDisk(disk.ID()); err != nil {
 		t.Fatal(err)
 	}
 }

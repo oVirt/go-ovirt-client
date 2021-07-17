@@ -1,31 +1,40 @@
+// Code generated automatically using go:generate. DO NOT EDIT.
+
 package ovirtclient
 
-func (o *oVirtClient) GetHost(id string) (Host, error) {
-	response, err := o.conn.SystemService().HostsService().HostService(id).Get().Send()
-	if err != nil {
-		return nil, wrap(
-			err,
-			EUnidentified,
-			"failed to fetch host %s",
-			id,
-		)
-	}
-	sdkHost, ok := response.Host()
-	if !ok {
-		return nil, wrap(
-			err,
-			ENotFound,
-			"host %s response did not contain a host",
-		)
-	}
-	host, err := convertSDKHost(sdkHost)
-	if err != nil {
-		return nil, wrap(
-			err,
-			EBug,
-			"failed to convert host %s",
-			id,
-		)
-	}
-	return host, nil
+import (
+	"fmt"
+)
+
+func (o *oVirtClient) GetHost(id string, retries ...RetryStrategy) (result Host, err error) {
+	retries = defaultRetries(retries, defaultReadTimeouts())
+	err = retry(
+		fmt.Sprintf("getting host %s", id),
+		o.logger,
+		retries,
+		func() error {
+			response, err := o.conn.SystemService().HostsService().HostService(id).Get().Send()
+			if err != nil {
+				return err
+			}
+			sdkObject, ok := response.Host()
+			if !ok {
+				return newError(
+					ENotFound,
+					"no host returned when getting host ID %s",
+					id,
+				)
+			}
+			result, err = convertSDKHost(sdkObject)
+			if err != nil {
+				return wrap(
+					err,
+					EBug,
+					"failed to convert host %s",
+					id,
+				)
+			}
+			return nil
+		})
+	return
 }

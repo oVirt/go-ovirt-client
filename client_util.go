@@ -1,9 +1,7 @@
 package ovirtclient
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
@@ -23,41 +21,28 @@ import (
 //         Update().
 //         Query("correlation_id", correlationID).
 //         Send()
-func (o *oVirtClient) waitForJobFinished(ctx context.Context, correlationID string) error {
-	o.logger.Debugf("Waiting for job with correlation ID %s to finish...", correlationID)
-	var lastError EngineError
-	for {
-		jobResp, err := o.conn.SystemService().JobsService().List().Search(fmt.Sprintf("correlation_id=%s", correlationID)).Send()
-		if err == nil {
+func (o *oVirtClient) waitForJobFinished(correlationID string, retries []RetryStrategy) error {
+	return retry(
+		fmt.Sprintf("waiting for job with correlation ID %s to finish", correlationID),
+		o.logger,
+		retries,
+		func() error {
+			jobResp, err := o.conn.SystemService().JobsService().List().Search(fmt.Sprintf("correlation_id=%s", correlationID)).Send()
+			if err != nil {
+				return err
+			}
 			if jobSlice, ok := jobResp.Jobs(); ok {
-				if len(jobSlice.Slice()) == 0 {
-					return nil
-				}
+				allJobsFinished := true
 				for _, job := range jobSlice.Slice() {
-					if status, _ := job.Status(); status != ovirtsdk.JOBSTATUS_STARTED {
-						return nil
+					if status, _ := job.Status(); status == ovirtsdk.JOBSTATUS_STARTED {
+						allJobsFinished = false
 					}
 				}
+				if allJobsFinished {
+					return nil
+				}
 			}
-			o.logger.Debugf("Job with correlation ID %s is still pending, retrying in 5 seconds...", correlationID)
-			lastError = newError(EPending, "job for correlation ID %s still pending", correlationID)
-		} else {
-			realErr := wrap(err, EUnidentified, "failed to list jobs for correlation ID %s", correlationID)
-			if !realErr.CanAutoRetry() {
-				o.logger.Debugf("Failed to fetch job list with correlation ID %s, giving up. (%v)", correlationID, err)
-				return realErr
-			}
-			o.logger.Debugf("Failed to fetch job list with correlation ID %s, retrying in 5 seconds... (%v)", correlationID, err)
-			lastError = realErr
-		}
-		select {
-		case <-time.After(5 * time.Second):
-		case <-ctx.Done():
-			o.logger.Debugf("Timeout while waiting for job with correlation ID %s to finish. (last error: %v)", correlationID, lastError)
-			return wrap(
-				lastError,
-				ETimeout,
-				"timeout while waiting for job with correlation_id %s to finish", correlationID)
-		}
-	}
+			return newError(EPending, "job for correlation ID %s still pending", correlationID)
+		},
+	)
 }

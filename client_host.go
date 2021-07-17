@@ -4,10 +4,12 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
+//go:generate go run scripts/rest.go -i "Host" -n "host"
+
 // HostClient contains the API portion that deals with hosts.
 type HostClient interface {
-	ListHosts() ([]Host, error)
-	GetHost(id string) (Host, error)
+	ListHosts(retries ...RetryStrategy) ([]Host, error)
+	GetHost(id string, retries ...RetryStrategy) (Host, error)
 }
 
 // Host is the representation of a host returned from the oVirt Engine API.
@@ -17,6 +19,7 @@ type Host interface {
 	Status() HostStatus
 }
 
+// HostStatus represents the complex states an oVirt host can be in.
 type HostStatus string
 
 const (
