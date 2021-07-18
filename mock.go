@@ -2,7 +2,6 @@ package ovirtclient
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/google/uuid"
@@ -53,17 +52,17 @@ func (m *mockClient) GetDisk(diskID string) (Disk, error) {
 	if disk, ok := m.disks[diskID]; ok {
 		return disk, nil
 	}
-	return nil, fmt.Errorf("disk with ID %s not found", diskID)
+	return nil, newError(ENotFound, "disk with ID %s not found", diskID)
 }
 
-func (m *mockClient) RemoveDisk(diskID string) error {
+func (m *mockClient) RemoveDisk(_ context.Context, diskID string) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if _, ok := m.disks[diskID]; ok {
 		delete(m.disks, diskID)
 		return nil
 	}
-	return fmt.Errorf("disk with ID %s not found", diskID)
+	return newError(ENotFound, "disk with ID %s not found", diskID)
 }
 
 func (m *mockClient) CreateVM(
@@ -97,7 +96,7 @@ func (m *mockClient) GetCluster(id string) (Cluster, error) {
 	if c, ok := m.clusters[id]; ok {
 		return c, nil
 	}
-	return nil, fmt.Errorf("cluster with ID %s not found", id)
+	return nil, newError(ENotFound, "cluster with ID %s not found", id)
 }
 
 func (m *mockClient) ListStorageDomains() ([]StorageDomain, error) {
@@ -120,7 +119,7 @@ func (m *mockClient) GetStorageDomain(id string) (StorageDomain, error) {
 	if s, ok := m.storageDomains[id]; ok {
 		return s, nil
 	}
-	return nil, fmt.Errorf("storage domain with ID %s not found", id)
+	return nil, newError(ENotFound, "storage domain with ID %s not found", id)
 }
 
 func (m *mockClient) ListHosts() ([]Host, error) {
@@ -143,7 +142,7 @@ func (m *mockClient) GetHost(id string) (Host, error) {
 	if h, ok := m.hosts[id]; ok {
 		return h, nil
 	}
-	return nil, fmt.Errorf("host with ID %s not found", id)
+	return nil, newError(ENotFound, "host with ID %s not found", id)
 }
 
 func (m *mockClient) ListTemplates() ([]Template, error) {
@@ -166,5 +165,5 @@ func (m *mockClient) GetTemplate(id string) (Template, error) {
 	if t, ok := m.templates[id]; ok {
 		return t, nil
 	}
-	return nil, fmt.Errorf("template with ID %s not found", id)
+	return nil, newError(ENotFound, "template with ID %s not found", id)
 }

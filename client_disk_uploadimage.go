@@ -56,7 +56,11 @@ func (o *oVirtClient) StartImageUpload(
 
 	disk, err := o.createDiskForUpload(storageDomainID, alias, format, qcowSize, sparse, cancel)
 	if err != nil {
-		return nil, err
+		return nil, wrap(
+			err,
+			EUnidentified,
+			"failed to create disk for image upload",
+		)
 	}
 
 	return o.createProgress(alias, qcowSize, size, bufReader, storageDomainID, sparse, newCtx, cancel, disk)
@@ -72,7 +76,12 @@ func (o *oVirtClient) createDiskForUpload(
 ) (*ovirtsdk4.Disk, error) {
 	storageDomain, err := ovirtsdk4.NewStorageDomainBuilder().Id(storageDomainID).Build()
 	if err != nil {
-		panic(fmt.Errorf("bug: failed to build storage domain object from storage domain ID: %s", storageDomainID))
+		return nil, wrap(
+			err,
+			EBug,
+			"failed to build storage domain object from storage domain ID: %s",
+			storageDomainID,
+		)
 	}
 	diskBuilder := ovirtsdk4.NewDiskBuilder().
 		Alias(alias).
@@ -84,13 +93,13 @@ func (o *oVirtClient) createDiskForUpload(
 	disk, err := diskBuilder.Build()
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf(
-			//nolint:govet
-			"failed to build disk with alias %s, format %s, provisioned and initial size %d (%w)",
+		return nil, wrap(
+			err,
+			EBug,
+			"failed to build disk with alias %s, format %s, provisioned and initial size %d",
 			alias,
 			format,
 			qcowSize,
-			err,
 		)
 	}
 	return disk, nil
@@ -108,6 +117,7 @@ func (o *oVirtClient) createProgress(
 	disk *ovirtsdk4.Disk,
 ) (UploadImageProgress, error) {
 	progress := &uploadImageProgress{
+		cli:             o,
 		correlationID:   fmt.Sprintf("image_transfer_%s", alias),
 		uploadedBytes:   0,
 		cowSize:         qcowSize,
@@ -131,6 +141,7 @@ func (o *oVirtClient) createProgress(
 }
 
 type uploadImageProgress struct {
+	cli             *oVirtClient
 	uploadedBytes   uint64
 	cowSize         uint64
 	size            uint64
@@ -146,7 +157,7 @@ type uploadImageProgress struct {
 	done chan struct{}
 	// lock is a lock that prevents race conditions during the upload process.
 	lock *sync.Mutex
-	// cancel is the cancel function for the context. Is is called to ensure that the context is properly canceled.
+	// cancel is the cancel function for the context. HasCode is called to ensure that the context is properly canceled.
 	cancel context.CancelFunc
 	// err holds the error that happened during the upload. It can be queried using the Err() method.
 	err error
@@ -174,7 +185,7 @@ func (u *uploadImageProgress) Disk() Disk {
 	}
 	disk, err := convertSDKDisk(sdkDisk)
 	if err != nil {
-		panic(fmt.Errorf("bug: failed to convert disk (%w)", err))
+		panic(wrap(err, EBug, "bug: failed to convert disk"))
 	}
 	return disk
 }
@@ -203,7 +214,7 @@ func (u *uploadImageProgress) Done() <-chan struct{} {
 func (u *uploadImageProgress) Read(p []byte) (n int, err error) {
 	select {
 	case <-u.ctx.Done():
-		return 0, fmt.Errorf("timeout while uploading image")
+		return 0, newError(ETimeout, "timeout while uploading image")
 	default:
 	}
 	n, err = u.reader.Read(p)
@@ -272,7 +283,7 @@ func (u *uploadImageProgress) removeDisk() {
 	disk := u.disk
 	if disk != nil {
 		if id, ok := u.disk.Id(); ok {
-			_ = u.client.RemoveDisk(id)
+			_ = u.client.RemoveDisk(u.ctx, id)
 		}
 	}
 }
@@ -284,7 +295,7 @@ func (u *uploadImageProgress) finalizeUpload(
 	finalizeRequest.Query("correlation_id", u.correlationID)
 	_, err := finalizeRequest.Send()
 	if err != nil {
-		return fmt.Errorf("failed to finalize image upload (%w)", err)
+		return wrap(err, EUnidentified, "failed to finalize image upload")
 	}
 	return nil
 }
@@ -292,16 +303,16 @@ func (u *uploadImageProgress) finalizeUpload(
 func (u *uploadImageProgress) uploadImage(transferURL *url.URL) error {
 	putRequest, err := http.NewRequest(http.MethodPut, transferURL.String(), u)
 	if err != nil {
-		return fmt.Errorf("failed to create HTTP request (%w)", err)
+		return wrap(err, EUnidentified, "failed to create HTTP request")
 	}
 	putRequest.Header.Add("content-type", "application/octet-stream")
 	putRequest.ContentLength = int64(u.size)
 	response, err := u.httpClient.Do(putRequest)
 	if err != nil {
-		return fmt.Errorf("failed to upload image (%w)", err)
+		return wrap(err, EUnidentified, "failed to upload image")
 	}
 	if err := response.Body.Close(); err != nil {
-		return fmt.Errorf("failed to close response body while uploading image (%w)", err)
+		return wrap(err, EUnidentified, "failed to close response body while uploading image")
 	}
 	return nil
 }
@@ -316,7 +327,7 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 	}
 
 	if len(tryURLs) == 0 {
-		return nil, fmt.Errorf("neither a transfer URL nor a proxy URL was returned from the oVirt Engine")
+		return nil, newError(EBug, "neither a transfer URL nor a proxy URL was returned from the oVirt Engine")
 	}
 
 	var foundTransferURL *url.URL
@@ -324,7 +335,7 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 	for _, transferURL := range tryURLs {
 		transferURL, err := url.Parse(transferURL)
 		if err != nil {
-			lastError = fmt.Errorf("failer to parse transfer URL %s (%w)", transferURL, err)
+			lastError = wrap(err, EUnidentified, "failed to parse transfer URL %s", transferURL)
 			continue
 		}
 
@@ -339,14 +350,14 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 			if err == nil {
 				statusCode := res.StatusCode
 				if err := res.Body.Close(); err != nil {
-					lastError = fmt.Errorf("failed to close response body in options request (%w)", err)
+					lastError = wrap(err, EUnidentified, "failed to close response body in options request")
 				} else {
 					if statusCode == 200 {
 						foundTransferURL = transferURL
 						lastError = nil
 						break
 					} else {
-						lastError = fmt.Errorf("non-200 status code returned from URL %s (%d)", hostUrl, res.StatusCode)
+						lastError = newError(EConnection, "non-200 status code returned from URL %s (%d)", hostUrl, res.StatusCode)
 					}
 				}
 			} else {
@@ -357,7 +368,7 @@ func (u *uploadImageProgress) findTransferURL(transfer *ovirtsdk4.ImageTransfer)
 		}
 	}
 	if foundTransferURL == nil {
-		return nil, fmt.Errorf("failed to find transfer URL (last error: %w)", lastError)
+		return nil, wrap(lastError, EUnidentified, "failed to find transfer URL")
 	}
 	return foundTransferURL, nil
 }
@@ -368,7 +379,7 @@ func (u *uploadImageProgress) createDisk() (string, *ovirtsdk4.DiskService, erro
 	addResp, err := addDiskRequest.Send()
 	if err != nil {
 		diskAlias, _ := u.disk.Alias()
-		return "", nil, fmt.Errorf("failed to create disk, alias: %s (%w)", diskAlias, err)
+		return "", nil, wrap(err, EUnidentified, "failed to create disk, alias: %s", diskAlias)
 	}
 	diskID := addResp.MustDisk().MustId()
 	diskService := u.conn.SystemService().DisksService().DiskService(diskID)
@@ -380,6 +391,7 @@ func (u *uploadImageProgress) setupImageTransfer(diskID string) (
 	*ovirtsdk4.ImageTransferService,
 	error,
 ) {
+	var lastError EngineError
 	imageTransfersService := u.conn.SystemService().ImageTransfersService()
 	image := ovirtsdk4.NewImageBuilder().Id(diskID).MustBuild()
 	transfer := ovirtsdk4.
@@ -392,27 +404,33 @@ func (u *uploadImageProgress) setupImageTransfer(diskID string) (
 		Query("correlation_id", u.correlationID)
 	transferRes, err := transferReq.Send()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to start image transfer (%w)", err)
+		return nil, nil, wrap(err, EUnidentified, "failed to start image transfer")
 	}
 	transfer = transferRes.MustImageTransfer()
 	transferService := imageTransfersService.ImageTransferService(transfer.MustId())
 
 	for {
-		req, lastError := transferService.Get().Send()
-		if lastError == nil {
+		req, err := transferService.Get().Send()
+		if err == nil {
 			if req.MustImageTransfer().MustPhase() == ovirtsdk4.IMAGETRANSFERPHASE_TRANSFERRING {
 				break
 			} else {
-				lastError = fmt.Errorf(
+				lastError = newError(
+					EPending,
 					"image transfer is in phase %s instead of transferring",
 					req.MustImageTransfer().MustPhase(),
 				)
+			}
+		} else {
+			lastError = wrap(err, EUnidentified, "failed to get image transfer for disk %s", diskID)
+			if !lastError.CanAutoRetry() {
+				return nil, nil, lastError
 			}
 		}
 		select {
 		case <-time.After(time.Second * 5):
 		case <-u.ctx.Done():
-			return nil, nil, fmt.Errorf("timeout while waiting for image transfer (last error was: %w)", lastError)
+			return nil, nil, wrap(lastError, ETimeout, "timeout while waiting for image transfer")
 		}
 	}
 	return transfer, transferService, nil
@@ -425,12 +443,12 @@ func (u *uploadImageProgress) waitForDiskOk(diskService *ovirtsdk4.DiskService) 
 		if err == nil {
 			disk, ok := req.Disk()
 			if !ok {
-				return fmt.Errorf("the disk was removed after upload, probably not supported")
+				return newError(EUnsupported, "the disk was removed after upload, probably not supported")
 			}
 			if disk.MustStatus() == ovirtsdk4.DISKSTATUS_OK {
-				return nil
+				return u.cli.waitForJobFinished(u.ctx, u.correlationID)
 			} else {
-				lastError = fmt.Errorf("disk status is %s, not ok", disk.MustStatus())
+				lastError = newError(EPending, "disk status is %s, not ok", disk.MustStatus())
 			}
 			u.disk = disk
 		} else {
@@ -439,7 +457,7 @@ func (u *uploadImageProgress) waitForDiskOk(diskService *ovirtsdk4.DiskService) 
 		select {
 		case <-time.After(5 * time.Second):
 		case <-u.ctx.Done():
-			return fmt.Errorf("timeout while waiting for disk to be ok after upload (last error: %w)", lastError)
+			return wrap(lastError, ETimeout, "timeout while waiting for disk to be ok after upload")
 		}
 	}
 }

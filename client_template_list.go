@@ -1,23 +1,19 @@
 package ovirtclient
 
-import (
-	"fmt"
-)
-
 func (o *oVirtClient) ListTemplates() ([]Template, error) {
 	response, err := o.conn.SystemService().TemplatesService().List().Send()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list templates (%w)", err)
+		return nil, wrap(err, EUnidentified, "failed to list templates")
 	}
 	sdkTemplates, ok := response.Templates()
 	if !ok {
-		return nil, fmt.Errorf("host list response didn't contain hosts")
+		return []Template{}, nil
 	}
 	result := make([]Template, len(sdkTemplates.Slice()))
 	for i, sdkTemplate := range sdkTemplates.Slice() {
 		result[i], err = convertSDKTemplate(sdkTemplate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert host %d in listing (%w)", i, err)
+			return nil, wrap(err, EBug, "failed to convert host %d in listing", i)
 		}
 	}
 	return result, nil

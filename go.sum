@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/ovirt/go-ovirt v0.0.0-20210308100159-ac0bcbc88d7c h1:2SbYZedeIawU8sGFnohfrdEcEMBA4V8SDouG6hly+H4=
-github.com/ovirt/go-ovirt v0.0.0-20210308100159-ac0bcbc88d7c/go.mod h1:fLDxPk1Sf64DBYtwIYxrnx3gPZ1q0xPdWdI1y9vxUaw=
+github.com/ovirt/go-ovirt v0.0.0-20210715091347-08d263954de7 h1:zaF8FIXz+hfsrDMhbYjZepy5BH90wfNufZGLHoOIjSk=
+github.com/ovirt/go-ovirt v0.0.0-20210715091347-08d263954de7/go.mod h1:Zkdj9/rW6eyuw0uOeEns6O3pP5G2ak+bI/tgkQ/tEZI=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

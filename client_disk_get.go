@@ -1,21 +1,32 @@
 package ovirtclient
 
-import (
-	"fmt"
-)
-
 func (o *oVirtClient) GetDisk(diskID string) (Disk, error) {
 	response, err := o.conn.SystemService().DisksService().DiskService(diskID).Get().Send()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch disk %s (%w)", diskID, err)
+		return nil, wrap(
+			err,
+			EUnidentified,
+			"failed to fetch disk %s",
+			diskID,
+		)
 	}
 	sdkDisk, ok := response.Disk()
 	if !ok {
-		return nil, fmt.Errorf("disk %s response did not contain a disk (%w)", diskID, err)
+		return nil, wrap(
+			err,
+			ENotFound,
+			"disk %s response did not contain a disk",
+			diskID,
+		)
 	}
 	disk, err := convertSDKDisk(sdkDisk)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert disk %s (%w)", diskID, err)
+		return nil, wrap(
+			err,
+			EBug,
+			"failed to convert disk %s",
+			diskID,
+		)
 	}
 	return disk, nil
 }

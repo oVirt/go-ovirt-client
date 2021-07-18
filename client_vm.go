@@ -2,7 +2,6 @@ package ovirtclient
 
 import (
 	"context"
-	"fmt"
 )
 
 type VMClient interface {
@@ -19,13 +18,13 @@ type VMClient interface {
 // is 0. If the parameters are guaranteed to be non-zero MustNewVMCPUTopo should be used.
 func NewVMCPUTopo(cores uint, threads uint, sockets uint) (VMCPUTopo, error) {
 	if cores == 0 {
-		return nil, fmt.Errorf("BUG: cores cannot be zero")
+		return nil, newError(EBadArgument, "cores cannot be zero")
 	}
 	if threads == 0 {
-		return nil, fmt.Errorf("BUG: threads cannot be zero")
+		return nil, newError(EBadArgument, "threads cannot be zero")
 	}
 	if sockets == 0 {
-		return nil, fmt.Errorf("BUG: sockets cannot be zero")
+		return nil, newError(EBadArgument, "sockets cannot be zero")
 	}
 	return &vmCPUTopo{
 		cores:   cores,
