@@ -24,6 +24,7 @@ import (
 //         Query("correlation_id", correlationID).
 //         Send()
 func (o *oVirtClient) waitForJobFinished(ctx context.Context, correlationID string) error {
+	o.logger.Debugf("Waiting for job with correlation ID %s to finish...", correlationID)
 	var lastError EngineError
 	for {
 		jobResp, err := o.conn.SystemService().JobsService().List().Search(fmt.Sprintf("correlation_id=%s", correlationID)).Send()
@@ -38,17 +39,21 @@ func (o *oVirtClient) waitForJobFinished(ctx context.Context, correlationID stri
 					}
 				}
 			}
+			o.logger.Debugf("Job with correlation ID %s is still pending, retrying in 5 seconds...", correlationID)
 			lastError = newError(EPending, "job for correlation ID %s still pending", correlationID)
 		} else {
 			realErr := wrap(err, EUnidentified, "failed to list jobs for correlation ID %s", correlationID)
 			if !realErr.CanAutoRetry() {
+				o.logger.Debugf("Failed to fetch job list with correlation ID %s, giving up. (%v)", correlationID, err)
 				return realErr
 			}
+			o.logger.Debugf("Failed to fetch job list with correlation ID %s, retrying in 5 seconds... (%v)", correlationID, err)
 			lastError = realErr
 		}
 		select {
 		case <-time.After(5 * time.Second):
 		case <-ctx.Done():
+			o.logger.Debugf("Timeout while waiting for job with correlation ID %s to finish. (last error: %v)", correlationID, lastError)
 			return wrap(
 				lastError,
 				ETimeout,

@@ -19,13 +19,16 @@ You can then create a client instance like this:
 ```go
 package main
 
-import "github.com/ovirt/go-ovirt-client"
+import (
+    "github.com/ovirt/go-client-log"
+    "github.com/ovirt/go-ovirt-client"
+)
 
 func main() {
     // Create a logger that logs to the standard Go log here:
-    logger := ovirtclient.NewGoLogLogger()
+    logger := ovirtclientlog.NewGoLogLogger(nil)
     // Create a new goVirt instance:
-	client, err := ovirtclient.New(
+    client, err := ovirtclient.New(
         // URL to your oVirt engine API here:
         "https://your-ovirt-engine/ovirt-engine/api/",
         // Username here:
@@ -44,7 +47,7 @@ func main() {
     )
     if err != nil {
         // Handle error, here in a really crude way:
-    	panic(err)
+        panic(err)
     }
     // Use client. Please use the code completion in your IDE to
     // discover the functions. Each is well documented.
@@ -63,15 +66,16 @@ This library also provides a test helper for integration testing against the oVi
 package main
 
 import (
-  "os"
-  "testing"
+    "os"
+    "testing"
 
-  "github.com/ovirt/go-ovirt-client"
+    ovirtclient "github.com/ovirt/go-ovirt-client"
+    ovirtclientlog "github.com/ovirt/go-ovirt-client-log"
 )
 
 func TestSomething(t *testing.T) {
     // Create a logger that logs to the standard Go log here:
-    logger := ovirtclient.NewGoTestLogger(t)
+    logger := ovirtclientlog.NewTestLogger(t)
     // Set to true to use in-memory mock, see below
     mock := false
     // Create the test helper
@@ -96,6 +100,8 @@ func TestSomething(t *testing.T) {
     //...
 }
 ```
+
+**Tip:** You can use any logger that satisfies the `Logger` interface described in [go-ovirt-client-log](https://github.com/oVirt/go-ovirt-client-log)
 
 ## Mock client
 

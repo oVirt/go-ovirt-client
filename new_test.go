@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
 func TestInvalidCredentials(t *testing.T) {
@@ -16,7 +17,7 @@ func TestInvalidCredentials(t *testing.T) {
 		t.Skipf("⚠ Skipping test: no live credentials provided.")
 		return
 	}
-	logger := ovirtclient.NewGoTestLogger(t)
+	logger := ovirtclientlog.NewTestLogger(t)
 	_, err = ovirtclient.New(
 		url,
 		"nonexistent@internal",
@@ -42,7 +43,7 @@ func TestInvalidCredentials(t *testing.T) {
 }
 
 func TestBadURL(t *testing.T) {
-	logger := ovirtclient.NewGoTestLogger(t)
+	logger := ovirtclientlog.NewTestLogger(t)
 	_, err := ovirtclient.New(
 		"https://example.com",
 		"nonexistent@internal",
@@ -100,7 +101,7 @@ func TestBadTLS(t *testing.T) {
 	}
 	defer srv.Stop()
 
-	logger := ovirtclient.NewGoTestLogger(t)
+	logger := ovirtclientlog.NewTestLogger(t)
 	_, err = ovirtclient.New(
 		fmt.Sprintf("https://127.0.0.1:%d", port),
 		"nonexistent@internal",
