@@ -19,6 +19,7 @@ type Client interface {
 	StorageDomainClient
 	HostClient
 	TemplateClient
+	TestConnectionClient
 }
 
 // ClientWithLegacySupport is an extension of Client that also offers the ability to retrieve the underlying
