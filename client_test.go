@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ovirt/go-ovirt-client"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
 func getHelper(t *testing.T) ovirtclient.TestHelper {
@@ -33,7 +34,7 @@ func getMockHelper(t *testing.T) ovirtclient.TestHelper {
 		"",
 		"",
 		true,
-		ovirtclient.NewGoTestLogger(t),
+		ovirtclientlog.NewTestLogger(t),
 	)
 	if err != nil {
 		panic(err)
@@ -72,7 +73,7 @@ func getLiveHelper(t *testing.T) (ovirtclient.TestHelper, error) {
 		blankTemplateID,
 		storageDomainID,
 		false,
-		ovirtclient.NewGoTestLogger(t),
+		ovirtclientlog.NewTestLogger(t),
 	)
 	if err != nil {
 		return nil, err

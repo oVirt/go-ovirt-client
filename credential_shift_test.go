@@ -8,6 +8,7 @@ import (
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
 func TestCredentialChangeAfterSetup(t *testing.T) {
@@ -37,7 +38,7 @@ func TestCredentialChangeAfterSetup(t *testing.T) {
 	}
 	defer srv.Stop()
 
-	logger := ovirtclient.NewGoTestLogger(t)
+	logger := ovirtclientlog.NewTestLogger(t)
 	conn, err := ovirtclient.NewWithVerify(
 		fmt.Sprintf("https://127.0.0.1:%d", port),
 		"nonexistent@internal",

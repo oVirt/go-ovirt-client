@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
 // TestHelper is a helper to run tests against an oVirt engine. When created it scans the oVirt Engine and tries to find
@@ -37,7 +39,7 @@ func MustNewTestHelper(
 	blankTemplateID string,
 	storageDomainID string,
 	mock bool,
-	logger Logger,
+	logger ovirtclientlog.Logger,
 ) TestHelper {
 	helper, err := NewTestHelper(
 		url,
@@ -69,7 +71,7 @@ func NewTestHelper(
 	blankTemplateID string,
 	storageDomainID string,
 	mock bool,
-	logger Logger,
+	logger ovirtclientlog.Logger,
 ) (TestHelper, error) {
 	client, err := createTestClient(url, username, password, caFile, caBundle, insecure, mock, logger)
 	if err != nil {
