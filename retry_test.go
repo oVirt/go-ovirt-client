@@ -83,7 +83,8 @@ func TestContextStrategy(t *testing.T) {
 	if r.failCount < 3 {
 		t.Fatalf("retry didn't call the target function enough times (%d)", r.failCount)
 	}
-	if r.failCount > 4 {
+	// Add some leeway for slower machines.
+	if r.failCount > 5 {
 		t.Fatalf("retry called too many times (%d)", r.failCount)
 	}
 	if endTime.Sub(startTime).Seconds() < 3 {

@@ -41,7 +41,7 @@ type DiskClient interface {
 		storageDomainID string,
 		sparse bool,
 		size uint64,
-		reader io.Reader,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
@@ -52,9 +52,33 @@ type DiskClient interface {
 		storageDomainID string,
 		sparse bool,
 		size uint64,
-		reader io.Reader,
-		retry ...RetryStrategy,
+		reader io.ReadSeekCloser,
+		retries ...RetryStrategy,
 	) (UploadImageResult, error)
+
+	// StartImageDownload starts the download of the image file of a specific disk.
+	// The caller can then wait for the initialization using the Initialized() call:
+	//
+	// <-download.Initialized()
+	//
+	// Alternatively, the downloader can use the Read() function to wait for the download to become available
+	// and then read immediately.
+	//
+	// The caller MUST close the returned reader, otherwise the disk will remain locked in the oVirt engine.
+	// The passed context is observed only for the initialization phase.
+	StartImageDownload(
+		diskID string,
+		format ImageFormat,
+		retries ...RetryStrategy,
+	) (ImageDownload, error)
+
+	// DownloadImage runs StartImageDownload, then waits for the download to be ready before returning the reader.
+	// The caller MUST close the ImageDownloadReader in order to properly unlock the disk in the oVirt engine.
+	DownloadImage(
+		diskID string,
+		format ImageFormat,
+		retries ...RetryStrategy,
+	) (ImageDownloadReader, error)
 
 	// ListDisks lists all disks.
 	ListDisks(retries ...RetryStrategy) ([]Disk, error)
@@ -62,6 +86,34 @@ type DiskClient interface {
 	GetDisk(diskID string, retries ...RetryStrategy) (Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
 	RemoveDisk(diskID string, retries ...RetryStrategy) error
+}
+
+type ImageDownloadReader interface {
+	io.Reader
+	// Read reads the specified bytes from the disk image. This call will block if
+	// the image is not yet ready for download.
+	Read(p []byte) (n int, err error)
+	// Close closes the image download and unlocks the disk.
+	Close() error
+	// BytesRead returns the number of bytes read so far. This can be used to
+	// provide a progress bar.
+	BytesRead() uint64
+	// Size returns the size of the disk image in bytes. This is ONLY available after the initialization is complete and
+	// MAY return 0 before.
+	Size() uint64
+}
+
+// ImageDownload represents an image download in progress. The caller MUST
+// close the image download when it is finished otherwise the disk will not be unlocked.
+type ImageDownload interface {
+	ImageDownloadReader
+
+	// Err returns the error that happened during initializing the download, or the last error reading from the
+	// image server.
+	Err() error
+	// Initialized returns a channel that will be closed when the initialization is complete. This can be either
+	// in an errored state (check Err()) or when the image is ready.
+	Initialized() <-chan struct{}
 }
 
 // UploadImageResult represents the completed image upload.
@@ -80,6 +132,9 @@ type Disk interface {
 	Alias() string
 	// ProvisionedSize is the size visible to the virtual machine.
 	ProvisionedSize() uint64
+	// TotalSize is the size of the image file.
+	// This value can be zero in some cases, for example when the disk upload wasn't properly finalized.
+	TotalSize() uint64
 	// Format is the format of the image.
 	Format() ImageFormat
 	// StorageDomainID is the ID of the storage system used for this disk.
@@ -150,6 +205,10 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 	if !ok {
 		return nil, newError(EFieldMissing, "disk %s does not contain a provisioned size", id)
 	}
+	totalSize, ok := sdkDisk.TotalSize()
+	if !ok {
+		return nil, newError(EFieldMissing, "disk %s does not contain a total size", id)
+	}
 	format, ok := sdkDisk.Format()
 	if !ok {
 		return nil, newError(EFieldMissing, "disk %s has no format field", id)
@@ -162,6 +221,7 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 		id:              id,
 		alias:           alias,
 		provisionedSize: uint64(provisionedSize),
+		totalSize:       uint64(totalSize),
 		format:          ImageFormat(format),
 		storageDomainID: storageDomainID,
 		status:          DiskStatus(status),
@@ -175,6 +235,11 @@ type disk struct {
 	format          ImageFormat
 	storageDomainID string
 	status          DiskStatus
+	totalSize       uint64
+}
+
+func (d disk) TotalSize() uint64 {
+	return d.totalSize
 }
 
 func (d disk) Status() DiskStatus {

@@ -31,10 +31,10 @@ const EBug ErrorCode = "bug"
 // EConnection signals a problem with the connection.
 const EConnection ErrorCode = "connection"
 
-// EPermanentHTTPError indicates a HTTP 400 error code
+// EPermanentHTTPError indicates a HTTP error code that should not be retried.
 const EPermanentHTTPError ErrorCode = "permanent_http_error"
 
-// ETemporaryHTTPError indicates a HTTP 500 error code
+// ETemporaryHTTPError indicates a HTTP error that can be retried.
 const ETemporaryHTTPError ErrorCode = "temporary_http_error"
 
 // EPending signals that the client library is still waiting for an action to be completed.
@@ -65,6 +65,15 @@ const EUnidentified ErrorCode = "generic_error"
 
 // EUnsupported signals that an action is not supported. This can indicate a disk format or a combination of parameters.
 const EUnsupported ErrorCode = "unsupported"
+
+// EDiskLocked indicates that the disk in question is locked.
+const EDiskLocked ErrorCode = "disk_locked"
+
+// ERelatedOperationInProgress means that the engine is busy working on something else on the same resource.
+const ERelatedOperationInProgress ErrorCode = "related_operation_in_progress"
+
+// ELocalIO indicates an input/output error on the client side. For example, a disk could not be read.
+const ELocalIO ErrorCode = "local_io_error"
 
 // CanAutoRetry returns false if the given error code is permanent and an automatic retry should not be attempted.
 func (e ErrorCode) CanAutoRetry() bool {
@@ -222,6 +231,10 @@ func realIdentify(err error) EngineError {
 		return wrap(err, ETLSError, "TLS error, check your CA certificate settings")
 	case errors.As(err, &notFoundErr):
 		return wrap(err, ENotFound, "the requested resource was not found")
+	case strings.Contains(err.Error(), "Disk is locked"):
+		return wrap(err, EDiskLocked, "the disk is locked")
+	case strings.Contains(err.Error(), "Related operation is currently in progress."):
+		return wrap(err, ERelatedOperationInProgress, "a related operation is in progress")
 	default:
 		return nil
 	}
