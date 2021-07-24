@@ -36,7 +36,7 @@ func retry(
 	for {
 		err := what()
 		if err == nil {
-			logger.Debugf("Completed %s %s.", action)
+			logger.Debugf("Completed %s.", action)
 			return nil
 		}
 		for _, r := range retries {
@@ -45,6 +45,7 @@ func retry(
 				return err
 			}
 		}
+		logger.Debugf("Failed %s, retrying... (%s)", action, err.Error())
 		// Here we create a select statement with a dynamic number of cases. We use this because a) select{} only
 		// supports fixed cases and b) the channel types are different. Context returns a <-chan struct{}, while
 		// time.After() returns <-chan time.Time. Go doesn't support type assertions, so we have to result to
@@ -236,6 +237,8 @@ func (a *autoRetryStrategy) Continue(err error, action string) error {
 				"non-retryable error encountered while %s, giving up",
 				action,
 			)
+		} else {
+			return nil
 		}
 	}
 	identifiedError := realIdentify(err)

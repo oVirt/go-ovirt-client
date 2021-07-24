@@ -19,7 +19,7 @@ func NewMock() MockClient {
 		storageDomains: map[string]storageDomain{
 			testStorageDomain.ID(): testStorageDomain,
 		},
-		disks: map[string]disk{},
+		disks: map[string]*diskWithData{},
 		clusters: map[string]cluster{
 			testCluster.ID(): testCluster,
 		},

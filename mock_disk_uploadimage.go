@@ -1,10 +1,10 @@
 package ovirtclient
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sync"
 )
 
 func (m *mockClient) StartImageUpload(
@@ -12,7 +12,7 @@ func (m *mockClient) StartImageUpload(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader io.Reader,
+	reader io.ReadSeekCloser,
 	_ ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	m.lock.Lock()
@@ -24,28 +24,34 @@ func (m *mockClient) StartImageUpload(
 		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
 	}
 
-	bufReader := bufio.NewReaderSize(reader, qcowHeaderSize)
-
-	format, _, err := extractQCOWParameters(size, bufReader)
+	format, _, err := extractQCOWParameters(size, reader)
 	if err != nil {
 		return nil, err
 	}
 
 	progress := &mockImageUploadProgress{
 		err: nil,
-		disk: disk{
-			id:              "",
-			alias:           alias,
-			provisionedSize: size,
-			format:          format,
-			storageDomainID: storageDomainID,
+		disk: &diskWithData{
+			disk: disk{
+				id:              "",
+				alias:           alias,
+				provisionedSize: size,
+				format:          format,
+				storageDomainID: storageDomainID,
+			},
+			locked: false,
+			lock:   &sync.Mutex{},
 		},
 		correlationID: fmt.Sprintf("image_transfer_%s", alias),
 		client:        m,
-		reader:        bufReader,
+		reader:        reader,
 		size:          size,
 		done:          make(chan struct{}),
 		sparse:        sparse,
+	}
+
+	if err := progress.disk.Lock(); err != nil {
+		return nil, newError(EDiskLocked, "disk locked after creation")
 	}
 
 	go progress.do()
@@ -58,7 +64,7 @@ func (m *mockClient) UploadImage(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader io.Reader,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	progress, err := m.StartImageUpload(alias, storageDomainID, sparse, size, reader, retries...)
@@ -74,10 +80,10 @@ func (m *mockClient) UploadImage(
 
 type mockImageUploadProgress struct {
 	err           error
-	disk          disk
+	disk          *diskWithData
 	correlationID string
 	client        *mockClient
-	reader        *bufio.Reader
+	reader        io.ReadSeekCloser
 	size          uint64
 	uploadedBytes uint64
 	done          chan struct{}
@@ -119,11 +125,19 @@ func (m *mockImageUploadProgress) do() {
 	m.client.disks[d.id] = d
 	m.disk = d
 	m.client.lock.Unlock()
+	defer func() {
+		m.disk.Unlock()
+		close(m.done)
+	}()
 
-	_, err := ioutil.ReadAll(m.reader)
+	var err error
+	if _, err = m.reader.Seek(0, io.SeekStart); err != nil {
+		m.err = fmt.Errorf("failed to seek to start of image file (%w)", err)
+		return
+	}
+	m.disk.data, err = ioutil.ReadAll(m.reader)
 	m.err = err
 	if err != nil {
 		m.uploadedBytes = m.size
 	}
-	close(m.done)
 }
