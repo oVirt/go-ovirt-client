@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func extractQCOWParameters(fileSize uint64, reader io.ReadSeekCloser) (
+func extractQCOWParameters(fileSize uint64, reader readSeekCloser) (
 	ImageFormat,
 	uint64,
 	error,

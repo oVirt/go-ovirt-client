@@ -12,7 +12,7 @@ func (m *mockClient) StartImageUpload(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader io.ReadSeekCloser,
+	reader readSeekCloser,
 	_ ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	m.lock.Lock()
@@ -64,7 +64,7 @@ func (m *mockClient) UploadImage(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader io.ReadSeekCloser,
+	reader readSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	progress, err := m.StartImageUpload(alias, storageDomainID, sparse, size, reader, retries...)
@@ -83,7 +83,7 @@ type mockImageUploadProgress struct {
 	disk          *diskWithData
 	correlationID string
 	client        *mockClient
-	reader        io.ReadSeekCloser
+	reader        readSeekCloser
 	size          uint64
 	uploadedBytes uint64
 	done          chan struct{}

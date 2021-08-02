@@ -19,7 +19,7 @@ func (o *oVirtClient) UploadImage(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader io.ReadSeekCloser,
+	reader readSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	retries = defaultRetries(retries, defaultLongTimeouts())
@@ -39,7 +39,7 @@ func (o *oVirtClient) StartImageUpload(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader io.ReadSeekCloser,
+	reader readSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	retries = defaultRetries(retries, defaultLongTimeouts())
@@ -120,7 +120,7 @@ func (o *oVirtClient) createProgress(
 	alias string,
 	qcowSize uint64,
 	size uint64,
-	reader io.ReadSeekCloser,
+	reader readSeekCloser,
 	storageDomainID string,
 	sparse bool,
 	newCtx context.Context,
@@ -161,7 +161,7 @@ type uploadImageProgress struct {
 	uploadedBytes   uint64
 	cowSize         uint64
 	size            uint64
-	reader          io.ReadSeekCloser
+	reader          readSeekCloser
 	storageDomainID string
 	sparse          bool
 	alias           string

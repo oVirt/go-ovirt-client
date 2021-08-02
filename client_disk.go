@@ -41,7 +41,7 @@ type DiskClient interface {
 		storageDomainID string,
 		sparse bool,
 		size uint64,
-		reader io.ReadSeekCloser,
+		reader readSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
@@ -52,7 +52,7 @@ type DiskClient interface {
 		storageDomainID string,
 		sparse bool,
 		size uint64,
-		reader io.ReadSeekCloser,
+		reader readSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageResult, error)
 
