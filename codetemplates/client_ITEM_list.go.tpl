@@ -2,9 +2,9 @@
 
 package ovirtclient
 
-func (o *oVirtClient) List{{ .ID }}s(retries ...RetryStrategy) (result []{{ .ID }}, err error) {
+func (o *oVirtClient) List{{ .Object }}s(retries ...RetryStrategy) (result []{{ .Object }}, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts())
-	result = []{{ .ID }}{}
+	result = []{{ .Object }}{}
 	err = retry(
 		"listing {{ .Name }}s",
 		o.logger,
@@ -18,9 +18,9 @@ func (o *oVirtClient) List{{ .ID }}s(retries ...RetryStrategy) (result []{{ .ID 
 			if !ok {
 				return nil
 			}
-			result = make([]{{ .ID }}, len(sdkObjects.Slice()))
+			result = make([]{{ .Object }}, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDK{{ .ID }}(sdkObject)
+				result[i], e = convertSDK{{ .Object }}(sdkObject)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert {{ .Name }} during listing item #%d", i)
 				}

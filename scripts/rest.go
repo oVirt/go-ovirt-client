@@ -16,12 +16,14 @@ import (
 type restItem struct {
 	// Name is the human-readable name for this item. It should be written lower case and with spaces.
 	Name string
+	// Object is the client-facing object.
+	Object string
 	// ID is the SDK identifier for this item. IT must be capitalized.
 	ID string
 }
 
 func main() {
-	name, id, tplDir, targetDir, nofmt, nolint := getParameters()
+	name, id, object, tplDir, targetDir, nofmt, nolint := getParameters()
 
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -34,8 +36,13 @@ func main() {
 		flag.Usage()
 	}
 
+	if object == "" {
+		object = id
+	}
+
 	restItem := restItem{
 		name,
+		object,
 		id,
 	}
 	if err := filepath.Walk(
@@ -61,15 +68,16 @@ func main() {
 	}
 }
 
-func getParameters() (string, string, string, string, bool, bool) {
+func getParameters() (string, string, string, string, string, bool, bool) {
 	name := ""
 	id := ""
+	object := ""
 	tplDir := "./codetemplates"
 	targetDir := "./"
 	watch := false
 	nofmt := false
 	nolint := false
-	setupFlags(&name, &id, &tplDir, &targetDir, &watch, &nofmt, &nolint)
+	setupFlags(&name, &id, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint)
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
@@ -86,10 +94,10 @@ func getParameters() (string, string, string, string, bool, bool) {
 	if os.Getenv("NOLINT") != "" {
 		nolint = true
 	}
-	return name, id, tplDir, targetDir, nofmt, nolint
+	return name, id, object, tplDir, targetDir, nofmt, nolint
 }
 
-func setupFlags(name *string, id *string, tplDir *string, targetDir *string, watch *bool, nofmt *bool, nolint *bool) {
+func setupFlags(name *string, id *string, object *string, tplDir *string, targetDir *string, watch *bool, nofmt *bool, nolint *bool) {
 	flag.StringVar(
 		name,
 		"n",
@@ -101,6 +109,12 @@ func setupFlags(name *string, id *string, tplDir *string, targetDir *string, wat
 		"i",
 		"",
 		"Pass an identifier used in the SDK. Must be capitalized. E.g. \"StorageDomain\". Required.",
+	)
+	flag.StringVar(
+		object,
+		"o",
+		"",
+		"Pass an identifier used in the client. Defaults to the same value as -i. Must be capitalized. E.g. \"StorageDomain\".",
 	)
 	flag.StringVar(
 		tplDir,

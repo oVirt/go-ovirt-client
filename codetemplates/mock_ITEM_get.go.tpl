@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) Get{{ .ID }}(id string, retries ...RetryStrategy) ({{ .ID }}, error) {
+func (m *mockClient) Get{{ .Object }}(id string, retries ...RetryStrategy) ({{ .Object }}, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if disk, ok := m.{{ .ID | toLower }}s[id]; ok {

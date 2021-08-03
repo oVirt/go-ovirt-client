@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) Get{{ .ID }}(id string, retries ...RetryStrategy) (result {{ .ID }}, err error) {
+func (o *oVirtClient) Get{{ .Object }}(id string, retries ...RetryStrategy) (result {{ .Object }}, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts())
 	err = retry(
 		fmt.Sprintf("getting {{ .Name }} %s", id),
@@ -21,11 +21,11 @@ func (o *oVirtClient) Get{{ .ID }}(id string, retries ...RetryStrategy) (result 
 			if !ok {
 				return newError(
 					ENotFound,
-					"no {{ .Name }} returned when getting {{ .ID | toLower }} ID %s",
+					"no {{ .Name }} returned when getting {{ .Object | toLower }} ID %s",
 					id,
 				)
 			}
-			result, err = convertSDK{{ .ID }}(sdkObject)
+			result, err = convertSDK{{ .Object }}(sdkObject)
 			if err != nil {
 				return wrap(
 					err,
