@@ -147,7 +147,7 @@ func (e *engineError) String() string {
 }
 
 func (e *engineError) Error() string {
-	return e.message
+	return fmt.Sprintf("%s: %s", e.code, e.message)
 }
 
 func (e *engineError) Code() ErrorCode {
