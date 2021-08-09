@@ -188,6 +188,7 @@ func validateUsername(username string) error {
 }
 
 func validateURL(url string) error {
+	//goland:noinspection HttpUrlsUsage
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		return newError(EBadArgument, "URL must start with http:// or https://")
 	}
