@@ -32,9 +32,7 @@ func MustNewTestHelper(
 	username string,
 	password string,
 	url string,
-	insecure bool,
-	caFile string,
-	caBundle []byte,
+	tlsProvider TLSProvider,
 	clusterID string,
 	blankTemplateID string,
 	storageDomainID string,
@@ -45,9 +43,7 @@ func MustNewTestHelper(
 		url,
 		username,
 		password,
-		caFile,
-		caBundle,
-		insecure,
+		tlsProvider,
 		clusterID,
 		blankTemplateID,
 		storageDomainID,
@@ -64,16 +60,14 @@ func NewTestHelper(
 	url string,
 	username string,
 	password string,
-	caFile string,
-	caBundle []byte,
-	insecure bool,
+	tlsProvider TLSProvider,
 	clusterID string,
 	blankTemplateID string,
 	storageDomainID string,
 	mock bool,
 	logger ovirtclientlog.Logger,
 ) (TestHelper, error) {
-	client, err := createTestClient(url, username, password, caFile, caBundle, insecure, mock, logger)
+	client, err := createTestClient(url, username, password, tlsProvider, mock, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -148,9 +142,7 @@ func createTestClient(
 	url string,
 	username string,
 	password string,
-	caFile string,
-	caBundle []byte,
-	insecure bool,
+	tlsProvider TLSProvider,
 	mock bool,
 	logger Logger,
 ) (Client, error) {
@@ -163,11 +155,9 @@ func createTestClient(
 			url,
 			username,
 			password,
-			caFile,
-			caBundle,
-			insecure,
-			nil,
+			tlsProvider,
 			logger,
+			nil,
 		)
 		if err != nil {
 			return nil, err

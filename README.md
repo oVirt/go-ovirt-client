@@ -27,6 +27,27 @@ import (
 func main() {
     // Create a logger that logs to the standard Go log here:
     logger := ovirtclientlog.NewGoLogLogger(nil)
+
+    // Create an ovirtclient.TLSProvider implementation. This allows for simple
+    // TLS configuration.
+	tls := ovirtclient.TLS()
+
+	// Add certificates from an in-memory byte slice. Certificates must be in PEM format.
+	tls.CACertsFromMemory(caCerts)
+	
+	// Add certificates from a single file. Certificates must be in PEM format.
+	tls.CACertsFromFile("/path/to/file.pem")
+
+	// Add certificates from a directory. Optionally, regular expressions can be passed that must match the file
+	// names.
+	tls.CACertsFromDir("/path/to/certs", regexp.MustCompile(`\.pem`)) 
+
+	// Add system certificates
+	tls.CACertsFromSystem()
+
+	// Disable certificate verification. This is a bad idea, please don't do this.
+	tls.Insecure()
+
     // Create a new goVirt instance:
     client, err := ovirtclient.New(
         // URL to your oVirt engine API here:
@@ -35,15 +56,12 @@ func main() {
         "admin@internal",
         // Password here:
         "password-here",
-        // Provide the path to the CA certificate here:
-        "/path/to/ca.crt",
-        // Alternatively, provide the certificate directly:
-        []byte("ca-cert-here in PEM format"),
-        // Disable certificate verification. This is a bad idea:
-        false,
-        // Extra headers map:
-        map[string]string{},
+        // Pass the TLS provider here:
+        tls,
+        // Pass the logger here:
         logger,
+        // Pass in extra settings here. Must implement the ovirtclient.ExtraSettings interface.
+        nil,
     )
     if err != nil {
         // Handle error, here in a really crude way:
@@ -78,14 +96,25 @@ func TestSomething(t *testing.T) {
     logger := ovirtclientlog.NewTestLogger(t)
     // Set to true to use in-memory mock, see below
     mock := false
+    
+    tls := ovirtclient.TLS()
+    
+    if caFile := os.Getenv("OVIRT_CAFILE"); caFile != "" {
+    	tls.CACertsFromFile(caFile)
+    }
+    if caBundle := os.Getenv("OVIRT_CABUNDLE"); caBundle != "" {
+        tls.CACertsFromMemory([]byte(caBundle))
+	}
+	if os.Getenv("OVIRT_INSECURE") != "" {
+		tls.Insecure()
+    }
+    
     // Create the test helper
     helper, err := ovirtclient.NewTestHelper(
         os.Getenv("OVIRT_URL"),
         os.Getenv("OVIRT_USER"),
         os.Getenv("OVIRT_PASSWORD"),
-        os.Getenv("OVIRT_CAFILE"),
-        []byte(os.Getenv("OVIRT_CABUNDLE")),
-        os.Getenv("OVIRT_INSECURE") != "",
+        tls,
         os.Getenv("OVIRT_CLUSTER_ID"),
         os.Getenv("OVIRT_BLANK_TEMPLATE_ID"),
         os.Getenv("OVIRT_STORAGE_DOMAIN_ID"),

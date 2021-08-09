@@ -2,10 +2,7 @@ package ovirtclient
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -13,31 +10,83 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-// New creates a new copy of the enhanced oVirt client.
+// ExtraSettings are the optional settings for the oVirt connection.
+//
+// For future development, an interface named ExtraSettingsV2, V3, etc. will be added that incorporate this interface.
+// This is done for backwards compatibility.
+type ExtraSettings interface {
+	// ExtraHeaders adds headers to the request.
+	ExtraHeaders() map[string]string
+	// Compression enables GZIP or DEFLATE compression on HTTP queries
+	Compression() bool
+}
+
+// New creates a new copy of the enhanced oVirt client. It accepts the following options:
+//
+// - url is the oVirt engine URL. This must start with http:// or https:// and typically ends with /ovirt-engine/.
+// - username is the username for the oVirt engine. This must contain the profile separated with an @ sign. For example,
+//            admin@internal.
+// - password must be the password for the oVirt engine. Other authentication mechanisms are not supported.
+// - tls is a TLSProvider responsible for supplying TLS configuration to the client. See below for a simple example.
+// - logger is an implementation of ovirtclientlog.Logger to provide logging.
+// - extraSettings is an implementation of the ExtraSettings interface, allowing for customization of headers and
+//                 turning on compression.
+//
+// ## TLS
+//
+// This library tries to follow best practices when it comes to connection security. Therefore, you will need to pass
+// a valid implementation of the TLSProvider interface in the tls parameter. The easiest way to do this is calling
+// the ovirtclient.TLS() function and then configuring the resulting variable with the following functions:
+//
+//    tls := ovirtclient.TLS()
+//
+//    // Add certificates from an in-memory byte slice. Certificates must be in PEM format.
+//    tls.CACertsFromMemory(caCerts)
+//
+//    // Add certificates from a single file. Certificates must be in PEM format.
+//    tls.CACertsFromFile("/path/to/file.pem")
+//
+//    // Add certificates from a directory. Optionally, regular expressions can be passed that must match the file
+//    // names.
+//    tls.CACertsFromDir("/path/to/certs", regexp.MustCompile(`\.pem`))
+//
+//    // Add system certificates
+//    tls.CACertsFromSystem()
+//
+//    // Disable certificate verification. This is a bad idea.
+//    tls.Insecure()
+//
+//    client, err := ovirtclient.New(
+//        url, username, password,
+//        tls,
+//        logger, extraSettings
+//    )
+//
+// ## Extra settings
+//
+// This library also supports customizing the connection settings. In order to stay backwards compatible the
+// extraSettings parameter must implement the ovirtclient.ExtraSettings interface. Future versions of this library will
+// add new interfaces (e.g. ExtraSettingsV2) to add new features without breaking compatibility.
 func New(
 	url string,
 	username string,
 	password string,
-	caFile string,
-	caCert []byte,
-	insecure bool,
-	extraHeaders map[string]string,
+	tls TLSProvider,
 	logger Logger,
+	extraSettings ExtraSettings,
 ) (ClientWithLegacySupport, error) {
-	return NewWithVerify(url, username, password, caFile, caCert, insecure, extraHeaders, logger, testConnection)
+	return NewWithVerify(url, username, password, tls, logger, extraSettings, testConnection)
 }
 
-// NewWithVerify allows customizing the verification function for the connection. Alternatively, a nil can be passed to
-// disable connection verification.
+// NewWithVerify is equivalent to New, but allows customizing the verification function for the connection.
+// Alternatively, a nil can be passed to disable connection verification.
 func NewWithVerify(
 	url string,
 	username string,
 	password string,
-	caFile string,
-	caCert []byte,
-	insecure bool,
-	extraHeaders map[string]string,
+	tls TLSProvider,
 	logger Logger,
+	extraSettings ExtraSettings,
 	verify func(connection *ovirtsdk4.Connection) error,
 ) (ClientWithLegacySupport, error) {
 	if err := validateURL(url); err != nil {
@@ -46,29 +95,28 @@ func NewWithVerify(
 	if err := validateUsername(username); err != nil {
 		return nil, wrap(err, "invalid username: %s", username)
 	}
-	if caFile == "" && len(caCert) == 0 && !insecure {
-		return nil, newError(EBadArgument, "one of caFile, caCert, or insecure must be provided")
+	tlsConfig, err := tls.CreateTLSConfig()
+	if err != nil {
+		return nil, wrap(err, ETLSError, "failed to create TLS configuration")
 	}
 
 	connBuilder := ovirtsdk4.NewConnectionBuilder().
 		URL(url).
 		Username(username).
 		Password(password).
-		CAFile(caFile).
-		CACert(caCert).
-		Insecure(insecure)
-	if len(extraHeaders) > 0 {
-		connBuilder.Headers(extraHeaders)
+		TLSConfig(tlsConfig)
+	if extraSettings != nil {
+		if len(extraSettings.ExtraHeaders()) > 0 {
+			connBuilder.Headers(extraSettings.ExtraHeaders())
+		}
+		if extraSettings.Compression() {
+			connBuilder.Compress(true)
+		}
 	}
 
 	conn, err := connBuilder.Build()
 	if err != nil {
 		return nil, wrap(err, EUnidentified, "failed to create underlying oVirt connection")
-	}
-
-	tlsConfig, err := createTLSConfig(caFile, caCert, insecure)
-	if err != nil {
-		return nil, wrap(err, ETLSError, "failed to create TLS configuration")
 	}
 
 	httpClient := http.Client{
@@ -119,57 +167,6 @@ func testConnection(conn *ovirtsdk4.Connection) error {
 		}
 	}
 	return nil
-}
-
-func createTLSConfig(
-	caFile string,
-	caCert []byte,
-	insecure bool,
-) (*tls.Config, error) {
-	tlsConfig := &tls.Config{
-		// Based on Mozilla intermediate compatibility:
-		// https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-		},
-		CurvePreferences: []tls.CurveID{
-			tls.CurveP256, tls.CurveP384,
-		},
-		PreferServerCipherSuites: false,
-		InsecureSkipVerify:       insecure,
-	}
-
-	certPool, err := x509.SystemCertPool()
-	if err != nil {
-		// This is the case on Windows where the system certificate pool is not available.
-		certPool = x509.NewCertPool()
-	}
-	if len(caCert) != 0 {
-		if ok := certPool.AppendCertsFromPEM(caCert); !ok {
-			return nil, newError(EBadArgument, "the provided CA certificate is not a valid certificate in PEM format")
-		}
-	}
-	if caFile != "" {
-		pemData, err := ioutil.ReadFile(caFile)
-		if err != nil {
-			return nil, wrap(err, EFileReadFailed, "failed to read CA certificate from file %s", caFile)
-		}
-		if ok := certPool.AppendCertsFromPEM(pemData); !ok {
-			return nil, newError(
-				ETLSError,
-				"the provided CA certificate is not a valid certificate in PEM format in file %s",
-				caFile,
-			)
-		}
-	}
-	tlsConfig.RootCAs = certPool
-	return tlsConfig, nil
 }
 
 func validateUsername(username string) error {
