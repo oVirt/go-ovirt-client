@@ -185,7 +185,7 @@ func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineE
 			}
 		}
 	}
-	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "(%v)"), realArgs...)
+	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "%v"), realArgs...)
 	return &engineError{
 		message: realMessage,
 		code:    code,
