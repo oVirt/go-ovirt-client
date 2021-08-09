@@ -40,6 +40,9 @@ const ETemporaryHTTPError ErrorCode = "temporary_http_error"
 // EPending signals that the client library is still waiting for an action to be completed.
 const EPending ErrorCode = "pending"
 
+// EUnexpectedDiskStatus indicates that a disk was in a status that was not expected in this state.
+const EUnexpectedDiskStatus ErrorCode = "unexpected_disk_status"
+
 // ETimeout signals that the client library has timed out waiting for an action to be completed.
 const ETimeout ErrorCode = "timeout"
 
@@ -93,6 +96,8 @@ func (e ErrorCode) CanAutoRetry() bool {
 	case EFieldMissing:
 		return false
 	case EPermanentHTTPError:
+		return false
+	case EUnexpectedDiskStatus:
 		return false
 	default:
 		return true

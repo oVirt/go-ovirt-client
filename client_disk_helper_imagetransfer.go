@@ -227,10 +227,14 @@ func (i *imageTransferImpl) checkDiskOk() (Disk, error) {
 	if err != nil {
 		return nil, err
 	}
-	if disk.Status() != DiskStatusOK {
-		return nil, newError(EPending, "disk status is %s, not ok", disk.Status())
+	switch disk.Status() {
+	case DiskStatusOK:
+		return disk, nil
+	case DiskStatusLocked:
+		return nil, newError(EPending, "disk status is %s, not %s", disk.Status(), DiskStatusOK)
+	default:
+		return nil, newError(EUnexpectedDiskStatus, "disk status is %s, not %s", disk.Status(), DiskStatusOK)
 	}
-	return disk, nil
 }
 
 // buildImageTransferRequest creates an SDK image transfer request and the associated service.
