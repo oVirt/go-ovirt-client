@@ -43,11 +43,9 @@ func TestCredentialChangeAfterSetup(t *testing.T) {
 		fmt.Sprintf("https://127.0.0.1:%d", port),
 		"nonexistent@internal",
 		"invalid-password-for-testing-purposes",
-		"",
-		realCABytes,
-		false,
-		nil,
+		ovirtclient.TLS().CACertsFromMemory(realCABytes),
 		logger,
+		nil,
 		func(connection *ovirtsdk4.Connection) error {
 			// Disable connection check on setup to simulate a credential shift after the connection
 			// has been established.

@@ -27,9 +27,7 @@ func getMockHelper(t *testing.T) ovirtclient.TestHelper {
 		"https://localhost/ovirt-engine/api",
 		"admin@internal",
 		"",
-		"",
-		nil,
-		true,
+		ovirtclient.TLS().Insecure(),
 		"",
 		"",
 		"",
@@ -43,21 +41,15 @@ func getMockHelper(t *testing.T) ovirtclient.TestHelper {
 }
 
 func getLiveHelper(t *testing.T) (ovirtclient.TestHelper, error) {
-	url := os.Getenv("OVIRT_URL")
-	if url == "" {
-		return nil, fmt.Errorf("the OVIRT_URL environment variable must not be empty")
+	url, tls, err := getConnectionParametersForLiveTesting()
+	if err != nil {
+		return nil, err
 	}
 	user := os.Getenv("OVIRT_USERNAME")
 	if user == "" {
 		return nil, fmt.Errorf("the OVIRT_USER environment variable must not be empty")
 	}
 	password := os.Getenv("OVIRT_PASSWORD")
-	caFile := os.Getenv("OVIRT_CAFILE")
-	caCert := os.Getenv("OVIRT_CA_CERT")
-	insecure := os.Getenv("OVIRT_INSECURE") != ""
-	if caFile == "" && caCert == "" && !insecure {
-		return nil, fmt.Errorf("one of OVIRT_CAFILE, OVIRT_CA_CERT, or OVIRT_INSECURE must be set")
-	}
 	clusterID := os.Getenv("OVIRT_CLUSTER_ID")
 	blankTemplateID := os.Getenv("OVIRT_BLANK_TEMPLATE_ID")
 	storageDomainID := os.Getenv("OVIRT_STORAGE_DOMAIN_ID")
@@ -66,9 +58,7 @@ func getLiveHelper(t *testing.T) (ovirtclient.TestHelper, error) {
 		url,
 		user,
 		password,
-		caFile,
-		[]byte(caCert),
-		insecure,
+		tls,
 		clusterID,
 		blankTemplateID,
 		storageDomainID,

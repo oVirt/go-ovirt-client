@@ -12,7 +12,7 @@ import (
 )
 
 func TestInvalidCredentials(t *testing.T) {
-	url, caFile, caCert, insecure, err := getConnectionParametersForLiveTesting()
+	url, tls, err := getConnectionParametersForLiveTesting()
 	if err != nil {
 		t.Skipf("⚠ Skipping test: no live credentials provided.")
 		return
@@ -22,11 +22,9 @@ func TestInvalidCredentials(t *testing.T) {
 		url,
 		"nonexistent@internal",
 		"invalid-password-for-testing-purposes",
-		caFile,
-		[]byte(caCert),
-		insecure,
-		nil,
+		tls,
 		logger,
+		nil,
 	)
 	if err == nil {
 		t.Fatal("no error returned from New on invalid credentials")
@@ -48,11 +46,9 @@ func TestBadURL(t *testing.T) {
 		"https://example.com",
 		"nonexistent@internal",
 		"invalid-password-for-testing-purposes",
-		"",
-		nil,
-		true,
-		nil,
+		ovirtclient.TLS().Insecure(),
 		logger,
+		nil,
 	)
 	if err == nil {
 		t.Fatal("no error returned from New on invalid URL")
@@ -106,11 +102,9 @@ func TestBadTLS(t *testing.T) {
 		fmt.Sprintf("https://127.0.0.1:%d", port),
 		"nonexistent@internal",
 		"invalid-password-for-testing-purposes",
-		"",
-		falseCACertBytes,
-		false,
-		nil,
+		ovirtclient.TLS().CACertsFromMemory(falseCACertBytes),
 		logger,
+		nil,
 	)
 
 	if err == nil {
@@ -127,16 +121,27 @@ func TestBadTLS(t *testing.T) {
 	}
 }
 
-func getConnectionParametersForLiveTesting() (string, string, string, bool, error) {
+func getConnectionParametersForLiveTesting() (string, ovirtclient.TLSProvider, error) {
 	url := os.Getenv("OVIRT_URL")
 	if url == "" {
-		return "", "", "", false, fmt.Errorf("the OVIRT_URL environment variable must not be empty")
+		return "", nil, fmt.Errorf("the OVIRT_URL environment variable must not be empty")
 	}
-	caFile := os.Getenv("OVIRT_CAFILE")
-	caCert := os.Getenv("OVIRT_CA_CERT")
-	insecure := os.Getenv("OVIRT_INSECURE") != ""
-	if caFile == "" && caCert == "" && !insecure {
-		return "", "", "", false, fmt.Errorf("one of OVIRT_CAFILE, OVIRT_CA_CERT, or OVIRT_INSECURE must be set")
+	tls := ovirtclient.TLS()
+	configured := false
+	if caFile := os.Getenv("OVIRT_CAFILE"); caFile != "" {
+		configured = true
+		tls.CACertsFromFile(caFile)
 	}
-	return url, caFile, caCert, insecure, nil
+	if caCert := os.Getenv("OVIRT_CA_CERT"); caCert != "" {
+		configured = true
+		tls.CACertsFromMemory([]byte(caCert))
+	}
+	if os.Getenv("OVIRT_INSECURE") != "" {
+		configured = true
+		tls.Insecure()
+	}
+	if !configured {
+		return "", nil, fmt.Errorf("one of OVIRT_CAFILE, OVIRT_CA_CERT, or OVIRT_INSECURE must be set")
+	}
+	return url, tls, nil
 }
