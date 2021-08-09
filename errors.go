@@ -34,9 +34,6 @@ const EConnection ErrorCode = "connection"
 // EPermanentHTTPError indicates a HTTP error code that should not be retried.
 const EPermanentHTTPError ErrorCode = "permanent_http_error"
 
-// ETemporaryHTTPError indicates a HTTP error that can be retried.
-const ETemporaryHTTPError ErrorCode = "temporary_http_error"
-
 // EPending signals that the client library is still waiting for an action to be completed.
 const EPending ErrorCode = "pending"
 
