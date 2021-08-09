@@ -35,7 +35,7 @@ func TestInvalidCredentials(t *testing.T) {
 	var e ovirtclient.EngineError
 	if errors.As(err, &e) {
 		if e.Code() != ovirtclient.EAccessDenied {
-			t.Fatalf("the returned error was not an access denied error EAccessDenied (%v)", err)
+			t.Fatalf("the returned error was not an EAccessDenied error (%v)", err)
 		}
 	} else {
 		t.Fatalf("the returned error was not an EngineError (%v)", err)
