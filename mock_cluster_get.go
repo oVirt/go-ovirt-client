@@ -2,11 +2,11 @@
 
 package ovirtclient
 
-func (m *mockClient) GetCluster(id string, retries ...RetryStrategy) (Cluster, error) {
+func (m *mockClient) GetCluster(id string, _ ...RetryStrategy) (Cluster, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if disk, ok := m.clusters[id]; ok {
-		return disk, nil
+	if item, ok := m.clusters[id]; ok {
+		return item, nil
 	}
 	return nil, newError(ENotFound, "cluster with ID %s not found", id)
 }

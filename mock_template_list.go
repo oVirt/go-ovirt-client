@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) ListTemplates(retries ...RetryStrategy) ([]Template, error) {
+func (m *mockClient) ListTemplates(_ ...RetryStrategy) ([]Template, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	result := make([]Template, len(m.templates))

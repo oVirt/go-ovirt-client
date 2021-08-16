@@ -20,7 +20,7 @@ func (o *oVirtClient) ListStorageDomains(retries ...RetryStrategy) (result []Sto
 			}
 			result = make([]StorageDomain, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDKStorageDomain(sdkObject)
+				result[i], e = convertSDKStorageDomain(sdkObject, o)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert storage domain during listing item #%d", i)
 				}

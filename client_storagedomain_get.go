@@ -21,11 +21,11 @@ func (o *oVirtClient) GetStorageDomain(id string, retries ...RetryStrategy) (res
 			if !ok {
 				return newError(
 					ENotFound,
-					"no storage domain returned when getting storageDomain ID %s",
+					"no storage domain returned when getting storage domain ID %s",
 					id,
 				)
 			}
-			result, err = convertSDKStorageDomain(sdkObject)
+			result, err = convertSDKStorageDomain(sdkObject, o)
 			if err != nil {
 				return wrap(
 					err,

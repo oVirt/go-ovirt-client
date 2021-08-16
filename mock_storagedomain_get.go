@@ -2,11 +2,11 @@
 
 package ovirtclient
 
-func (m *mockClient) GetStorageDomain(id string, retries ...RetryStrategy) (StorageDomain, error) {
+func (m *mockClient) GetStorageDomain(id string, _ ...RetryStrategy) (StorageDomain, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if disk, ok := m.storageDomains[id]; ok {
-		return disk, nil
+	if item, ok := m.storageDomains[id]; ok {
+		return item, nil
 	}
 	return nil, newError(ENotFound, "storage domain with ID %s not found", id)
 }

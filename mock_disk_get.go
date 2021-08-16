@@ -2,11 +2,11 @@
 
 package ovirtclient
 
-func (m *mockClient) GetDisk(id string, retries ...RetryStrategy) (Disk, error) {
+func (m *mockClient) GetDisk(id string, _ ...RetryStrategy) (Disk, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if disk, ok := m.disks[id]; ok {
-		return disk, nil
+	if item, ok := m.disks[id]; ok {
+		return item, nil
 	}
 	return nil, newError(ENotFound, "disk with ID %s not found", id)
 }

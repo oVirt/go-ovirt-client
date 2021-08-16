@@ -25,7 +25,7 @@ func (o *oVirtClient) GetDisk(id string, retries ...RetryStrategy) (result Disk,
 					id,
 				)
 			}
-			result, err = convertSDKDisk(sdkObject)
+			result, err = convertSDKDisk(sdkObject, o)
 			if err != nil {
 				return wrap(
 					err,

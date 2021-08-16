@@ -20,7 +20,7 @@ func (o *oVirtClient) ListDisks(retries ...RetryStrategy) (result []Disk, err er
 			}
 			result = make([]Disk, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDKDisk(sdkObject)
+				result[i], e = convertSDKDisk(sdkObject, o)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert disk during listing item #%d", i)
 				}
