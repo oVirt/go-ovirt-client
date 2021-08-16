@@ -36,7 +36,7 @@ type BuildableTLSProvider interface {
 	// CACertsFromDir adds all PEM-encoded certificates from a directory. If one or more patterns are passed, the
 	// files will only be added if the files match at least one of the patterns. The certificate will fail if one or
 	// more matching files don't contain a valid certificate.
-	CACertsFromDir(dir string, patterns ...regexp.Regexp) BuildableTLSProvider
+	CACertsFromDir(dir string, patterns ...*regexp.Regexp) BuildableTLSProvider
 
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
 	// or not supported on the platform.
@@ -63,7 +63,7 @@ type standardTLSProvider struct {
 
 type standardTLSProviderDirectory struct {
 	dir      string
-	patterns []regexp.Regexp
+	patterns []*regexp.Regexp
 }
 
 func (s *standardTLSProvider) Insecure() TLSProvider {
@@ -90,7 +90,7 @@ func (s *standardTLSProvider) CACertsFromFile(file string) BuildableTLSProvider 
 	return s
 }
 
-func (s *standardTLSProvider) CACertsFromDir(dir string, patterns ...regexp.Regexp) BuildableTLSProvider {
+func (s *standardTLSProvider) CACertsFromDir(dir string, patterns ...*regexp.Regexp) BuildableTLSProvider {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.configured = true
