@@ -120,7 +120,7 @@ func setupVNICProfileID(vnicProfileID string, clusterID string, client Client) (
 		if err != nil {
 			return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
 		}
-		for _, vnicProfile := range vnicProfiles  {
+		for _, vnicProfile := range vnicProfiles {
 			network, err := vnicProfile.Network()
 			if err != nil {
 				return "", fmt.Errorf("failed to fetch network %s (%w)", vnicProfile.NetworkID(), err)

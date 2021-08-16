@@ -44,8 +44,8 @@ func convertSDKVNICProfile(sdkObject *ovirtsdk.VnicProfile, client Client) (VNIC
 	return &vnicProfile{
 		client: client,
 
-		id: id,
-		name: name,
+		id:        id,
+		name:      name,
 		networkID: networkID,
 	}, nil
 }
