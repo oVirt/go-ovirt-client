@@ -16,8 +16,8 @@ func NewMock() MockClient {
 	testNetwork := generateTestNetwork(testDatacenter)
 	testVNICProfile := generateTestVNICProfile(testNetwork)
 	blankTemplate := &template{
-		id: BlankTemplateID,
-		name: "Blank",
+		id:          BlankTemplateID,
+		name:        "Blank",
 		description: "Blank template",
 	}
 
@@ -38,13 +38,14 @@ func NewMock() MockClient {
 		templates: map[string]*template{
 			blankTemplate.ID(): blankTemplate,
 		},
+		nics: map[string]*nic{},
 		vnicProfiles: map[string]*vnicProfile{
 			testVNICProfile.ID(): testVNICProfile,
 		},
-		networks:     map[string]*network{
+		networks: map[string]*network{
 			testNetwork.ID(): testNetwork,
 		},
-		dataCenters:  map[string]*datacenterWithClusters{
+		dataCenters: map[string]*datacenterWithClusters{
 			testDatacenter.ID(): testDatacenter,
 		},
 	}
@@ -70,17 +71,17 @@ func generateTestVNICProfile(testNetwork *network) *vnicProfile {
 
 func generateTestNetwork(testDatacenter *datacenterWithClusters) *network {
 	return &network{
-		id:     uuid.NewString(),
-		name:   "test",
-		dcID:   testDatacenter.ID(),
+		id:   uuid.NewString(),
+		name: "test",
+		dcID: testDatacenter.ID(),
 	}
 }
 
 func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
 	return &datacenterWithClusters{
 		datacenter: datacenter{
-			id:     uuid.NewString(),
-			name:   "test",
+			id:   uuid.NewString(),
+			name: "test",
 		},
 		clusters: []string{
 			testCluster.ID(),

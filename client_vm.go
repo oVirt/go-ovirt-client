@@ -33,6 +33,13 @@ type VM interface {
 
 	// Remove removes the current VM. This involves an API call and may be slow.
 	Remove(retries ...RetryStrategy) error
+
+	// CreateNIC creates a network interface on the current VM. This involves an API call and may be slow.
+	CreateNIC(name string, vnicProfileID string, retries ...RetryStrategy) (NIC, error)
+	// GetNIC fetches a NIC with a specific ID on the current VM. This involves an API call and may be slow.
+	GetNIC(id string, retries ...RetryStrategy) (NIC, error)
+	// ListNICs fetches a list of network interfaces attached to this VM. This involves an API call and may be slow.
+	ListNICs(retries ...RetryStrategy) ([]NIC, error)
 }
 
 type vm struct {
@@ -47,6 +54,18 @@ type vm struct {
 
 func (v *vm) Remove(retries ...RetryStrategy) error {
 	return v.client.RemoveVM(v.id, retries...)
+}
+
+func (v *vm) CreateNIC(name string, vnicProfileID string, retries ...RetryStrategy) (NIC, error) {
+	return v.client.CreateNIC(v.id, name, vnicProfileID, retries...)
+}
+
+func (v *vm) GetNIC(id string, retries ...RetryStrategy) (NIC, error) {
+	return v.client.GetNIC(v.id, id, retries...)
+}
+
+func (v *vm) ListNICs(retries ...RetryStrategy) ([]NIC, error) {
+	return v.client.ListNICs(v.id, retries...)
 }
 
 func (v *vm) Comment() string {

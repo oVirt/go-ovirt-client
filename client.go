@@ -15,6 +15,7 @@ type Client interface {
 
 	DiskClient
 	VMClient
+	NICClient
 	VNICProfileClient
 	NetworkClient
 	DatacenterClient
