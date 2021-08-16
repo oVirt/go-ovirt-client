@@ -118,6 +118,7 @@ func TestSomething(t *testing.T) {
         os.Getenv("OVIRT_CLUSTER_ID"),
         os.Getenv("OVIRT_BLANK_TEMPLATE_ID"),
         os.Getenv("OVIRT_STORAGE_DOMAIN_ID"),
+		os.Getenv("OVIRT_VNIC_PROFILE_ID"),
         mock,
         logger,
     )
