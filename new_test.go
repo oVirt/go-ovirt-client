@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -12,11 +11,13 @@ import (
 )
 
 func TestInvalidCredentials(t *testing.T) {
-	url, tls, err := getConnectionParametersForLiveTesting()
+	helper, err := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewTestLogger(t))
 	if err != nil {
-		t.Skipf("⚠ Skipping test: no live credentials provided.")
+		t.Skipf("🚧 Skipping test: no live credentials provided.")
 		return
 	}
+	url := helper.GetClient().GetURL()
+	tls := helper.GetTLS()
 	logger := ovirtclientlog.NewTestLogger(t)
 	_, err = ovirtclient.New(
 		url,
@@ -119,29 +120,4 @@ func TestBadTLS(t *testing.T) {
 	} else {
 		t.Fatalf("the returned error was not an EngineError (%v)", err)
 	}
-}
-
-func getConnectionParametersForLiveTesting() (string, ovirtclient.TLSProvider, error) {
-	url := os.Getenv("OVIRT_URL")
-	if url == "" {
-		return "", nil, fmt.Errorf("the OVIRT_URL environment variable must not be empty")
-	}
-	tls := ovirtclient.TLS()
-	configured := false
-	if caFile := os.Getenv("OVIRT_CAFILE"); caFile != "" {
-		configured = true
-		tls.CACertsFromFile(caFile)
-	}
-	if caCert := os.Getenv("OVIRT_CA_CERT"); caCert != "" {
-		configured = true
-		tls.CACertsFromMemory([]byte(caCert))
-	}
-	if os.Getenv("OVIRT_INSECURE") != "" {
-		configured = true
-		tls.Insecure()
-	}
-	if !configured {
-		return "", nil, fmt.Errorf("one of OVIRT_CAFILE, OVIRT_CA_CERT, or OVIRT_INSECURE must be set")
-	}
-	return url, tls, nil
 }
