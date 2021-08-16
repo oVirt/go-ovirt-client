@@ -9,14 +9,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ovirt/go-ovirt-client"
+	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
 func getHelper(t *testing.T) ovirtclient.TestHelper {
 	helper, err := getLiveHelper(t)
 	if err != nil {
-		t.Logf("⚠ Warning: failed to create live helper for tests, falling back to mock backend.")
+		t.Logf("⚠ Warning: failed to create live helper for tests, falling back to mock backend. (%v)", err)
 		return getMockHelper(t)
 	}
 	return helper

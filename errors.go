@@ -167,6 +167,10 @@ func (e *engineError) CanAutoRetry() bool {
 	return e.code.CanAutoRetry()
 }
 
+func newFieldNotFound(object string, field string) error {
+	return newError(EFieldMissing, "no %s field found on %s object", field, object)
+}
+
 func newError(code ErrorCode, format string, args ...interface{}) EngineError {
 	return &engineError{
 		message: fmt.Sprintf(format, args...),
