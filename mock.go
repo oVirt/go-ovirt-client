@@ -23,6 +23,7 @@ type mockClient struct {
 	clusters       map[string]*cluster
 	hosts          map[string]*host
 	templates      map[string]*template
+	dataCenters    map[string]*datacenterWithClusters
 }
 
 func (m *mockClient) GetURL() string {

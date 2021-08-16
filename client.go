@@ -15,6 +15,7 @@ type Client interface {
 
 	DiskClient
 	VMClient
+	DatacenterClient
 	ClusterClient
 	StorageDomainClient
 	HostClient

@@ -12,6 +12,7 @@ func NewMock() MockClient {
 	testCluster := generateTestCluster()
 	testHost := generateTestHost(testCluster)
 	testStorageDomain := generateTestStorageDomain()
+	testDatacenter := generateTestDatacenter(testCluster)
 	blankTemplate := &template{
 		id:          BlankTemplateID,
 		name:        "Blank",
@@ -34,14 +35,30 @@ func NewMock() MockClient {
 		templates: map[string]*template{
 			blankTemplate.ID(): blankTemplate,
 		},
+		dataCenters: map[string]*datacenterWithClusters{
+			testDatacenter.ID(): testDatacenter,
+		},
 	}
 
 	testCluster.client = client
 	testHost.client = client
 	blankTemplate.client = client
 	testStorageDomain.client = client
+	testDatacenter.client = client
 
 	return client
+}
+
+func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
+	return &datacenterWithClusters{
+		datacenter: datacenter{
+			id:   uuid.NewString(),
+			name: "test",
+		},
+		clusters: []string{
+			testCluster.ID(),
+		},
+	}
 }
 
 func generateTestStorageDomain() *storageDomain {
