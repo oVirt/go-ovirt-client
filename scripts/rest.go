@@ -20,10 +20,12 @@ type restItem struct {
 	Object string
 	// ID is the SDK identifier for this item. IT must be capitalized.
 	ID string
+	// ID2 is the secondary ID of this item. Defaults to the same as ID.
+	ID2 string
 }
 
 func main() {
-	name, id, object, tplDir, targetDir, nofmt, nolint := getParameters()
+	name, id, id2, object, tplDir, targetDir, nofmt, nolint := getParameters()
 
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -40,10 +42,15 @@ func main() {
 		object = id
 	}
 
+	if id2 == "" {
+		id2 = id
+	}
+
 	restItem := restItem{
 		name,
 		object,
 		id,
+		id2,
 	}
 	if err := filepath.Walk(
 		tplDir, func(fn string, info os.FileInfo, _ error) error {
@@ -68,16 +75,17 @@ func main() {
 	}
 }
 
-func getParameters() (string, string, string, string, string, bool, bool) {
+func getParameters() (string, string, string, string, string, string, bool, bool) {
 	name := ""
 	id := ""
+	id2 := ""
 	object := ""
 	tplDir := "./codetemplates"
 	targetDir := "./"
 	watch := false
 	nofmt := false
 	nolint := false
-	setupFlags(&name, &id, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint)
+	setupFlags(&name, &id, &id2, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint)
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
@@ -94,10 +102,10 @@ func getParameters() (string, string, string, string, string, bool, bool) {
 	if os.Getenv("NOLINT") != "" {
 		nolint = true
 	}
-	return name, id, object, tplDir, targetDir, nofmt, nolint
+	return name, id, id2, object, tplDir, targetDir, nofmt, nolint
 }
 
-func setupFlags(name *string, id *string, object *string, tplDir *string, targetDir *string, watch *bool, nofmt *bool, nolint *bool) {
+func setupFlags(name *string, id *string, id2 *string, object *string, tplDir *string, targetDir *string, watch *bool, nofmt *bool, nolint *bool) {
 	flag.StringVar(
 		name,
 		"n",
@@ -109,6 +117,12 @@ func setupFlags(name *string, id *string, object *string, tplDir *string, target
 		"i",
 		"",
 		"Pass an identifier used in the SDK. Must be capitalized. E.g. \"StorageDomain\". Required.",
+	)
+	flag.StringVar(
+		id2,
+		"s",
+		"",
+		"Pass a secondary identifier used in the SDK. Must be capitalized. E.g. \"Profile\".",
 	)
 	flag.StringVar(
 		object,

@@ -13,19 +13,19 @@ func (o *oVirtClient) Get{{ .Object }}(id string, retries ...RetryStrategy) (res
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().{{ .ID }}sService().{{ .ID }}Service(id).Get().Send()
+			response, err := o.conn.SystemService().{{ .ID }}sService().{{ .ID2 }}Service(id).Get().Send()
 			if err != nil {
 				return err
 			}
-			sdkObject, ok := response.{{ .ID }}()
+			sdkObject, ok := response.{{ .ID2 }}()
 			if !ok {
 				return newError(
 					ENotFound,
-					"no {{ .Name }} returned when getting {{ .Object | toLower }} ID %s",
+					"no {{ .Name }} returned when getting {{ .Name }} ID %s",
 					id,
 				)
 			}
-			result, err = convertSDK{{ .Object }}(sdkObject)
+			result, err = convertSDK{{ .Object }}(sdkObject, o)
 			if err != nil {
 				return wrap(
 					err,

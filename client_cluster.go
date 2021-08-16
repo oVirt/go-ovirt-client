@@ -22,7 +22,7 @@ type Cluster interface {
 	Name() string
 }
 
-func convertSDKCluster(sdkCluster *ovirtsdk4.Cluster) (Cluster, error) {
+func convertSDKCluster(sdkCluster *ovirtsdk4.Cluster, client Client) (Cluster, error) {
 	id, ok := sdkCluster.Id()
 	if !ok {
 		return nil, newError(EFieldMissing, "failed to fetch ID for cluster")
@@ -33,12 +33,15 @@ func convertSDKCluster(sdkCluster *ovirtsdk4.Cluster) (Cluster, error) {
 		return nil, newError(EFieldMissing, "failed to fetch name for cluster %s", id)
 	}
 	return &cluster{
-		id:   id,
-		name: name,
+		client: client,
+		id:     id,
+		name:   name,
 	}, nil
 }
 
 type cluster struct {
+	client Client
+
 	id   string
 	name string
 }

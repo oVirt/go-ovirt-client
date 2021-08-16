@@ -41,7 +41,7 @@ const (
 	HostStatusUp                      HostStatus = "up"
 )
 
-func convertSDKHost(sdkHost *ovirtsdk4.Host) (Host, error) {
+func convertSDKHost(sdkHost *ovirtsdk4.Host, client Client) (Host, error) {
 	id, ok := sdkHost.Id()
 	if !ok {
 		return nil, newError(EFieldMissing, "returned host did not contain an ID")
@@ -59,6 +59,7 @@ func convertSDKHost(sdkHost *ovirtsdk4.Host) (Host, error) {
 		return nil, newError(EFieldMissing, "failed to fetch cluster ID from host %s", id)
 	}
 	return &host{
+		client:    client,
 		id:        id,
 		status:    HostStatus(status),
 		clusterID: clusterID,
@@ -66,6 +67,8 @@ func convertSDKHost(sdkHost *ovirtsdk4.Host) (Host, error) {
 }
 
 type host struct {
+	client Client
+
 	id        string
 	clusterID string
 	status    HostStatus

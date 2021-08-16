@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) List{{ .Object }}s(retries ...RetryStrategy) ([]{{ .Object }}, error) {
+func (m *mockClient) List{{ .Object }}s(_ ...RetryStrategy) ([]{{ .Object }}, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	result := make([]{{ .Object }}, len(m.{{ .ID | toLower }}s))

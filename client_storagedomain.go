@@ -59,7 +59,7 @@ const (
 	StorageDomainExternalStatusWarning StorageDomainExternalStatus = "warning"
 )
 
-func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (StorageDomain, error) {
+func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client Client) (StorageDomain, error) {
 	id, ok := sdkStorageDomain.Id()
 	if !ok {
 		return nil, newError(EFieldMissing, "failed to fetch ID of storage domain")
@@ -85,6 +85,8 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (Storage
 	}
 
 	return &storageDomain{
+		client: client,
+
 		id:             id,
 		name:           name,
 		available:      uint64(available),
@@ -94,6 +96,8 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain) (Storage
 }
 
 type storageDomain struct {
+	client Client
+
 	id             string
 	name           string
 	available      uint64

@@ -14,13 +14,13 @@ func (o *oVirtClient) List{{ .Object }}s(retries ...RetryStrategy) (result []{{ 
 			if e != nil {
 				return e
 			}
-			sdkObjects, ok := response.{{ .ID }}s()
+			sdkObjects, ok := response.{{ .ID2 }}s()
 			if !ok {
 				return nil
 			}
 			result = make([]{{ .Object }}, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDK{{ .Object }}(sdkObject)
+				result[i], e = convertSDK{{ .Object }}(sdkObject, o)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert {{ .Name }} during listing item #%d", i)
 				}

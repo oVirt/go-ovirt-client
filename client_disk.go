@@ -178,7 +178,7 @@ const (
 	ImageFormatRaw ImageFormat = "raw"
 )
 
-func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
+func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 	id, ok := sdkDisk.Id()
 	if !ok {
 		return nil, newError(EFieldMissing, "disk does not contain an ID")
@@ -218,6 +218,8 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 		return nil, newError(EFieldMissing, "disk %s has no status field", id)
 	}
 	return &disk{
+		client: client,
+
 		id:              id,
 		alias:           alias,
 		provisionedSize: uint64(provisionedSize),
@@ -229,6 +231,8 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk) (Disk, error) {
 }
 
 type disk struct {
+	client Client
+
 	id              string
 	alias           string
 	provisionedSize uint64
