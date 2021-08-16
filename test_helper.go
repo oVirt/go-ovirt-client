@@ -26,6 +26,9 @@ type TestHelper interface {
 
 	// GenerateRandomID generates a random ID for testing.
 	GenerateRandomID(length uint) string
+
+	// GetVNICProfileID returns a VNIC profile ID for testing.
+	GetVNICProfileID() string
 }
 
 func MustNewTestHelper(
@@ -36,6 +39,7 @@ func MustNewTestHelper(
 	clusterID string,
 	blankTemplateID string,
 	storageDomainID string,
+	vnicProfileID string,
 	mock bool,
 	logger ovirtclientlog.Logger,
 ) TestHelper {
@@ -47,6 +51,7 @@ func MustNewTestHelper(
 		clusterID,
 		blankTemplateID,
 		storageDomainID,
+		vnicProfileID,
 		mock,
 		logger,
 	)
@@ -64,6 +69,7 @@ func NewTestHelper(
 	clusterID string,
 	blankTemplateID string,
 	storageDomainID string,
+	vnicProfileID string,
 	mock bool,
 	logger ovirtclientlog.Logger,
 ) (TestHelper, error) {
@@ -87,13 +93,52 @@ func NewTestHelper(
 		return nil, err
 	}
 
+	vnicProfileID, err = setupVNICProfileID(vnicProfileID, clusterID, client)
+	if err != nil {
+		return nil, err
+	}
+
 	return &testHelper{
 		client:          client,
 		clusterID:       clusterID,
 		storageDomainID: storageDomainID,
 		blankTemplateID: blankTemplateID,
+		vnicProfileID:   vnicProfileID,
 		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
 	}, nil
+}
+
+func setupVNICProfileID(vnicProfileID string, clusterID string, client Client) (string, error) {
+	if vnicProfileID != "" {
+		_, err := client.GetVNICProfile(vnicProfileID)
+		if err != nil {
+			return "", fmt.Errorf("failed to verify VNIC profile ID %s", vnicProfileID)
+		}
+		return vnicProfileID, nil
+	} else {
+		vnicProfiles, err := client.ListVNICProfiles()
+		if err != nil {
+			return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
+		}
+		for _, vnicProfile := range vnicProfiles  {
+			network, err := vnicProfile.Network()
+			if err != nil {
+				return "", fmt.Errorf("failed to fetch network %s (%w)", vnicProfile.NetworkID(), err)
+			}
+			dc, err := network.Datacenter()
+			if err != nil {
+				return "", fmt.Errorf("failed to fetch datacenter from network %s (%w)", network.ID(), err)
+			}
+			hasCluster, err := dc.HasCluster(clusterID)
+			if err != nil {
+				return "", fmt.Errorf("failed to get datacenter clusters for %s", dc.ID())
+			}
+			if hasCluster {
+				return vnicProfile.ID(), nil
+			}
+		}
+		return "", fmt.Errorf("failed to find a valid VNIC profile ID for testing")
+	}
 }
 
 func setupBlankTemplateID(blankTemplateID string, client Client) (id string, err error) {
@@ -235,10 +280,15 @@ func verifyTestStorageDomainID(client Client, storageDomainID string) error {
 
 type testHelper struct {
 	client          Client
+	rand            *rand.Rand
 	clusterID       string
 	storageDomainID string
-	rand            *rand.Rand
 	blankTemplateID string
+	vnicProfileID   string
+}
+
+func (t *testHelper) GetVNICProfileID() string {
+	return t.vnicProfileID
 }
 
 func (t *testHelper) GetClient() Client {

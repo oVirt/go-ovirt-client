@@ -31,6 +31,7 @@ func getMockHelper(t *testing.T) ovirtclient.TestHelper {
 		"",
 		"",
 		"",
+		"",
 		true,
 		ovirtclientlog.NewTestLogger(t),
 	)
@@ -53,6 +54,7 @@ func getLiveHelper(t *testing.T) (ovirtclient.TestHelper, error) {
 	clusterID := os.Getenv("OVIRT_CLUSTER_ID")
 	blankTemplateID := os.Getenv("OVIRT_BLANK_TEMPLATE_ID")
 	storageDomainID := os.Getenv("OVIRT_STORAGE_DOMAIN_ID")
+	vnicProfileID := os.Getenv("OVIRT_VNIC_PROFILE_ID")
 
 	helper, err := ovirtclient.NewTestHelper(
 		url,
@@ -62,6 +64,7 @@ func getLiveHelper(t *testing.T) (ovirtclient.TestHelper, error) {
 		clusterID,
 		blankTemplateID,
 		storageDomainID,
+		vnicProfileID,
 		false,
 		ovirtclientlog.NewTestLogger(t),
 	)
