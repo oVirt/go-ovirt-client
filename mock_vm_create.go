@@ -4,11 +4,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateVM(clusterID string, name string, templateID string, _ ...RetryStrategy) (VM, error) {
+func (m *mockClient) CreateVM(name string, clusterID string, templateID string, params OptionalVMParameters, _ ...RetryStrategy) (VM, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if err := validateVMCreationParameters(clusterID, name, templateID); err != nil {
+	if err := validateVMCreationParameters(name, clusterID, templateID, params); err != nil {
 		return nil, err
 	}
 	if _, ok := m.clusters[clusterID]; !ok {

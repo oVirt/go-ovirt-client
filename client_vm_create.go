@@ -6,8 +6,8 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-func (o *oVirtClient) CreateVM(clusterID string, name string, templateID string, retries ...RetryStrategy) (result VM, err error) {
-	if err := validateVMCreationParameters(clusterID, name, templateID); err != nil {
+func (o *oVirtClient) CreateVM(name string, clusterID string, templateID string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
+	if err := validateVMCreationParameters(name, clusterID, templateID, params); err != nil {
 		return nil, err
 	}
 
@@ -48,12 +48,12 @@ func (o *oVirtClient) CreateVM(clusterID string, name string, templateID string,
 	return
 }
 
-func validateVMCreationParameters(clusterID string, name string, templateID string) error {
-	if clusterID == "" {
-		return newError(EBadArgument, "cluster ID cannot be empty for VM creation")
-	}
+func validateVMCreationParameters(name string, clusterID string, templateID string, params OptionalVMParameters) error {
 	if name == "" {
 		return newError(EBadArgument, "name cannot be empty for VM creation")
+	}
+	if clusterID == "" {
+		return newError(EBadArgument, "cluster ID cannot be empty for VM creation")
 	}
 	if templateID == "" {
 		return newError(EBadArgument, "template ID cannot be empty for VM creation")

@@ -2,13 +2,15 @@ package ovirtclient_test
 
 import (
 	"testing"
+
+	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
 func TestVMNICCreation(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	vm, err := client.CreateVM(helper.GetClusterID(), "test", helper.GetBlankTemplateID())
+	vm, err := client.CreateVM("test", helper.GetClusterID(), helper.GetBlankTemplateID(), ovirtclient.VMParams())
 	if err != nil {
 		t.Fatal(err)
 	}

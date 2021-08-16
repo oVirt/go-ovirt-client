@@ -1,6 +1,8 @@
 package ovirtclient
 
 import (
+	"sync"
+
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
@@ -9,7 +11,13 @@ import (
 // VMClient includes the methods required to deal with virtual machines.
 type VMClient interface {
 	// CreateVM creates a virtual machine.
-	CreateVM(clusterID string, name string, templateID string, retries ...RetryStrategy) (VM, error)
+	CreateVM(
+		name string,
+		clusterID string,
+		templateID string,
+		optional OptionalVMParameters,
+		retries ...RetryStrategy,
+	) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
 	GetVM(id string, retries ...RetryStrategy) (VM, error)
 	// ListVMs returns a list of all virtual machines.
@@ -40,6 +48,25 @@ type VM interface {
 	GetNIC(id string, retries ...RetryStrategy) (NIC, error)
 	// ListNICs fetches a list of network interfaces attached to this VM. This involves an API call and may be slow.
 	ListNICs(retries ...RetryStrategy) ([]NIC, error)
+}
+
+// OptionalVMParameters are a list of parameters that
+type OptionalVMParameters interface {
+}
+
+type BuildableVMParameters interface {
+	OptionalVMParameters
+}
+
+// VMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
+func VMParams() BuildableVMParameters {
+	return &vmParams{
+		lock: &sync.Mutex{},
+	}
+}
+
+type vmParams struct {
+	lock *sync.Mutex
 }
 
 type vm struct {
