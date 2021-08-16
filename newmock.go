@@ -23,6 +23,7 @@ func NewMock() MockClient {
 	client := &mockClient{
 		url:  "https://localhost/ovirt-engine/api",
 		lock: &sync.Mutex{},
+		vms:  map[string]*vm{},
 		storageDomains: map[string]*storageDomain{
 			testStorageDomain.ID(): testStorageDomain,
 		},

@@ -18,6 +18,7 @@ type MockClient interface {
 type mockClient struct {
 	url            string
 	lock           *sync.Mutex
+	vms            map[string]*vm
 	storageDomains map[string]*storageDomain
 	disks          map[string]*diskWithData
 	clusters       map[string]*cluster
