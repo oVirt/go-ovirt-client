@@ -14,7 +14,7 @@ func (o *oVirtClient) List{{ .Object }}s(retries ...RetryStrategy) (result []{{ 
 			if e != nil {
 				return e
 			}
-			sdkObjects, ok := response.{{ .ID2 }}s()
+			sdkObjects, ok := response.{{ .SecondaryID }}s()
 			if !ok {
 				return nil
 			}

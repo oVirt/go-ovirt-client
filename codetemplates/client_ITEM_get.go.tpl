@@ -13,11 +13,11 @@ func (o *oVirtClient) Get{{ .Object }}(id string, retries ...RetryStrategy) (res
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().{{ .ID }}sService().{{ .ID2 }}Service(id).Get().Send()
+			response, err := o.conn.SystemService().{{ .ID }}sService().{{ .SecondaryID }}Service(id).Get().Send()
 			if err != nil {
 				return err
 			}
-			sdkObject, ok := response.{{ .ID2 }}()
+			sdkObject, ok := response.{{ .SecondaryID }}()
 			if !ok {
 				return newError(
 					ENotFound,
