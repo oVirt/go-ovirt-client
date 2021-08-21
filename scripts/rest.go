@@ -13,44 +13,49 @@ import (
 	"text/template"
 )
 
+// restItem is the data structure passed to code generation templates s a root object.
 type restItem struct {
 	// Name is the human-readable name for this item. It should be written lower case and with spaces.
 	Name string
-	// Object is the client-facing object.
+	// Object is the name of the item as it is facing outwards from the go-ovirt-client.
 	Object string
-	// ID is the SDK identifier for this item. IT must be capitalized.
+	// ID is the SDK identifier for this item. It must be capitalized.
 	ID string
-	// ID2 is the secondary ID of this item. Defaults to the same as ID.
-	ID2 string
+	// SecondaryID is the secondary ID of this item, which is sometimes required when the SDK uses a different name for
+	// an object. This is the case for VnicProfile vs. Profile, which refer to the same object. Defaults to the same as
+	// ID.
+	SecondaryID string
 }
 
 func main() {
-	name, id, id2, object, tplDir, targetDir, nofmt, nolint := getParameters()
+	name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint := getParameters()
 
 	name = strings.TrimSpace(name)
 	if name == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "The -n parameter is required.\n\n")
 		flag.Usage()
+		os.Exit(1)
 	}
 	id = strings.TrimSpace(id)
 	if id == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "The -i parameter is required.\n\n")
 		flag.Usage()
+		os.Exit(1)
 	}
 
 	if object == "" {
 		object = id
 	}
 
-	if id2 == "" {
-		id2 = id
+	if secondaryID == "" {
+		secondaryID = id
 	}
 
 	restItem := restItem{
 		name,
 		object,
 		id,
-		id2,
+		secondaryID,
 	}
 	if err := filepath.Walk(
 		tplDir, func(fn string, info os.FileInfo, _ error) error {
@@ -68,7 +73,8 @@ func main() {
 	if !nolint {
 		if err := runGoLint(targetDir); err != nil {
 			log.Fatalf(
-				"Failed to run golangci-lint. You can skip this step by passing -nolint in the command line or setting the NOLINT environment variable. (%v)",
+				"Failed to run golangci-lint. You can skip this step by passing -nolint in the command line "+
+					"or setting the NOLINT environment variable. (%v)",
 				err,
 			)
 		}
@@ -78,18 +84,19 @@ func main() {
 func getParameters() (string, string, string, string, string, string, bool, bool) {
 	name := ""
 	id := ""
-	id2 := ""
+	secondaryID := ""
 	object := ""
 	tplDir := "./codetemplates"
 	targetDir := "./"
 	watch := false
 	nofmt := false
 	nolint := false
-	setupFlags(&name, &id, &id2, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint)
+	setupFlags(&name, &id, &secondaryID, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint)
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
-			"Usage: go run rest.go OPTIONS\n\nThis file generates REST client calls based on the templates in the \"codetemplates\" directory.\n",
+			"Usage: go run rest.go OPTIONS\n\n"+
+				"This file generates REST client calls based on the templates in the \"codetemplates\" directory.\n",
 		)
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -102,10 +109,22 @@ func getParameters() (string, string, string, string, string, string, bool, bool
 	if os.Getenv("NOLINT") != "" {
 		nolint = true
 	}
-	return name, id, id2, object, tplDir, targetDir, nofmt, nolint
+	return name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint
 }
 
-func setupFlags(name *string, id *string, id2 *string, object *string, tplDir *string, targetDir *string, watch *bool, nofmt *bool, nolint *bool) {
+// setupFlags sets up the command line flags. This function is annotated with nolint:funlen since there is no reasonable
+// way to split this function and still keeping the code simple.
+func setupFlags( // nolint:funlen
+	name *string,
+	id *string,
+	secondaryID *string,
+	object *string,
+	tplDir *string,
+	targetDir *string,
+	watch *bool,
+	nofmt *bool,
+	nolint *bool,
+) {
 	flag.StringVar(
 		name,
 		"n",
@@ -119,7 +138,7 @@ func setupFlags(name *string, id *string, id2 *string, object *string, tplDir *s
 		"Pass an identifier used in the SDK. Must be capitalized. E.g. \"StorageDomain\". Required.",
 	)
 	flag.StringVar(
-		id2,
+		secondaryID,
 		"s",
 		"",
 		"Pass a secondary identifier used in the SDK. Must be capitalized. E.g. \"Profile\".",
@@ -128,7 +147,8 @@ func setupFlags(name *string, id *string, id2 *string, object *string, tplDir *s
 		object,
 		"o",
 		"",
-		"Pass an identifier used in the client. Defaults to the same value as -i. Must be capitalized. E.g. \"StorageDomain\".",
+		"Pass an identifier used in the client. Defaults to the same value as -i. "+
+			"Must be capitalized. E.g. \"StorageDomain\".",
 	)
 	flag.StringVar(
 		tplDir,
@@ -169,7 +189,7 @@ func setupFlags(name *string, id *string, id2 *string, object *string, tplDir *s
 }
 
 func handleTemplateFile(templateFileName string, id string, targetDir string, restItem restItem, nofmt bool) error {
-	fh, err := os.Open(templateFileName)
+	fh, err := os.Open(templateFileName) // nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", templateFileName, err)
 	}
@@ -189,7 +209,8 @@ func handleTemplateFile(templateFileName string, id string, targetDir string, re
 	if !nofmt {
 		if err := runGoFmt(t); err != nil {
 			return fmt.Errorf(
-				"failed to run go fmt on %s. You can skip this step by passing -nofmt in the command line or setting the NOFMT environment variable. (%w)",
+				"failed to run go fmt on %s. You can skip this step by passing -nofmt in the command line or "+
+					"setting the NOFMT environment variable. (%w)",
 				t,
 				err,
 			)
@@ -199,14 +220,14 @@ func handleTemplateFile(templateFileName string, id string, targetDir string, re
 }
 
 func runGoFmt(t string) error {
-	cmd := exec.Command("gofmt", "-w", t)
+	cmd := exec.Command("gofmt", "-w", t) // nolint:gosec
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func runGoLint(t string) error {
-	cmd := exec.Command("golangci-lint", "run", t)
+	cmd := exec.Command("golangci-lint", "run", t) // nolint:gosec
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
