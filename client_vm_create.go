@@ -48,7 +48,7 @@ func (o *oVirtClient) CreateVM(name string, clusterID string, templateID string,
 	return
 }
 
-func validateVMCreationParameters(name string, clusterID string, templateID string, params OptionalVMParameters) error {
+func validateVMCreationParameters(name string, clusterID string, templateID string, _ OptionalVMParameters) error {
 	if name == "" {
 		return newError(EBadArgument, "name cannot be empty for VM creation")
 	}

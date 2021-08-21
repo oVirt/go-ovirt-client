@@ -27,6 +27,8 @@ linters:
     - goconst
     # Complain about unnecessary type conversions.
     - unconvert
+    # Complain about unused parameters. These should be replaced with underscores.
+    - unparam
     # Check for non-ASCII identifiers.
     - asciicheck
     # Check for HTTP response body being closed. Sometimes, you may need to disable this using // nolint:bodyclose.
