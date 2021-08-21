@@ -46,7 +46,7 @@ func (o *oVirtClient) CreateNIC(vmid string, name string, vnicProfileID string, 
 			return nil
 		},
 	)
-	return
+	return result, err
 }
 
 func validateNICCreationParameters(vmid string, name string) error {

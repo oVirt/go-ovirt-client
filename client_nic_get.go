@@ -37,5 +37,5 @@ func (o *oVirtClient) GetNIC(vmid string, id string, retries ...RetryStrategy) (
 			return nil
 		},
 	)
-	return
+	return result, err
 }

@@ -21,6 +21,8 @@ linters:
     - revive
     # Complain about deeply nested if cases.
     - nestif
+    # Prevent naked returns in long functions
+    - nakedret
     # We don't want hidden global scope, so disallow global variables. You can disable this with
     # // nolint:gochecknoglobals where global variables are legitimately needed.
     - gochecknoglobals

@@ -45,7 +45,7 @@ func (o *oVirtClient) CreateVM(name string, clusterID string, templateID string,
 			return nil
 		},
 	)
-	return
+	return result, err
 }
 
 func validateVMCreationParameters(name string, clusterID string, templateID string, _ OptionalVMParameters) error {
