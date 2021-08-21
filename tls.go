@@ -120,7 +120,7 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 	}
 	if s.insecure {
 		return &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nolint:gosec
 		}, nil
 	}
 	tlsConfig := &tls.Config{
@@ -138,8 +138,7 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 		CurvePreferences: []tls.CurveID{
 			tls.CurveP256, tls.CurveP384,
 		},
-		PreferServerCipherSuites: false,
-		InsecureSkipVerify:       false,
+		InsecureSkipVerify: false,
 	}
 
 	certPool, err := s.createCertPool()
@@ -187,7 +186,7 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 				}
 			}
 			fullPath := filepath.Join(dir.dir, info.Name())
-			data, err := ioutil.ReadFile(fullPath)
+			data, err := ioutil.ReadFile(fullPath) // nolint:gosec
 			if err != nil {
 				return wrap(
 					err,
@@ -210,7 +209,7 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 
 func (s *standardTLSProvider) addCertsFromFile(certPool *x509.CertPool) error {
 	for _, file := range s.files {
-		pemData, err := ioutil.ReadFile(file)
+		pemData, err := ioutil.ReadFile(file) //nolint:gosec
 		if err != nil {
 			return wrap(err, EFileReadFailed, "failed to read CA certificate from file %s", file)
 		}

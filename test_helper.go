@@ -115,7 +115,9 @@ func NewTestHelper(
 		storageDomainID: storageDomainID,
 		blankTemplateID: blankTemplateID,
 		vnicProfileID:   vnicProfileID,
-		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
+		// We are suppressing gosec linting here since rand is not used in a security-relevant context,
+		// only to generate random ID's for testing.
+		rand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}, nil
 }
 

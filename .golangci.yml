@@ -17,6 +17,9 @@ linters:
 
     # region Code Quality and Comments
 
+    # Inspect source code for potential security problems. This check has a fairly high false positive rate,
+    # comment with // nolint:gosec where not relevant.
+    - gosec
     # Replace golint
     - revive
     # Complain about deeply nested if cases.

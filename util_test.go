@@ -124,6 +124,7 @@ func newTestServer(port int, serverCert []byte, serverPrivKey []byte, handler ht
 			Certificates: []tls.Certificate{
 				cert,
 			},
+			MinVersion: tls.VersionTLS12,
 		},
 	}
 	return &testServer{
