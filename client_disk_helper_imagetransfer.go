@@ -122,37 +122,37 @@ type imageTransferImpl struct {
 
 // checkStatusCode takes a HTTP status code from the ImageIO endpoint and verifies it.
 func (i *imageTransferImpl) checkStatusCode(statusCode int) error {
-	if statusCode > 299 {
-		if statusCode < 399 {
+	if statusCode < 300 {
+		return nil
+	}
+	if statusCode < 399 {
+		return newError(
+			ENotAnOVirtEngine,
+			"received redirect response for image %s",
+			i.direction,
+		)
+	} else if statusCode < 499 {
+		if statusCode == 401 {
 			return newError(
-				ENotAnOVirtEngine,
-				"received redirect response for image %s",
-				i.direction,
-			)
-		} else if statusCode < 499 {
-			if statusCode == 401 {
-				return newError(
-					EAccessDenied,
-					"received unauthorized (401) status code for image %s",
-					i.direction,
-				)
-			}
-			return newError(
-				EPermanentHTTPError,
-				"unexpected client status code (%d) received for image %s",
-				statusCode,
-				i.direction,
-			)
-		} else {
-			return newError(
-				EPermanentHTTPError,
-				"unexpected server error status code %d while attempting to %s image",
-				statusCode,
+				EAccessDenied,
+				"received unauthorized (401) status code for image %s",
 				i.direction,
 			)
 		}
+		return newError(
+			EPermanentHTTPError,
+			"unexpected client status code (%d) received for image %s",
+			statusCode,
+			i.direction,
+		)
+	} else {
+		return newError(
+			EPermanentHTTPError,
+			"unexpected server error status code %d while attempting to %s image",
+			statusCode,
+			i.direction,
+		)
 	}
-	return nil
 }
 
 // initialize sets up the image transfer in the specified direction. If successful, it returns
