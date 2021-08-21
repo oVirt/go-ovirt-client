@@ -63,14 +63,14 @@ func (o *oVirtClient) StartImageUpload(
 	}
 
 	return o.createProgress(
+		newCtx,
+		cancel,
 		alias,
 		qcowSize,
 		size,
 		reader,
 		storageDomainID,
 		sparse,
-		newCtx,
-		cancel,
 		disk,
 		retries,
 		format,
@@ -117,14 +117,14 @@ func (o *oVirtClient) createDiskForUpload(
 }
 
 func (o *oVirtClient) createProgress(
+	newCtx context.Context,
+	cancel context.CancelFunc,
 	alias string,
 	qcowSize uint64,
 	size uint64,
 	reader readSeekCloser,
 	storageDomainID string,
 	sparse bool,
-	newCtx context.Context,
-	cancel context.CancelFunc,
 	disk *ovirtsdk4.Disk,
 	retries []RetryStrategy,
 	format ImageFormat,

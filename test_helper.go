@@ -126,30 +126,29 @@ func setupVNICProfileID(vnicProfileID string, clusterID string, client Client) (
 			return "", fmt.Errorf("failed to verify VNIC profile ID %s", vnicProfileID)
 		}
 		return vnicProfileID, nil
-	} else {
-		vnicProfiles, err := client.ListVNICProfiles()
-		if err != nil {
-			return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
-		}
-		for _, vnicProfile := range vnicProfiles {
-			network, err := vnicProfile.Network()
-			if err != nil {
-				return "", fmt.Errorf("failed to fetch network %s (%w)", vnicProfile.NetworkID(), err)
-			}
-			dc, err := network.Datacenter()
-			if err != nil {
-				return "", fmt.Errorf("failed to fetch datacenter from network %s (%w)", network.ID(), err)
-			}
-			hasCluster, err := dc.HasCluster(clusterID)
-			if err != nil {
-				return "", fmt.Errorf("failed to get datacenter clusters for %s", dc.ID())
-			}
-			if hasCluster {
-				return vnicProfile.ID(), nil
-			}
-		}
-		return "", fmt.Errorf("failed to find a valid VNIC profile ID for testing")
 	}
+	vnicProfiles, err := client.ListVNICProfiles()
+	if err != nil {
+		return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
+	}
+	for _, vnicProfile := range vnicProfiles {
+		network, err := vnicProfile.Network()
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch network %s (%w)", vnicProfile.NetworkID(), err)
+		}
+		dc, err := network.Datacenter()
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch datacenter from network %s (%w)", network.ID(), err)
+		}
+		hasCluster, err := dc.HasCluster(clusterID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get datacenter clusters for %s", dc.ID())
+		}
+		if hasCluster {
+			return vnicProfile.ID(), nil
+		}
+	}
+	return "", fmt.Errorf("failed to find a valid VNIC profile ID for testing")
 }
 
 func setupBlankTemplateID(blankTemplateID string, client Client) (id string, err error) {

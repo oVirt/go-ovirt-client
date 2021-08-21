@@ -239,9 +239,8 @@ func (a *autoRetryStrategy) Continue(err error, action string) error {
 				"non-retryable error encountered while %s, giving up",
 				action,
 			)
-		} else {
-			return nil
 		}
+		return nil
 	}
 	identifiedError := realIdentify(err)
 	if identifiedError == nil {
