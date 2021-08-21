@@ -323,7 +323,7 @@ func (t *testHelper) GetStorageDomainID() string {
 	return t.storageDomainID
 }
 
-var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") // nolint:gochecknoglobals
 
 func (t *testHelper) GenerateRandomID(length uint) string {
 	b := make([]byte, length)

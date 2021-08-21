@@ -17,6 +17,9 @@ linters:
 
     # region Code Quality and Comments
 
+    # We don't want hidden global scope, so disallow global variables. You can disable this with
+    # // nolint:gochecknoglobals where global variables are legitimately needed.
+    - gochecknoglobals
     # Check if comments end in a period. This helps prevent incomplete comment lines, such as half-written sentences.
     - godot
     # Complain about TODO, FIXME, etc comments as these indicate incomplete code.

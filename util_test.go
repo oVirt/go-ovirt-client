@@ -17,8 +17,8 @@ import (
 	"time"
 )
 
-var nextFreePort = 8080
-var nextFreePortLock = &sync.Mutex{}
+var nextFreePort = 8080              // nolint:gochecknoglobals
+var nextFreePortLock = &sync.Mutex{} // nolint:gochecknoglobals
 
 func getNextFreePort() int {
 	nextFreePortLock.Lock()
