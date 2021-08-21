@@ -20,13 +20,13 @@ linters:
     # Inspect source code for potential security problems. This check has a fairly high false positive rate,
     # comment with // nolint:gosec where not relevant.
     - gosec
-    # Replace golint
+    # Replace golint.
     - revive
     # Complain about deeply nested if cases.
     - nestif
-    # Prevent naked returns in long functions
+    # Prevent naked returns in long functions.
     - nakedret
-    # Make Go code more readable
+    # Make Go code more readable.
     - gocritic
     # We don't want hidden global scope, so disallow global variables. You can disable this with
     # // nolint:gochecknoglobals where global variables are legitimately needed.
@@ -35,7 +35,7 @@ linters:
     - gochecknoinits
     # Check if comments end in a period. This helps prevent incomplete comment lines, such as half-written sentences.
     - godot
-    # Complain about TODO, FIXME, etc comments as these indicate incomplete code.
+    # Complain about comments as these indicate incomplete code.
     - godox
     # Keep the cyclomatic complexity of functions to a reasonable level.
     - gocyclo
@@ -61,15 +61,17 @@ linters:
     - funlen
     # Prevent dogsledding (mass-ignoring return values). This typically indicates missing error handling.
     - dogsled
+    # Enforce consistent import aliases across all files.
+    - importas
     # Make package imports always deterministic.
     - gci
     # Prevent faulty error checks.
     - nilerr
-    # Prevent direct error checks that won't work with wrapped errors
+    # Prevent direct error checks that won't work with wrapped errors.
     - errorlint
     # Find slice usage that could potentially be preallocated.
     - prealloc
-    # Check for improper duration handling
+    # Check for improper duration handling.
     - durationcheck
     # Report if statements that could be shorter.
     - ifshort
@@ -81,8 +83,6 @@ linters:
 
     # region Code formatting
 
-    # Enforce consistent import aliases. Not a big deal, but still makes for nicer reading.
-    - importas
     # Enforce proper white-space handling.
     - gofumpt
     - whitespace
@@ -100,9 +100,9 @@ linters-settings:
     enable-all: true
     check-shadowing: false
     disable:
-      ## Remove this in a future PR to optimize struct usage.
+      # Remove this in a future PR to optimize struct usage.
       - fieldalignment
-      # We don't care about variable shadowing
+      # We don't care about variable shadowing.
       - shadow
   stylecheck:
     checks:
