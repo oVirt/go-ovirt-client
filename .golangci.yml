@@ -17,6 +17,8 @@ linters:
 
     # region Code Quality and Comments
 
+    # Check if comments end in a period. This helps prevent incomplete comment lines, such as half-written sentences.
+    - godot
     # Complain about TODO, FIXME, etc comments as these indicate incomplete code.
     - godox
     # Keep the cyclomatic complexity of functions to a reasonable level.

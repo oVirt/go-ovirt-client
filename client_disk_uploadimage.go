@@ -306,7 +306,8 @@ func (u *uploadImageProgress) transferImage(transfer imageTransfer, transferURL 
 	)
 }
 
-// putRequest performs a single HTTP put request
+// putRequest performs a single HTTP put request to upload an image. This can be called multiple times to retry an
+// upload.
 func (u *uploadImageProgress) putRequest(transferURL string, transfer imageTransfer) error {
 	// We ensure that the reader is at the first byte before attempting a PUT request, otherwise we may upload an
 	// incomplete image.
