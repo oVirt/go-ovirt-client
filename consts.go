@@ -1,5 +1,7 @@
 package ovirtclient
 
-const qcowHeaderSize = 32
-const qcowMagicBytes = "QFI\xfb"
-const qcowSizeStartByte = 24
+const (
+	qcowHeaderSize    = 32
+	qcowMagicBytes    = "QFI\xfb"
+	qcowSizeStartByte = 24
+)

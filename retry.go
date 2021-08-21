@@ -226,8 +226,7 @@ func AutoRetry() RetryStrategy {
 	}
 }
 
-type autoRetryStrategy struct {
-}
+type autoRetryStrategy struct{}
 
 func (a *autoRetryStrategy) Continue(err error, action string) error {
 	var engineErr EngineError
@@ -302,7 +301,6 @@ func (m *maxTriesStrategy) Continue(err error, action string) error {
 		)
 	}
 	return nil
-
 }
 
 func (m *maxTriesStrategy) Wait(_ error) interface{} {

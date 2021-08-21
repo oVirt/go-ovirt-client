@@ -259,7 +259,6 @@ func (u *uploadImageProgress) upload() {
 
 // processUpload is the function that does the actual upload of the image.
 func (u *uploadImageProgress) processUpload() error {
-
 	if err := u.createDisk(); err != nil {
 		u.removeDisk()
 		return err

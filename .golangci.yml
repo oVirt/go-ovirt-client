@@ -83,6 +83,9 @@ linters:
 
     # Enforce consistent import aliases. Not a big deal, but still makes for nicer reading.
     - importas
+    # Enforce proper white-space handling.
+    - gofumpt
+    - whitespace
 
     # endregion
 linters-settings:
