@@ -51,7 +51,7 @@ func (o *oVirtClient) StartImageUpload(
 		return nil, err
 	}
 
-	newCtx, cancel := context.WithCancel(context.Background()) //nolint:govet
+	newCtx, cancel := context.WithCancel(context.Background())
 
 	disk, err := o.createDiskForUpload(storageDomainID, alias, format, qcowSize, sparse, cancel)
 	if err != nil {

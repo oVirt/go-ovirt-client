@@ -143,7 +143,7 @@ func (i *imageDownload) attemptTransferImage(transferURL string) (*http.Response
 	if err != nil {
 		return nil, wrap(err, EBug, "failed to create HTTP request to %s", transferURL)
 	}
-	httpResponse, err := i.httpClient.Do(req) //nolint:bodyclose
+	httpResponse, err := i.httpClient.Do(req)
 	if err != nil {
 		return httpResponse, wrap(
 			err,
