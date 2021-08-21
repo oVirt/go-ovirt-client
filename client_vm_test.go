@@ -10,8 +10,7 @@ func TestVMListShouldNotFail(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	_, err := client.ListVMs()
-	if err != nil {
+	if _, err := client.ListVMs(); err != nil {
 		t.Fatal(err)
 	}
 }
