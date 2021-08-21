@@ -29,7 +29,8 @@ type ExtraSettings interface {
 //
 //   username
 //
-// This is the username for the oVirt engine. This must contain the profile separated with an @ sign. For example, admin@internal.
+// This is the username for the oVirt engine. This must contain the profile separated with an @ sign. For example,
+// admin@internal.
 //
 //   password
 //
@@ -45,7 +46,8 @@ type ExtraSettings interface {
 //
 //   extraSettings
 //
-// This is an implementation of the ExtraSettings interface, allowing for customization of headers and turning on compression.
+// This is an implementation of the ExtraSettings interface, allowing for customization of headers and turning on
+// compression.
 //
 // TLS
 //

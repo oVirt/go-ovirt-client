@@ -31,31 +31,61 @@ type StorageDomain interface {
 
 // StorageDomainStatus represents the status a domain can be in. Either this status field, or the
 // StorageDomainExternalStatus must be set.
+//
+// Note: this is not well documented due to missing source documentation. If you know something about these statuses
+// please contribute here:
+// https://github.com/oVirt/ovirt-engine-api-model/blob/master/src/main/java/types/StorageDomainStatus.java
 type StorageDomainStatus string
 
 const (
-	StorageDomainStatusActivating              StorageDomainStatus = "activating"
-	StorageDomainStatusActive                  StorageDomainStatus = "active"
-	StorageDomainStatusDetaching               StorageDomainStatus = "detaching"
-	StorageDomainStatusInactive                StorageDomainStatus = "inactive"
-	StorageDomainStatusLocked                  StorageDomainStatus = "locked"
-	StorageDomainStatusMaintenance             StorageDomainStatus = "maintenance"
-	StorageDomainStatusMixed                   StorageDomainStatus = "mixed"
+	// StorageDomainStatusActivating indicates that the storage domain is currently activating and will soon be active.
+	StorageDomainStatusActivating StorageDomainStatus = "activating"
+	// StorageDomainStatusActive is the normal status for a storage domain when it's working.
+	StorageDomainStatusActive StorageDomainStatus = "active"
+	// StorageDomainStatusDetaching is the status when it is being disconnected.
+	StorageDomainStatusDetaching StorageDomainStatus = "detaching"
+	// StorageDomainStatusInactive is an undocumented status of the storage domain.
+	StorageDomainStatusInactive StorageDomainStatus = "inactive"
+	// StorageDomainStatusLocked is an undocumented status of the storage domain.
+	StorageDomainStatusLocked StorageDomainStatus = "locked"
+	// StorageDomainStatusMaintenance is an undocumented status of the storage domain.
+	StorageDomainStatusMaintenance StorageDomainStatus = "maintenance"
+	// StorageDomainStatusMixed is an undocumented status of the storage domain.
+	StorageDomainStatusMixed StorageDomainStatus = "mixed"
+	// StorageDomainStatusPreparingForMaintenance is an undocumented status of the storage domain.
 	StorageDomainStatusPreparingForMaintenance StorageDomainStatus = "preparing_for_maintenance"
-	StorageDomainStatusUnattached              StorageDomainStatus = "unattached"
-	StorageDomainStatusUnknown                 StorageDomainStatus = "unknown"
-	StorageDomainStatusNA                      StorageDomainStatus = ""
+	// StorageDomainStatusUnattached is an undocumented status of the storage domain.
+	StorageDomainStatusUnattached StorageDomainStatus = "unattached"
+	// StorageDomainStatusUnknown is an undocumented status of the storage domain.
+	StorageDomainStatusUnknown StorageDomainStatus = "unknown"
+	// StorageDomainStatusNA indicates that the storage domain does not have a status. Please check the external status
+	// instead.
+	StorageDomainStatusNA StorageDomainStatus = ""
 )
 
-// StorageDomainExternalStatus represents the status of an external storage domain.
+// StorageDomainExternalStatus represents the status of an external storage domain. This status is updated externally.
+//
+// Note: this is not well-defined as the oVirt model has only a very generic description. See
+// https://github.com/oVirt/ovirt-engine-api-model/blob/9869596c298925538d510de5019195b488970738/src/main/java/types/ExternalStatus.java
+// for details.
 type StorageDomainExternalStatus string
 
 const (
-	StorageDomainExternalStatusNA      StorageDomainExternalStatus = ""
-	StorageDomainExternalStatusError   StorageDomainExternalStatus = "error"
+	// StorageDomainExternalStatusNA represents an external status that is not applicable.
+	// Most likely, the status should be obtained from StorageDomainStatus, since the
+	// storage domain in question is not an external storage.
+	StorageDomainExternalStatusNA StorageDomainExternalStatus = ""
+	// StorageDomainExternalStatusError indicates an error state.
+	StorageDomainExternalStatusError StorageDomainExternalStatus = "error"
+	// StorageDomainExternalStatusFailure indicates a failure state.
 	StorageDomainExternalStatusFailure StorageDomainExternalStatus = "failure"
-	StorageDomainExternalStatusInfo    StorageDomainExternalStatus = "info"
-	StorageDomainExternalStatusOk      StorageDomainExternalStatus = "ok"
+	// StorageDomainExternalStatusInfo indicates an OK status, but there is information available for the administrator
+	// that might be relevant.
+	StorageDomainExternalStatusInfo StorageDomainExternalStatus = "info"
+	// StorageDomainExternalStatusOk indicates a working status.
+	StorageDomainExternalStatusOk StorageDomainExternalStatus = "ok"
+	// StorageDomainExternalStatusWarning indicates that the storage domain has warnings that may be relevant for the
+	// administrator.
 	StorageDomainExternalStatusWarning StorageDomainExternalStatus = "warning"
 )
 

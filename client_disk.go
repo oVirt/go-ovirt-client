@@ -88,6 +88,9 @@ type DiskClient interface {
 	RemoveDisk(diskID string, retries ...RetryStrategy) error
 }
 
+// ImageDownloadReader is a special reader for reading image downloads. On the first Read call
+// it waits until the image download is ready and then returns the desired bytes. It also
+// tracks how many bytes are read for an async display of a progress bar.
 type ImageDownloadReader interface {
 	io.Reader
 	// Read reads the specified bytes from the disk image. This call will block if
@@ -148,8 +151,12 @@ type Disk interface {
 type DiskStatus string
 
 const (
-	DiskStatusOK      DiskStatus = "ok"
-	DiskStatusLocked  DiskStatus = "locked"
+	// DiskStatusOK represents a disk status that operations can be performed on.
+	DiskStatusOK DiskStatus = "ok"
+	// DiskStatusLocked represents a disk status where no operations can be performed on the disk.
+	DiskStatusLocked DiskStatus = "locked"
+	// DiskStatusIllegal indicates that the disk cannot be accessed by the virtual machine, and the user needs
+	// to take action to resolve the issue.
 	DiskStatusIllegal DiskStatus = "illegal"
 )
 
@@ -170,11 +177,21 @@ type UploadImageProgress interface {
 	Done() <-chan struct{}
 }
 
-// ImageFormat is a constant for representing the format that images can be in.
+// ImageFormat is a constant for representing the format that images can be in. This is relevant
+// for both image uploads and image downloads, as the oVirt engine has the capability of converting
+// between these formats.
+//
+// Note: the mocking facility cannot convert between the formats due to the complexity of the QCOW2
+// format. It is recommended to write tests only using the raw format as comparing QCOW2 files
+// is complex.
 type ImageFormat string
 
 const (
+	// ImageFormatCow is an image conforming to the QCOW2 image format. This image format can use
+	// compression, supports snapshots, and other features.
+	// See https://github.com/qemu/qemu/blob/master/docs/interop/qcow2.txt for details.
 	ImageFormatCow ImageFormat = "cow"
+	// ImageFormatRaw is not actually a format, it only contains the raw bytes on the block device.
 	ImageFormatRaw ImageFormat = "raw"
 )
 

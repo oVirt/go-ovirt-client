@@ -27,7 +27,7 @@ type NIC interface {
 	// VNICProfileID returns the ID of the VNIC profile in use by the NIC.
 	VNICProfileID() string
 
-	// GetVM fetches an up to date copy of the virtual machine this VM is attached to. This involves an API call and
+	// GetVM fetches an up to date copy of the virtual machine this NIC is attached to. This involves an API call and
 	// may be slow.
 	GetVM(retries ...RetryStrategy) (VM, error)
 	// GetVNICProfile retrieves the VNIC profile associated with this NIC. This involves an API call and may be slow.

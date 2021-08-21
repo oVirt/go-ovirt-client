@@ -11,7 +11,9 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-var correlationIDRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+// correlationIDRand is a random generator for selecting letters to put in the correlation ID. This does not need
+// to be cryptographically strong as it is short-lived.
+var correlationIDRand = rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec,gochecknoglobals
 
 // generateCorrelationID generates a random ID usable for correlation.
 func generateCorrelationID(prefix string) string {

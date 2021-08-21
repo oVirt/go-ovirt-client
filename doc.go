@@ -4,11 +4,11 @@ for the oVirt API, as well as a mocking facility for testing purposes.
 
 Reading this documentation
 
-This documentation contain two parts. This introduction explains setting up the client with the credentials. The API
+This documentation contains two parts. This introduction explains setting up the client with the credentials. The API
 doc contains the individual API calls.
 
-When reading the API doc, start with the Client interface: it contains all components of the API. The individual API's,
-their documentation and examples are located in subinterfaces, such as DiskClient.
+When reading the API doc, start with the Client interface: it contains all components of the API. The individual
+API's, their documentation and examples are located in subinterfaces, such as DiskClient.
 
 Creating a client
 
@@ -57,8 +57,8 @@ ovirtclient.NewTestHelperFromEnv() function:
 
     helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
 
-This function will inspect environment variables to determine if a connection to a live oVirt engine can be estabilshed.
-The following environment variables are supported:
+This function will inspect environment variables to determine if a connection to a live oVirt engine can be
+established. The following environment variables are supported:
 
   OVIRT_URL
 
@@ -142,8 +142,8 @@ You can also create the test helper manually:
 
 Logging
 
-This library provides extensive logging. Each API interaction is logged on the debug level, and other messages are added
-on other levels. In order to provide logging this library uses the go-ovirt-client-log
+This library provides extensive logging. Each API interaction is logged on the debug level, and other messages are
+added on other levels. In order to provide logging this library uses the go-ovirt-client-log
 (https://github.com/oVirt/go-ovirt-client-log) interface definition:
 
     type Logger interface {
@@ -206,7 +206,9 @@ The configured tls variable can then be passed to the New() function to create a
 
 Retries
 
-This library attempts to retry API calls that can be retried if possible. Each function has a sensible retry policy. However, you may want to customize the retries by passing one or more retry flags. The following retry flags are supported:
+This library attempts to retry API calls that can be retried if possible. Each function has a sensible retry policy.
+However, you may want to customize the retries by passing one or more retry flags. The following retry flags are
+supported:
 
     ovirtclient.ContextStrategy(ctx)
 
@@ -214,7 +216,8 @@ This strategy will stop retries when the context parameter is canceled.
 
     ovirtclient.ExponentialBackoff(factor)
 
-This strategy adds a wait time after each time, which is increased by the given factor on each try. The default is a backoff with a factor of 2.
+This strategy adds a wait time after each time, which is increased by the given factor on each try. The default is a
+backoff with a factor of 2.
 
     ovirtclient.AutoRetry()
 
@@ -222,7 +225,8 @@ This strategy will cancel retries if the error in question is a permanent error.
 
     ovirtclient.MaxTries(tries)
 
-This strategy will abort retries if a maximum number of tries is reached. On complex calls the retries are counted per underlying API call.
+This strategy will abort retries if a maximum number of tries is reached. On complex calls the retries are counted per
+underlying API call.
 
     ovirtclient.Timeout(duration)
 

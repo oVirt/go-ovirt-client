@@ -50,10 +50,12 @@ type VM interface {
 	ListNICs(retries ...RetryStrategy) ([]NIC, error)
 }
 
-// OptionalVMParameters are a list of parameters that
-type OptionalVMParameters interface {
-}
+// OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
+// interface is expected to be extended in the future.
+type OptionalVMParameters interface{}
 
+// BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
+// builder functions. This is placed here for future use.
 type BuildableVMParameters interface {
 	OptionalVMParameters
 }

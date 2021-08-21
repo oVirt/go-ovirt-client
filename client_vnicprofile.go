@@ -14,9 +14,14 @@ type VNICProfileClient interface {
 	ListVNICProfiles(retries ...RetryStrategy) ([]VNICProfile, error)
 }
 
+// VNICProfile is a collection of settings that can be applied to individual virtual network interface cards in the
+// Engine.
 type VNICProfile interface {
+	// ID returns the identifier of the VNICProfile.
 	ID() string
+	// Name returns the human-readable name of the VNIC profile.
 	Name() string
+	// NetworkID returns the network ID the VNICProfile is attached to.
 	NetworkID() string
 
 	// Network fetches the network object from the oVirt engine. This is an API call and may be slow.
