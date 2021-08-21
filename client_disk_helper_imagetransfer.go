@@ -125,13 +125,14 @@ func (i *imageTransferImpl) checkStatusCode(statusCode int) error {
 	if statusCode < 300 {
 		return nil
 	}
-	if statusCode < 399 {
+	switch {
+	case statusCode < 399:
 		return newError(
 			ENotAnOVirtEngine,
 			"received redirect response for image %s",
 			i.direction,
 		)
-	} else if statusCode < 499 {
+	case statusCode < 499:
 		if statusCode == 401 {
 			return newError(
 				EAccessDenied,
@@ -145,7 +146,7 @@ func (i *imageTransferImpl) checkStatusCode(statusCode int) error {
 			statusCode,
 			i.direction,
 		)
-	} else {
+	default:
 		return newError(
 			EPermanentHTTPError,
 			"unexpected server error status code %d while attempting to %s image",
@@ -449,22 +450,23 @@ func (i *imageTransferImpl) optionsRequest(parsedTransferURL *url.URL) error {
 		_ = res.Body.Close()
 	}()
 	statusCode := res.StatusCode
-	if statusCode < 199 {
+	switch {
+	case statusCode < 199:
 		return newError(
 			EConnection,
 			"HTTP connection error while calling %s",
 			parsedTransferURL.String(),
 		)
-	} else if statusCode < 399 {
+	case statusCode < 399:
 		return nil
-	} else if statusCode < 499 {
+	case statusCode < 499:
 		return newError(
 			EPermanentHTTPError,
 			"HTTP 4xx status code returned from URL %s (%d)",
 			parsedTransferURL.String(),
 			res.StatusCode,
 		)
-	} else {
+	default:
 		return newError(
 			EConnection,
 			"non-200 status code returned from URL %s (%d)",

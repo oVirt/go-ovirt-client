@@ -226,7 +226,7 @@ func (i *imageDownload) Read(p []byte) (n int, err error) {
 	n, err = i.reader.Read(p)
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	i.bytesRead = i.bytesRead + uint64(n)
+	i.bytesRead += uint64(n)
 
 	if i.bytesRead == i.size {
 		go func() {

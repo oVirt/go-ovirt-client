@@ -157,10 +157,8 @@ func setupBlankTemplateID(blankTemplateID string, client Client) (id string, err
 		if err != nil {
 			return "", fmt.Errorf("failed to find blank template (%w)", err)
 		}
-	} else {
-		if err := verifyBlankTemplateID(client, blankTemplateID); err != nil {
-			return "", fmt.Errorf("failed to verify blank template ID %s (%w)", blankTemplateID, err)
-		}
+	} else if err := verifyBlankTemplateID(client, blankTemplateID); err != nil {
+		return "", fmt.Errorf("failed to verify blank template ID %s (%w)", blankTemplateID, err)
 	}
 	return blankTemplateID, nil
 }
@@ -171,10 +169,8 @@ func setupTestStorageDomainID(storageDomainID string, client Client) (id string,
 		if err != nil {
 			return "", fmt.Errorf("failed to find storage domain to test on (%w)", err)
 		}
-	} else {
-		if err := verifyTestStorageDomainID(client, storageDomainID); err != nil {
-			return "", fmt.Errorf("failed to verify storage domain ID %s (%w)", storageDomainID, err)
-		}
+	} else if err := verifyTestStorageDomainID(client, storageDomainID); err != nil {
+		return "", fmt.Errorf("failed to verify storage domain ID %s (%w)", storageDomainID, err)
 	}
 	return storageDomainID, nil
 }
@@ -185,10 +181,8 @@ func setupTestClusterID(clusterID string, client Client) (id string, err error) 
 		if err != nil {
 			return "", fmt.Errorf("failed to find a cluster to test on (%w)", err)
 		}
-	} else {
-		if err := verifyTestClusterID(client, clusterID); err != nil {
-			return "", fmt.Errorf("failed to verify cluster ID %s (%w)", clusterID, err)
-		}
+	} else if err := verifyTestClusterID(client, clusterID); err != nil {
+		return "", fmt.Errorf("failed to verify cluster ID %s (%w)", clusterID, err)
 	}
 	return clusterID, nil
 }

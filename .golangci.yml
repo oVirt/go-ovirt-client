@@ -23,6 +23,8 @@ linters:
     - nestif
     # Prevent naked returns in long functions
     - nakedret
+    # Make Go code more readable
+    - gocritic
     # We don't want hidden global scope, so disallow global variables. You can disable this with
     # // nolint:gochecknoglobals where global variables are legitimately needed.
     - gochecknoglobals

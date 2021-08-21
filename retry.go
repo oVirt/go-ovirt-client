@@ -202,7 +202,7 @@ type exponentialBackoff struct {
 
 func (e *exponentialBackoff) Wait(_ error) interface{} {
 	waitTime := e.waitTime
-	e.waitTime = e.waitTime * time.Duration(e.factor)
+	e.waitTime *= time.Duration(e.factor)
 	return time.After(waitTime)
 }
 
