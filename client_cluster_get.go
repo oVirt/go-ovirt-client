@@ -25,7 +25,7 @@ func (o *oVirtClient) GetCluster(id string, retries ...RetryStrategy) (result Cl
 					id,
 				)
 			}
-			result, err = convertSDKCluster(sdkObject)
+			result, err = convertSDKCluster(sdkObject, o)
 			if err != nil {
 				return wrap(
 					err,

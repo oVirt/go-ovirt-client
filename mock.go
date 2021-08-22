@@ -18,11 +18,16 @@ type MockClient interface {
 type mockClient struct {
 	url            string
 	lock           *sync.Mutex
-	storageDomains map[string]storageDomain
+	vms            map[string]*vm
+	storageDomains map[string]*storageDomain
 	disks          map[string]*diskWithData
-	clusters       map[string]cluster
-	hosts          map[string]host
-	templates      map[string]template
+	clusters       map[string]*cluster
+	hosts          map[string]*host
+	templates      map[string]*template
+	nics           map[string]*nic
+	vnicProfiles   map[string]*vnicProfile
+	networks       map[string]*network
+	dataCenters    map[string]*datacenterWithClusters
 }
 
 func (m *mockClient) GetURL() string {

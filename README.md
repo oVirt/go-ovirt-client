@@ -1,6 +1,6 @@
 # goVirt: an easy-to-use overlay for the oVirt Go SDK
 
-<p align="center"><strong>⚠⚠⚠ This library is early in development. ⚠⚠⚠</strong></p>
+<p align="center"><strong>🚧 This library is early in development. 🚧</strong></p>
 
 This library is early in development, and the API may change at any time until version 1.0.0. We hope to stabilize the API soon, providing the core functionality on an as-needed basis. If you need an API integrated, please open an issue. 
 
@@ -78,11 +78,35 @@ func main() {
 
 ## Test helper
 
-This library also provides a test helper for integration testing against the oVirt engine. It allows for automatically discovering a usable storage domain, host, clusters, etc:
+The test helper can work in two ways:
+
+Either it sets up test fixtures in the mock client, or it sets up a live connection and identifies a usable storage
+domain, cluster, etc. for testing purposes.
+
+The easiest way to set up the test helper is using environment variables. To do that, you can use the
+ovirtclient.NewTestHelperFromEnv() function:
 
 ```go
-package main
+helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+```
 
+This function will inspect environment variables to determine if a connection to a live oVirt engine can be estabilshed.
+The following environment variables are supported:
+
+- `OVIRT_URL`: URL of the oVirt engine.
+- `OVIRT_USERNAME`: The username for the oVirt engine.
+- `OVIRT_PASSWORD`: The password for the oVirt engine
+- `OVIRT_CAFILE`: A file containing the CA certificate in PEM format.
+- `OVIRT_CA_BUNDLE`: Provide the CA certificate in PEM format directly.
+- `OVIRT_INSECURE`: Disable certificate verification if set. Not recommended.
+- `OVIRT_CLUSTER_ID`: The cluster to use for testing. Will be automatically chosen if not provided.
+- `OVIRT_BLANK_TEMPLATE_ID`: ID of the blank template. Will be automatically chosen if not provided.
+- `OVIRT_STORAGE_DOMAIN_ID`: Storage domain to use for testing. Will be automatically chosen if not provided.
+- `OVIRT_VNIC_PROFILE_ID`: VNIC profile to use for testing. Will be automatically chosen if not provided.
+
+You can also create the test helper manually:
+
+```go
 import (
     "os"
     "testing"
@@ -92,32 +116,24 @@ import (
 )
 
 func TestSomething(t *testing.T) {
-    // Create a logger that logs to the standard Go log here:
+    // Create a logger that logs to the standard Go log here
     logger := ovirtclientlog.NewTestLogger(t)
-    // Set to true to use in-memory mock, see below
+
+    // Set to true to use in-memory mock, otherwise this will use a live connection.
     mock := false
-    
-    tls := ovirtclient.TLS()
-    
-    if caFile := os.Getenv("OVIRT_CAFILE"); caFile != "" {
-    	tls.CACertsFromFile(caFile)
-    }
-    if caBundle := os.Getenv("OVIRT_CABUNDLE"); caBundle != "" {
-        tls.CACertsFromMemory([]byte(caBundle))
-	}
-	if os.Getenv("OVIRT_INSECURE") != "" {
-		tls.Insecure()
-    }
-    
+
     // Create the test helper
     helper, err := ovirtclient.NewTestHelper(
-        os.Getenv("OVIRT_URL"),
-        os.Getenv("OVIRT_USER"),
-        os.Getenv("OVIRT_PASSWORD"),
-        tls,
+        "https://localhost/ovirt-engine/",
+        "admin@internal",
+        "super-secret",
+        ovirtclient.TLS().CACertsFromSystem(),
+        // The following parameters define which infrastructure parts to use for testing.
+        // Leave these empty for auto-detection / fixture setup.
         os.Getenv("OVIRT_CLUSTER_ID"),
         os.Getenv("OVIRT_BLANK_TEMPLATE_ID"),
         os.Getenv("OVIRT_STORAGE_DOMAIN_ID"),
+        os.Getenv("OVIRT_VNIC_PROFILE_ID"),
         mock,
         logger,
     )
@@ -187,4 +203,4 @@ You can also get a properly preconfigured HTTP client if you need it:
 httpClient := client.GetHTTPClient()
 ```
 
-**⚠ Warning:** If you code relies on the SDK or HTTP clients you will not be able to use the mock functionality described above for testing.
+**🚧 Warning:** If you code relies on the SDK or HTTP clients you will not be able to use the mock functionality described above for testing.

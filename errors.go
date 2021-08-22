@@ -16,7 +16,6 @@ type ErrorCode string
 const EAccessDenied ErrorCode = "access_denied"
 
 // ENotAnOVirtEngine signals that the server did not respond with a proper oVirt response.
-// the cre
 const ENotAnOVirtEngine ErrorCode = "not_ovirt_engine"
 
 // ETLSError signals that the provided CA certificate did not match the server that was attempted to connect.
@@ -105,14 +104,14 @@ func (e ErrorCode) CanAutoRetry() bool {
 //
 // Usage:
 //
-// if err != nil {
+//   if err != nil {
 //     var realErr ovirtclient.EngineError
 //     if errors.As(err, &realErr) {
 //          // deal with EngineError
 //     } else {
 //          // deal with other errors
 //     }
-// }
+//   }
 type EngineError interface {
 	error
 
@@ -167,6 +166,10 @@ func (e *engineError) CanAutoRetry() bool {
 	return e.code.CanAutoRetry()
 }
 
+func newFieldNotFound(object string, field string) error {
+	return newError(EFieldMissing, "no %s field found on %s object", field, object)
+}
+
 func newError(code ErrorCode, format string, args ...interface{}) EngineError {
 	return &engineError{
 		message: fmt.Sprintf(format, args...),
@@ -203,12 +206,12 @@ func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineE
 //
 // Usage:
 //
-// if err != nil {
+//   if err != nil {
 //     if wrappedError := identify(err); wrappedError != nil {
 //         return wrappedError
 //     }
 //     // Handle unknown error here
-// }
+//   }
 func identify(err error) error {
 	return realIdentify(err)
 }

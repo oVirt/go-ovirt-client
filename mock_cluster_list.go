@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) ListClusters(retries ...RetryStrategy) ([]Cluster, error) {
+func (m *mockClient) ListClusters(_ ...RetryStrategy) ([]Cluster, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	result := make([]Cluster, len(m.clusters))

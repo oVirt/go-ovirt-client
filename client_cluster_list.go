@@ -20,7 +20,7 @@ func (o *oVirtClient) ListClusters(retries ...RetryStrategy) (result []Cluster, 
 			}
 			result = make([]Cluster, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDKCluster(sdkObject)
+				result[i], e = convertSDKCluster(sdkObject, o)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert cluster during listing item #%d", i)
 				}

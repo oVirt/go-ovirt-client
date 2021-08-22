@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) ListDisks(retries ...RetryStrategy) ([]Disk, error) {
+func (m *mockClient) ListDisks(_ ...RetryStrategy) ([]Disk, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	result := make([]Disk, len(m.disks))

@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) ListStorageDomains(retries ...RetryStrategy) ([]StorageDomain, error) {
+func (m *mockClient) ListStorageDomains(_ ...RetryStrategy) ([]StorageDomain, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	result := make([]StorageDomain, len(m.storageDomains))

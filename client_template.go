@@ -22,7 +22,7 @@ type Template interface {
 	Description() string
 }
 
-func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template) (Template, error) {
+func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template, client Client) (Template, error) {
 	id, ok := sdkTemplate.Id()
 	if !ok {
 		return nil, newError(EFieldMissing, "template does not contain ID")
@@ -36,6 +36,7 @@ func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template) (Template, error) {
 		return nil, newError(EFieldMissing, "template does not contain a description")
 	}
 	return &template{
+		client:      client,
 		id:          id,
 		name:        name,
 		description: description,
@@ -43,6 +44,7 @@ func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template) (Template, error) {
 }
 
 type template struct {
+	client      Client
 	id          string
 	name        string
 	description string

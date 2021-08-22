@@ -2,11 +2,11 @@
 
 package ovirtclient
 
-func (m *mockClient) GetTemplate(id string, retries ...RetryStrategy) (Template, error) {
+func (m *mockClient) GetTemplate(id string, _ ...RetryStrategy) (Template, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if disk, ok := m.templates[id]; ok {
-		return disk, nil
+	if item, ok := m.templates[id]; ok {
+		return item, nil
 	}
 	return nil, newError(ENotFound, "template with ID %s not found", id)
 }

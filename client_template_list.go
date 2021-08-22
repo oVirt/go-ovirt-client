@@ -20,7 +20,7 @@ func (o *oVirtClient) ListTemplates(retries ...RetryStrategy) (result []Template
 			}
 			result = make([]Template, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDKTemplate(sdkObject)
+				result[i], e = convertSDKTemplate(sdkObject, o)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert template during listing item #%d", i)
 				}

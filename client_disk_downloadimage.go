@@ -45,7 +45,6 @@ func (o *oVirtClient) StartImageDownload(diskID string, format ImageFormat, retr
 	return dl, nil
 }
 
-// DownloadImage is a simplified function for image download. See
 func (o *oVirtClient) DownloadImage(
 	diskID string,
 	format ImageFormat,

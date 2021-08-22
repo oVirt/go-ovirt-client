@@ -15,6 +15,10 @@ type Client interface {
 
 	DiskClient
 	VMClient
+	NICClient
+	VNICProfileClient
+	NetworkClient
+	DatacenterClient
 	ClusterClient
 	StorageDomainClient
 	HostClient
@@ -29,7 +33,7 @@ type ClientWithLegacySupport interface {
 	GetSDKClient() *ovirtsdk4.Connection
 
 	// GetHTTPClient returns a configured HTTP client for the oVirt engine. This can be used to send manual
-	// HTTP request to the oVirt engine.
+	// HTTP requests to the oVirt engine.
 	GetHTTPClient() http.Client
 
 	Client

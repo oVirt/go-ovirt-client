@@ -2,11 +2,11 @@
 
 package ovirtclient
 
-func (m *mockClient) GetHost(id string, retries ...RetryStrategy) (Host, error) {
+func (m *mockClient) GetHost(id string, _ ...RetryStrategy) (Host, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if disk, ok := m.hosts[id]; ok {
-		return disk, nil
+	if item, ok := m.hosts[id]; ok {
+		return item, nil
 	}
 	return nil, newError(ENotFound, "host with ID %s not found", id)
 }

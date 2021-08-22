@@ -23,16 +23,33 @@ type ExtraSettings interface {
 
 // New creates a new copy of the enhanced oVirt client. It accepts the following options:
 //
-// - url is the oVirt engine URL. This must start with http:// or https:// and typically ends with /ovirt-engine/.
-// - username is the username for the oVirt engine. This must contain the profile separated with an @ sign. For example,
-//            admin@internal.
-// - password must be the password for the oVirt engine. Other authentication mechanisms are not supported.
-// - tls is a TLSProvider responsible for supplying TLS configuration to the client. See below for a simple example.
-// - logger is an implementation of ovirtclientlog.Logger to provide logging.
-// - extraSettings is an implementation of the ExtraSettings interface, allowing for customization of headers and
-//                 turning on compression.
+//   url
 //
-// ## TLS
+// This is the oVirt engine URL. This must start with http:// or https:// and typically ends with /ovirt-engine/.
+//
+//   username
+//
+// This is the username for the oVirt engine. This must contain the profile separated with an @ sign. For example,
+// admin@internal.
+//
+//   password
+//
+// This is the password for the oVirt engine. Other authentication mechanisms are not supported.
+//
+//   tls
+//
+// This is a TLSProvider responsible for supplying TLS configuration to the client. See below for a simple example.
+//
+//   logger
+//
+// This is an implementation of ovirtclientlog.Logger to provide logging.
+//
+//   extraSettings
+//
+// This is an implementation of the ExtraSettings interface, allowing for customization of headers and turning on
+// compression.
+//
+// TLS
 //
 // This library tries to follow best practices when it comes to connection security. Therefore, you will need to pass
 // a valid implementation of the TLSProvider interface in the tls parameter. The easiest way to do this is calling
@@ -62,7 +79,7 @@ type ExtraSettings interface {
 //        logger, extraSettings
 //    )
 //
-// ## Extra settings
+// Extra settings
 //
 // This library also supports customizing the connection settings. In order to stay backwards compatible the
 // extraSettings parameter must implement the ovirtclient.ExtraSettings interface. Future versions of this library will

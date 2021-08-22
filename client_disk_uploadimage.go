@@ -390,7 +390,7 @@ func (u *uploadImageProgress) attemptCreateDisk() error {
 	if !ok {
 		return newError(EFieldMissing, "add disk response did not contain a disk")
 	}
-	disk, err := convertSDKDisk(sdkDisk)
+	disk, err := convertSDKDisk(sdkDisk, u.cli)
 	if err != nil {
 		return wrap(err, EBug, "failed to convert disk object")
 	}

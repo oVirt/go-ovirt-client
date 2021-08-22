@@ -20,7 +20,7 @@ func (o *oVirtClient) ListHosts(retries ...RetryStrategy) (result []Host, err er
 			}
 			result = make([]Host, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDKHost(sdkObject)
+				result[i], e = convertSDKHost(sdkObject, o)
 				if e != nil {
 					return wrap(e, EBug, "failed to convert host during listing item #%d", i)
 				}

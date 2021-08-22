@@ -25,7 +25,7 @@ func (o *oVirtClient) GetHost(id string, retries ...RetryStrategy) (result Host,
 					id,
 				)
 			}
-			result, err = convertSDKHost(sdkObject)
+			result, err = convertSDKHost(sdkObject, o)
 			if err != nil {
 				return wrap(
 					err,

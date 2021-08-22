@@ -25,7 +25,7 @@ func (o *oVirtClient) GetTemplate(id string, retries ...RetryStrategy) (result T
 					id,
 				)
 			}
-			result, err = convertSDKTemplate(sdkObject)
+			result, err = convertSDKTemplate(sdkObject, o)
 			if err != nil {
 				return wrap(
 					err,

@@ -2,11 +2,11 @@
 
 package ovirtclient
 
-func (m *mockClient) Get{{ .ID }}(id string, retries ...RetryStrategy) ({{ .ID }}, error) {
+func (m *mockClient) Get{{ .Object }}(id string, _ ...RetryStrategy) ({{ .Object }}, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if disk, ok := m.{{ .ID | toLower }}s[id]; ok {
-		return disk, nil
+	if item, ok := m.{{ .ID | toLower }}s[id]; ok {
+		return item, nil
 	}
 	return nil, newError(ENotFound, "{{ .Name }} with ID %s not found", id)
 }

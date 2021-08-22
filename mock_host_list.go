@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) ListHosts(retries ...RetryStrategy) ([]Host, error) {
+func (m *mockClient) ListHosts(_ ...RetryStrategy) ([]Host, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	result := make([]Host, len(m.hosts))

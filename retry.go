@@ -128,6 +128,8 @@ func (r retryStrategyContainer) CanTimeout() bool {
 	return r.canTimeout
 }
 
+// RetryInstance is an instance created by the RetryStrategy for a single use. It may have internal state
+// and should not be reused.
 type RetryInstance interface {
 	// Continue returns an error if no more tries should be attempted. The error will be returned directly from the
 	// retry function. The passed action parameters can be used to create a meaningful error message.
