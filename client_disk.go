@@ -166,6 +166,9 @@ type Disk interface {
 		format ImageFormat,
 		retries ...RetryStrategy,
 	) (ImageDownloadReader, error)
+
+  // Remove removes the current disk in the oVirt engine.
+	Remove(retries ...RetryStrategy) error
 }
 
 // DiskStatus shows the status of a disk. Certain operations lock a disk, which is important because the disk can then
@@ -279,6 +282,10 @@ type disk struct {
 	storageDomainID string
 	status          DiskStatus
 	totalSize       uint64
+}
+
+func (d disk) Remove(retries ...RetryStrategy) error {
+	return d.client.RemoveDisk(d.id, retries...)
 }
 
 func (d disk) TotalSize() uint64 {
