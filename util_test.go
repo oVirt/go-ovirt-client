@@ -17,8 +17,10 @@ import (
 	"time"
 )
 
-var nextFreePort = 8080
-var nextFreePortLock = &sync.Mutex{}
+var (
+	nextFreePort     = 8080          // nolint:gochecknoglobals
+	nextFreePortLock = &sync.Mutex{} // nolint:gochecknoglobals
+)
 
 func getNextFreePort() int {
 	nextFreePortLock.Lock()
@@ -124,6 +126,7 @@ func newTestServer(port int, serverCert []byte, serverPrivKey []byte, handler ht
 			Certificates: []tls.Certificate{
 				cert,
 			},
+			MinVersion: tls.VersionTLS12,
 		},
 	}
 	return &testServer{
@@ -155,15 +158,13 @@ func (t *testServer) Stop() {
 	_ = t.srv.Shutdown(ctx)
 }
 
-type noopHandler struct {
-}
+type noopHandler struct{}
 
 func (t *noopHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(200)
 }
 
-type unauthorizedHandler struct {
-}
+type unauthorizedHandler struct{}
 
 func (u *unauthorizedHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(401)

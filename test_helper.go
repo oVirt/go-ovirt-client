@@ -115,7 +115,9 @@ func NewTestHelper(
 		storageDomainID: storageDomainID,
 		blankTemplateID: blankTemplateID,
 		vnicProfileID:   vnicProfileID,
-		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
+		// We are suppressing gosec linting here since rand is not used in a security-relevant context,
+		// only to generate random ID's for testing.
+		rand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}, nil
 }
 
@@ -126,30 +128,29 @@ func setupVNICProfileID(vnicProfileID string, clusterID string, client Client) (
 			return "", fmt.Errorf("failed to verify VNIC profile ID %s", vnicProfileID)
 		}
 		return vnicProfileID, nil
-	} else {
-		vnicProfiles, err := client.ListVNICProfiles()
-		if err != nil {
-			return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
-		}
-		for _, vnicProfile := range vnicProfiles {
-			network, err := vnicProfile.Network()
-			if err != nil {
-				return "", fmt.Errorf("failed to fetch network %s (%w)", vnicProfile.NetworkID(), err)
-			}
-			dc, err := network.Datacenter()
-			if err != nil {
-				return "", fmt.Errorf("failed to fetch datacenter from network %s (%w)", network.ID(), err)
-			}
-			hasCluster, err := dc.HasCluster(clusterID)
-			if err != nil {
-				return "", fmt.Errorf("failed to get datacenter clusters for %s", dc.ID())
-			}
-			if hasCluster {
-				return vnicProfile.ID(), nil
-			}
-		}
-		return "", fmt.Errorf("failed to find a valid VNIC profile ID for testing")
 	}
+	vnicProfiles, err := client.ListVNICProfiles()
+	if err != nil {
+		return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
+	}
+	for _, vnicProfile := range vnicProfiles {
+		network, err := vnicProfile.Network()
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch network %s (%w)", vnicProfile.NetworkID(), err)
+		}
+		dc, err := network.Datacenter()
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch datacenter from network %s (%w)", network.ID(), err)
+		}
+		hasCluster, err := dc.HasCluster(clusterID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get datacenter clusters for %s", dc.ID())
+		}
+		if hasCluster {
+			return vnicProfile.ID(), nil
+		}
+	}
+	return "", fmt.Errorf("failed to find a valid VNIC profile ID for testing")
 }
 
 func setupBlankTemplateID(blankTemplateID string, client Client) (id string, err error) {
@@ -158,10 +159,8 @@ func setupBlankTemplateID(blankTemplateID string, client Client) (id string, err
 		if err != nil {
 			return "", fmt.Errorf("failed to find blank template (%w)", err)
 		}
-	} else {
-		if err := verifyBlankTemplateID(client, blankTemplateID); err != nil {
-			return "", fmt.Errorf("failed to verify blank template ID %s (%w)", blankTemplateID, err)
-		}
+	} else if err := verifyBlankTemplateID(client, blankTemplateID); err != nil {
+		return "", fmt.Errorf("failed to verify blank template ID %s (%w)", blankTemplateID, err)
 	}
 	return blankTemplateID, nil
 }
@@ -172,10 +171,8 @@ func setupTestStorageDomainID(storageDomainID string, client Client) (id string,
 		if err != nil {
 			return "", fmt.Errorf("failed to find storage domain to test on (%w)", err)
 		}
-	} else {
-		if err := verifyTestStorageDomainID(client, storageDomainID); err != nil {
-			return "", fmt.Errorf("failed to verify storage domain ID %s (%w)", storageDomainID, err)
-		}
+	} else if err := verifyTestStorageDomainID(client, storageDomainID); err != nil {
+		return "", fmt.Errorf("failed to verify storage domain ID %s (%w)", storageDomainID, err)
 	}
 	return storageDomainID, nil
 }
@@ -186,10 +183,8 @@ func setupTestClusterID(clusterID string, client Client) (id string, err error) 
 		if err != nil {
 			return "", fmt.Errorf("failed to find a cluster to test on (%w)", err)
 		}
-	} else {
-		if err := verifyTestClusterID(client, clusterID); err != nil {
-			return "", fmt.Errorf("failed to verify cluster ID %s (%w)", clusterID, err)
-		}
+	} else if err := verifyTestClusterID(client, clusterID); err != nil {
+		return "", fmt.Errorf("failed to verify cluster ID %s (%w)", clusterID, err)
 	}
 	return clusterID, nil
 }
@@ -323,7 +318,7 @@ func (t *testHelper) GetStorageDomainID() string {
 	return t.storageDomainID
 }
 
-var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") // nolint:gochecknoglobals
 
 func (t *testHelper) GenerateRandomID(length uint) string {
 	b := make([]byte, length)

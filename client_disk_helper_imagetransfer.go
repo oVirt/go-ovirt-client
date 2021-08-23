@@ -122,37 +122,38 @@ type imageTransferImpl struct {
 
 // checkStatusCode takes a HTTP status code from the ImageIO endpoint and verifies it.
 func (i *imageTransferImpl) checkStatusCode(statusCode int) error {
-	if statusCode > 299 {
-		if statusCode < 399 {
+	if statusCode < 300 {
+		return nil
+	}
+	switch {
+	case statusCode < 399:
+		return newError(
+			ENotAnOVirtEngine,
+			"received redirect response for image %s",
+			i.direction,
+		)
+	case statusCode < 499:
+		if statusCode == 401 {
 			return newError(
-				ENotAnOVirtEngine,
-				"received redirect response for image %s",
-				i.direction,
-			)
-		} else if statusCode < 499 {
-			if statusCode == 401 {
-				return newError(
-					EAccessDenied,
-					"received unauthorized (401) status code for image %s",
-					i.direction,
-				)
-			}
-			return newError(
-				EPermanentHTTPError,
-				"unexpected client status code (%d) received for image %s",
-				statusCode,
-				i.direction,
-			)
-		} else {
-			return newError(
-				EPermanentHTTPError,
-				"unexpected server error status code %d while attempting to %s image",
-				statusCode,
+				EAccessDenied,
+				"received unauthorized (401) status code for image %s",
 				i.direction,
 			)
 		}
+		return newError(
+			EPermanentHTTPError,
+			"unexpected client status code (%d) received for image %s",
+			statusCode,
+			i.direction,
+		)
+	default:
+		return newError(
+			EPermanentHTTPError,
+			"unexpected server error status code %d while attempting to %s image",
+			statusCode,
+			i.direction,
+		)
 	}
-	return nil
 }
 
 // initialize sets up the image transfer in the specified direction. If successful, it returns
@@ -449,22 +450,23 @@ func (i *imageTransferImpl) optionsRequest(parsedTransferURL *url.URL) error {
 		_ = res.Body.Close()
 	}()
 	statusCode := res.StatusCode
-	if statusCode < 199 {
+	switch {
+	case statusCode < 199:
 		return newError(
 			EConnection,
 			"HTTP connection error while calling %s",
 			parsedTransferURL.String(),
 		)
-	} else if statusCode < 399 {
+	case statusCode < 399:
 		return nil
-	} else if statusCode < 499 {
+	case statusCode < 499:
 		return newError(
 			EPermanentHTTPError,
 			"HTTP 4xx status code returned from URL %s (%d)",
 			parsedTransferURL.String(),
 			res.StatusCode,
 		)
-	} else {
+	default:
 		return newError(
 			EConnection,
 			"non-200 status code returned from URL %s (%d)",

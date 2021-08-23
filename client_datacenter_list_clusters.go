@@ -35,5 +35,5 @@ func (o *oVirtClient) ListDatacenterClusters(id string, retries ...RetryStrategy
 			}
 			return nil
 		})
-	return
+	return result, err
 }

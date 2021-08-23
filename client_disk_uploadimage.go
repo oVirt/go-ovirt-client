@@ -51,7 +51,7 @@ func (o *oVirtClient) StartImageUpload(
 		return nil, err
 	}
 
-	newCtx, cancel := context.WithCancel(context.Background()) //nolint:govet
+	newCtx, cancel := context.WithCancel(context.Background())
 
 	disk, err := o.createDiskForUpload(storageDomainID, alias, format, qcowSize, sparse, cancel)
 	if err != nil {
@@ -63,14 +63,14 @@ func (o *oVirtClient) StartImageUpload(
 	}
 
 	return o.createProgress(
+		newCtx,
+		cancel,
 		alias,
 		qcowSize,
 		size,
 		reader,
 		storageDomainID,
 		sparse,
-		newCtx,
-		cancel,
 		disk,
 		retries,
 		format,
@@ -117,14 +117,14 @@ func (o *oVirtClient) createDiskForUpload(
 }
 
 func (o *oVirtClient) createProgress(
+	newCtx context.Context,
+	cancel context.CancelFunc,
 	alias string,
 	qcowSize uint64,
 	size uint64,
 	reader readSeekCloser,
 	storageDomainID string,
 	sparse bool,
-	newCtx context.Context,
-	cancel context.CancelFunc,
 	disk *ovirtsdk4.Disk,
 	retries []RetryStrategy,
 	format ImageFormat,
@@ -259,7 +259,6 @@ func (u *uploadImageProgress) upload() {
 
 // processUpload is the function that does the actual upload of the image.
 func (u *uploadImageProgress) processUpload() error {
-
 	if err := u.createDisk(); err != nil {
 		u.removeDisk()
 		return err
@@ -306,7 +305,8 @@ func (u *uploadImageProgress) transferImage(transfer imageTransfer, transferURL 
 	)
 }
 
-// putRequest performs a single HTTP put request
+// putRequest performs a single HTTP put request to upload an image. This can be called multiple times to retry an
+// upload.
 func (u *uploadImageProgress) putRequest(transferURL string, transfer imageTransfer) error {
 	// We ensure that the reader is at the first byte before attempting a PUT request, otherwise we may upload an
 	// incomplete image.

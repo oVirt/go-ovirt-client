@@ -181,16 +181,15 @@ func newError(code ErrorCode, format string, args ...interface{}) EngineError {
 // to the message automatically in Go style. If the passed error code is EUnidentified or not an EngineError
 // this function will attempt to identify the error deeper.
 func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineError {
-	realArgs := append(args, err)
+	// gocritic will complain on the following line due to appendAssign, but that's legit here.
+	realArgs := append(args, err) // nolint:gocritic
 	if code == EUnidentified {
 		var realErr EngineError
 		if errors.As(err, &realErr) {
 			code = realErr.Code()
-		} else {
-			if e := realIdentify(err); e != nil {
-				err = e
-				code = e.Code()
-			}
+		} else if e := realIdentify(err); e != nil {
+			err = e
+			code = e.Code()
 		}
 	}
 	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "%v"), realArgs...)

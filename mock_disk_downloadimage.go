@@ -80,7 +80,7 @@ func (m *mockImageDownload) Read(p []byte) (n int, err error) {
 	if err != nil {
 		m.lastError = err
 	}
-	m.bytesRead = m.bytesRead + uint64(n)
+	m.bytesRead += uint64(n)
 
 	if m.bytesRead == m.size {
 		go func() {

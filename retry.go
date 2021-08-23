@@ -202,7 +202,7 @@ type exponentialBackoff struct {
 
 func (e *exponentialBackoff) Wait(_ error) interface{} {
 	waitTime := e.waitTime
-	e.waitTime = e.waitTime * time.Duration(e.factor)
+	e.waitTime *= time.Duration(e.factor)
 	return time.After(waitTime)
 }
 
@@ -226,8 +226,7 @@ func AutoRetry() RetryStrategy {
 	}
 }
 
-type autoRetryStrategy struct {
-}
+type autoRetryStrategy struct{}
 
 func (a *autoRetryStrategy) Continue(err error, action string) error {
 	var engineErr EngineError
@@ -239,9 +238,8 @@ func (a *autoRetryStrategy) Continue(err error, action string) error {
 				"non-retryable error encountered while %s, giving up",
 				action,
 			)
-		} else {
-			return nil
 		}
+		return nil
 	}
 	identifiedError := realIdentify(err)
 	if identifiedError == nil {
@@ -303,7 +301,6 @@ func (m *maxTriesStrategy) Continue(err error, action string) error {
 		)
 	}
 	return nil
-
 }
 
 func (m *maxTriesStrategy) Wait(_ error) interface{} {

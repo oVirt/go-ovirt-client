@@ -143,7 +143,7 @@ func (i *imageDownload) attemptTransferImage(transferURL string) (*http.Response
 	if err != nil {
 		return nil, wrap(err, EBug, "failed to create HTTP request to %s", transferURL)
 	}
-	httpResponse, err := i.httpClient.Do(req) //nolint:bodyclose
+	httpResponse, err := i.httpClient.Do(req)
 	if err != nil {
 		return httpResponse, wrap(
 			err,
@@ -177,32 +177,32 @@ func (i *imageDownload) attemptTransferImage(transferURL string) (*http.Response
 // HTTP response if needed. This is a fallback mechanism for the case when the engine doesn't return
 // the correct image size.
 func (i *imageDownload) extractDownloadSize(httpResponse *http.Response) error {
-	if i.size == 0 {
-		header := httpResponse.Header
-		if header.Get("content-encoding") != "" {
-			return newError(
-				EBug,
-				"the oVirt engine API did not return an image download size and the ImageIO response contained a non-plaintext encoding, so the download size cannot be determined",
-			)
-		}
-		if contentLengthString := header.Get("content-length"); contentLengthString != "" {
-			contentLength, err := strconv.ParseUint(contentLengthString, 10, 64)
-			if err != nil {
-				return wrap(
-					err,
-					EBug,
-					"the oVirt engine API did not return an image download size and the ImageIO response contained an invalid content-length header (%s), so the download size cannot be determined",
-				)
-			}
-			i.size = contentLength
-		} else {
-			return newError(
-				EBug,
-				"the oVirt engine API did not return an image download size and the ImageIO response did not contain a content-length header, so the download size cannot be determined",
-			)
-		}
+	if i.size != 0 {
+		return nil
 	}
-	return nil
+	header := httpResponse.Header
+	if header.Get("content-encoding") != "" {
+		return newError(
+			EBug,
+			"the oVirt engine API did not return an image download size and the ImageIO response contained a non-plaintext encoding, so the download size cannot be determined",
+		)
+	}
+	if contentLengthString := header.Get("content-length"); contentLengthString != "" {
+		contentLength, err := strconv.ParseUint(contentLengthString, 10, 64)
+		if err != nil {
+			return wrap(
+				err,
+				EBug,
+				"the oVirt engine API did not return an image download size and the ImageIO response contained an invalid content-length header (%s), so the download size cannot be determined",
+			)
+		}
+		i.size = contentLength
+		return nil
+	}
+	return newError(
+		EBug,
+		"the oVirt engine API did not return an image download size and the ImageIO response did not contain a content-length header, so the download size cannot be determined",
+	)
 }
 
 // Err will return the last error from the image download.
@@ -226,7 +226,7 @@ func (i *imageDownload) Read(p []byte) (n int, err error) {
 	n, err = i.reader.Read(p)
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	i.bytesRead = i.bytesRead + uint64(n)
+	i.bytesRead += uint64(n)
 
 	if i.bytesRead == i.size {
 		go func() {
