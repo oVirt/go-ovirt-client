@@ -167,7 +167,7 @@ type Disk interface {
 		retries ...RetryStrategy,
 	) (ImageDownloadReader, error)
 
-  // Remove removes the current disk in the oVirt engine.
+	// Remove removes the current disk in the oVirt engine.
 	Remove(retries ...RetryStrategy) error
 }
 
