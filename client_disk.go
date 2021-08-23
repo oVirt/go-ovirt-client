@@ -145,6 +145,28 @@ type Disk interface {
 	// Status returns the status the disk is in.
 	Status() DiskStatus
 
+	// StartDownload starts the download of the image file the current disk.
+	// The caller can then wait for the initialization using the Initialized() call:
+	//
+	//     <-download.Initialized()
+	//
+	// Alternatively, the downloader can use the Read() function to wait for the download to become available
+	// and then read immediately.
+	//
+	// The caller MUST close the returned reader, otherwise the disk will remain locked in the oVirt engine.
+	// The passed context is observed only for the initialization phase.
+	StartDownload(
+		format ImageFormat,
+		retries ...RetryStrategy,
+	) (ImageDownload, error)
+
+	// Download runs StartDownload, then waits for the download to be ready before returning the reader.
+	// The caller MUST close the ImageDownloadReader in order to properly unlock the disk in the oVirt engine.
+	Download(
+		format ImageFormat,
+		retries ...RetryStrategy,
+	) (ImageDownloadReader, error)
+
 	// Remove removes the current disk in the oVirt engine.
 	Remove(retries ...RetryStrategy) error
 }
@@ -292,4 +314,12 @@ func (d disk) Format() ImageFormat {
 
 func (d disk) StorageDomainID() string {
 	return d.storageDomainID
+}
+
+func (d disk) StartDownload(format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
+	return d.client.StartImageDownload(d.id, format, retries...)
+}
+
+func (d disk) Download(format ImageFormat, retries ...RetryStrategy) (ImageDownloadReader, error) {
+	return d.client.DownloadImage(d.id, format, retries...)
 }
