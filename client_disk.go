@@ -80,12 +80,90 @@ type DiskClient interface {
 		retries ...RetryStrategy,
 	) (ImageDownloadReader, error)
 
+	// StartCreateDisk starts creating an empty disk with the specified parameters and returns a DiskCreation object,
+	// which can be queried for completion. Optional parameters can be created using CreateDiskParams().
+	StartCreateDisk(
+		storageDomainID string,
+		format ImageFormat,
+		size uint64,
+		params CreateDiskOptionalParameters,
+		retries ...RetryStrategy,
+	) (DiskCreation, error)
+	// CreateDisk is a shorthand for calling StartCreateDisk, and then waiting for the disk creation to complete.
+	// Optional parameters can be created using CreateDiskParams().
+	// Caution! The CreateDisk method may return both an error and a disk that has been created, but has not reached
+	// the ready state. Since the disk is almost certainly in a locked state, this may mean that there is a disk left
+	// behind.
+	CreateDisk(
+		storageDomainID string,
+		format ImageFormat,
+		size uint64,
+		params CreateDiskOptionalParameters,
+		retries ...RetryStrategy,
+	) (Disk, error)
+
 	// ListDisks lists all disks.
 	ListDisks(retries ...RetryStrategy) ([]Disk, error)
 	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
 	GetDisk(diskID string, retries ...RetryStrategy) (Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
 	RemoveDisk(diskID string, retries ...RetryStrategy) error
+}
+
+// CreateDiskOptionalParameters is a structure that serves to hold the optional parameters for DiskClient.CreateDisk.
+type CreateDiskOptionalParameters interface {
+	// Alias is a secondary name for the disk.
+	Alias() string
+	// Sparse returns true if sparse provisioning should be used for disks.
+	Sparse() *bool
+}
+
+// BuildableCreateDiskParameters is a buildable version of CreateDiskOptionalParameters.
+type BuildableCreateDiskParameters interface {
+	CreateDiskOptionalParameters
+
+	// WithAlias sets the alias of the disk.
+	WithAlias(alias string) BuildableCreateDiskParameters
+	// WithSparse sets the sparse flag on the disk.
+	WithSparse(sparse bool) BuildableCreateDiskParameters
+}
+
+// CreateDiskParams creates a buildable set of CreateDiskOptionalParameters for use with
+// Client.CreateDisk.
+func CreateDiskParams() BuildableCreateDiskParameters {
+	return &createDiskParams{}
+}
+
+type createDiskParams struct {
+	alias  string
+	sparse *bool
+}
+
+func (c *createDiskParams) Alias() string {
+	return c.alias
+}
+
+func (c *createDiskParams) WithAlias(alias string) BuildableCreateDiskParameters {
+	c.alias = alias
+	return c
+}
+
+func (c *createDiskParams) Sparse() *bool {
+	return c.sparse
+}
+
+func (c *createDiskParams) WithSparse(sparse bool) BuildableCreateDiskParameters {
+	c.sparse = &sparse
+	return c
+}
+
+// DiskCreation is a process object that lets you query the status of the disk creation.
+type DiskCreation interface {
+	// Disk returns the disk that has been created, even if it is not yet ready.
+	Disk() Disk
+	// Wait waits until the disk creation is complete and returns when it is done. It returns the created disk and
+	// an error if one happened.
+	Wait(retries ...RetryStrategy) (Disk, error)
 }
 
 // ImageDownloadReader is a special reader for reading image downloads. On the first Read call
@@ -259,6 +337,10 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 	if !ok {
 		return nil, newError(EFieldMissing, "disk %s has no status field", id)
 	}
+	sparse, ok := sdkDisk.Sparse()
+	if !ok {
+		return nil, newError(EFieldMissing, "disk %s has no sparse field", id)
+	}
 	return &disk{
 		client: client,
 
@@ -269,6 +351,7 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 		format:          ImageFormat(format),
 		storageDomainID: storageDomainID,
 		status:          DiskStatus(status),
+		sparse:          sparse,
 	}, nil
 }
 
@@ -282,6 +365,7 @@ type disk struct {
 	storageDomainID string
 	status          DiskStatus
 	totalSize       uint64
+	sparse          bool
 }
 
 func (d disk) Remove(retries ...RetryStrategy) error {
