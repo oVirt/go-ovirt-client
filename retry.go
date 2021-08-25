@@ -45,7 +45,8 @@ func retry(
 				return err
 			}
 		}
-		logger.Debugf("Failed %s, retrying... (%s)", action, err.Error())
+
+		logRetry(action, logger, err)
 		// Here we create a select statement with a dynamic number of cases. We use this because a) select{} only
 		// supports fixed cases and b) the channel types are different. Context returns a <-chan struct{}, while
 		// time.After() returns <-chan time.Time. Go doesn't support type assertions, so we have to result to
@@ -73,6 +74,19 @@ func retry(
 			logger.Debugf("Error while %s (%v)", action, err)
 			return err
 		}
+	}
+}
+
+func logRetry(action string, logger ovirtclientlog.Logger, err error) {
+	var e EngineError
+	isPending := false
+	if errors.As(err, &e) {
+		isPending = e.HasCode(EPending)
+	}
+	if isPending {
+		logger.Debugf("Still %s, retrying... (%s)", action, err.Error())
+	} else {
+		logger.Debugf("Failed %s, retrying... (%s)", action, err.Error())
 	}
 }
 
