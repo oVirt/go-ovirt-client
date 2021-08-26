@@ -73,8 +73,6 @@ linters:
     - prealloc
     # Check for improper duration handling.
     - durationcheck
-    # Report if statements that could be shorter.
-    - ifshort
     # Enforce tests being in the _test package.
     - testpackage
 
