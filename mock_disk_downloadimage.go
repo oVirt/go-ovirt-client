@@ -7,7 +7,15 @@ import (
 	"time"
 )
 
-func (m *mockClient) StartImageDownload(diskID string, format ImageFormat, _ ...RetryStrategy) (ImageDownload, error) {
+// Deprecated: use StartDownloadDisk instead.
+func (m *mockClient) StartImageDownload(diskID string, format ImageFormat, retries ...RetryStrategy) (
+	ImageDownload,
+	error,
+) {
+	return m.StartDownloadDisk(diskID, format, retries...)
+}
+
+func (m *mockClient) StartDownloadDisk(diskID string, format ImageFormat, _ ...RetryStrategy) (ImageDownload, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -34,11 +42,19 @@ func (m *mockClient) StartImageDownload(diskID string, format ImageFormat, _ ...
 	return dl, nil
 }
 
+// Deprecated: use DownloadImage instead.
 func (m *mockClient) DownloadImage(diskID string, format ImageFormat, retries ...RetryStrategy) (
 	ImageDownloadReader,
 	error,
 ) {
-	download, err := m.StartImageDownload(diskID, format, retries...)
+	return m.DownloadDisk(diskID, format, retries...)
+}
+
+func (m *mockClient) DownloadDisk(diskID string, format ImageFormat, retries ...RetryStrategy) (
+	ImageDownloadReader,
+	error,
+) {
+	download, err := m.StartDownloadDisk(diskID, format, retries...)
 	if err != nil {
 		return nil, err
 	}

@@ -69,7 +69,7 @@ func main() {
     }
     // Use client. Please use the code completion in your IDE to
     // discover the functions. Each is well documented.
-    upload, err := client.StartImageUpload(
+    upload, err := client.StartUploadToNewDisk(
         //...
     )
     //....

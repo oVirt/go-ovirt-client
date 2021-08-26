@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"sync"
 )
 
 func (m *mockClient) StartImageUpload(
@@ -13,50 +12,16 @@ func (m *mockClient) StartImageUpload(
 	sparse bool,
 	size uint64,
 	reader readSeekCloser,
-	_ ...RetryStrategy,
+	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	if alias == "" {
-		return nil, newError(EBadArgument, "alias cannot be empty")
-	}
-	if _, ok := m.storageDomains[storageDomainID]; !ok {
-		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
-	}
-
-	format, _, err := extractQCOWParameters(size, reader)
-	if err != nil {
-		return nil, err
-	}
-
-	progress := &mockImageUploadProgress{
-		err: nil,
-		disk: &diskWithData{
-			disk: disk{
-				id:              "",
-				alias:           alias,
-				provisionedSize: size,
-				format:          format,
-				storageDomainID: storageDomainID,
-			},
-			locked: false,
-			lock:   &sync.Mutex{},
-		},
-		correlationID: fmt.Sprintf("image_transfer_%s", alias),
-		client:        m,
-		reader:        reader,
-		size:          size,
-		done:          make(chan struct{}),
-		sparse:        sparse,
-	}
-
-	if err := progress.disk.Lock(); err != nil {
-		return nil, newError(EDiskLocked, "disk locked after creation")
-	}
-
-	go progress.do()
-
-	return progress, nil
+	return m.StartUploadToNewDisk(
+		storageDomainID,
+		"",
+		size,
+		CreateDiskParams().WithSparse(sparse).WithAlias(alias),
+		reader,
+		retries...,
+	)
 }
 
 func (m *mockClient) UploadImage(
@@ -67,7 +32,145 @@ func (m *mockClient) UploadImage(
 	reader readSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
-	progress, err := m.StartImageUpload(alias, storageDomainID, sparse, size, reader, retries...)
+	return m.UploadToNewDisk(
+		storageDomainID,
+		"",
+		size,
+		CreateDiskParams().WithSparse(sparse).WithAlias(alias),
+		reader,
+		retries...,
+	)
+}
+
+func (m *mockClient) StartUploadToDisk(
+	diskID string,
+	size uint64,
+	reader readSeekCloser,
+	retries ...RetryStrategy,
+) (UploadImageProgress, error) {
+	disk, err := m.getDisk(diskID, retries...)
+	if err != nil {
+		return nil, err
+	}
+
+	if size > disk.TotalSize() {
+		return nil, newError(
+			EBadArgument,
+			"the specified size (%d bytes) is larger than the target disk %s (%d bytes)",
+			size,
+			diskID,
+			disk.TotalSize(),
+		)
+	}
+
+	imageFormat, err := extractQCOWParameters(size, reader)
+	if err != nil {
+		return nil, err
+	}
+
+	if imageFormat != disk.Format() {
+		return nil, newError(
+			EBadArgument,
+			"the mock facility doesn't support uploading %s images to %s disks,"+
+				" please upload in the disk format in your tests.",
+			imageFormat,
+			disk.Format(),
+		)
+	}
+
+	progress := &mockImageUploadProgress{
+		err:    nil,
+		disk:   disk,
+		client: m,
+		reader: reader,
+		size:   size,
+		done:   make(chan struct{}),
+	}
+
+	// Lock the disk to simulate the upload being initialized.
+	if err := progress.disk.Lock(); err != nil {
+		return nil, newError(EDiskLocked, "disk locked after creation")
+	}
+
+	go progress.do()
+
+	return progress, nil
+}
+
+func (m *mockClient) UploadToDisk(diskID string, size uint64, reader readSeekCloser, retries ...RetryStrategy) error {
+	progress, err := m.StartUploadToDisk(diskID, size, reader, retries...)
+	if err != nil {
+		return err
+	}
+	<-progress.Done()
+	return progress.Err()
+}
+
+func (m *mockClient) StartUploadToNewDisk(
+	storageDomainID string,
+	format ImageFormat,
+	size uint64,
+	params CreateDiskOptionalParameters,
+	reader readSeekCloser,
+	_ ...RetryStrategy,
+) (UploadImageProgress, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if _, ok := m.storageDomains[storageDomainID]; !ok {
+		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
+	}
+
+	imageFormat, err := extractQCOWParameters(size, reader)
+	if err != nil {
+		return nil, err
+	}
+
+	if imageFormat != format {
+		return nil, newError(
+			EBadArgument,
+			"the mock facility doesn't support uploading %s images to %s disks,"+
+				" please upload in the disk format in your tests.",
+			imageFormat,
+			format,
+		)
+	}
+
+	disk, err := m.createDisk(storageDomainID, format, size, params)
+	if err != nil {
+		return nil, err
+	}
+	// Unlock the disk to simulate disk creation being complete.
+	disk.Unlock()
+
+	progress := &mockImageUploadProgress{
+		err:    nil,
+		disk:   disk,
+		client: m,
+		reader: reader,
+		size:   size,
+		done:   make(chan struct{}),
+	}
+
+	// Lock the disk to simulate the upload being initialized.
+	if err := progress.disk.Lock(); err != nil {
+		return nil, newError(EDiskLocked, "disk locked after creation")
+	}
+
+	go progress.do()
+
+	return progress, nil
+}
+
+func (m *mockClient) UploadToNewDisk(
+	storageDomainID string,
+	format ImageFormat,
+	size uint64,
+	params CreateDiskOptionalParameters,
+	reader readSeekCloser,
+	retries ...RetryStrategy,
+) (UploadImageResult, error) {
+	progress, err := m.StartUploadToNewDisk(storageDomainID, format, size, params, reader, retries...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +184,11 @@ func (m *mockClient) UploadImage(
 type mockImageUploadProgress struct {
 	err           error
 	disk          *diskWithData
-	correlationID string
 	client        *mockClient
 	reader        readSeekCloser
 	size          uint64
 	uploadedBytes uint64
 	done          chan struct{}
-	sparse        bool
 }
 
 func (m *mockImageUploadProgress) Disk() Disk {
@@ -96,10 +197,6 @@ func (m *mockImageUploadProgress) Disk() Disk {
 		return nil
 	}
 	return disk
-}
-
-func (m *mockImageUploadProgress) CorrelationID() string {
-	return m.correlationID
 }
 
 func (m *mockImageUploadProgress) UploadedBytes() uint64 {
@@ -119,12 +216,6 @@ func (m *mockImageUploadProgress) Done() <-chan struct{} {
 }
 
 func (m *mockImageUploadProgress) do() {
-	m.client.lock.Lock()
-	d := m.disk
-	d.id = m.client.GenerateUUID()
-	m.client.disks[d.id] = d
-	m.disk = d
-	m.client.lock.Unlock()
 	defer func() {
 		m.disk.Unlock()
 		close(m.done)

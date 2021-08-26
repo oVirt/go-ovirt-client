@@ -36,6 +36,7 @@ type DiskClient interface {
 	//         //...
 	//     }
 	//
+	// Deprecated: Use StartUploadToNewDisk instead.
 	StartImageUpload(
 		alias string,
 		storageDomainID string,
@@ -45,8 +46,45 @@ type DiskClient interface {
 		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
+	// StartUploadToNewDisk uploads an image file into a disk. The actual upload takes place in the
+	// background and can be tracked using the returned UploadImageProgress object. If the process fails a removal
+	// of the created disk is attempted.
+	//
+	// Parameters are as follows:
+	//
+	// - storageDomainID: this is the UUID of the storage domain that the image should be uploaded to.
+	// - format: format of the created disk. This does not necessarily have to be identical to the format of the image
+	//   being uploaded as the oVirt engine converts images on upload.
+	// - size: file size of the uploaded image on the disk.
+	// - reader: this is the source of the image data. It is a reader that must support seek and close operations.
+	// - retries: a set of optional retry options.
+	//
+	// You can wait for the upload to complete using the Done() method:
+	//
+	//     progress, err := cli.StartUploadToNewDisk(...)
+	//     if err != nil {
+	//         //...
+	//     }
+	//     <-progress.Done()
+	//
+	// After the upload is complete you can check the Err() method if it completed successfully:
+	//
+	//     if err := progress.Err(); err != nil {
+	//         //...
+	//     }
+	StartUploadToNewDisk(
+		storageDomainID string,
+		format ImageFormat,
+		size uint64,
+		params CreateDiskOptionalParameters,
+		reader readSeekCloser,
+		retries ...RetryStrategy,
+	) (UploadImageProgress, error)
+
 	// UploadImage is identical to StartImageUpload, but waits until the upload is complete. It returns the disk ID
 	// as a result, or the error if one happened.
+	//
+	// Deprecated: Use UploadToNewDisk instead.
 	UploadImage(
 		alias string,
 		storageDomainID string,
@@ -56,25 +94,106 @@ type DiskClient interface {
 		retries ...RetryStrategy,
 	) (UploadImageResult, error)
 
+	// UploadToNewDisk is identical to StartUploadToNewDisk, but waits until the upload is complete. It
+	// returns the disk ID as a result, or the error if one happened.
+	UploadToNewDisk(
+		storageDomainID string,
+		format ImageFormat,
+		size uint64,
+		params CreateDiskOptionalParameters,
+		reader readSeekCloser,
+		retries ...RetryStrategy,
+	) (UploadImageResult, error)
+
+	// StartUploadToDisk uploads a disk image to an existing disk. The actual upload takes place in the background
+	// and can be tracked using the returned UploadImageProgress object. Parameters are as follows:
+	//
+	// - diskID: ID of the disk to upload to.
+	// - reader This is the source of the image data.
+	// - retries: A set of optional retry options.
+	//
+	// You can wait for the upload to complete using the Done() method:
+	//
+	//     progress, err := cli.StartUploadToDisk(...)
+	//     if err != nil {
+	//         //...
+	//     }
+	//     <-progress.Done()
+	//
+	// After the upload is complete you can check the Err() method if it completed successfully:
+	//
+	//     if err := progress.Err(); err != nil {
+	//         //...
+	//     }
+	StartUploadToDisk(
+		diskID string,
+		size uint64,
+		reader readSeekCloser,
+		retries ...RetryStrategy,
+	) (UploadImageProgress, error)
+
+	// UploadToDisk runs StartUploadDisk and then waits for the upload to complete. It returns an error if the upload
+	// failed despite retries.
+	//
+	// Parameters are as follows:
+	//
+	// - diskID: ID of the disk to upload to.
+	// - size: size of the file on disk.
+	// - reader: this is the source of the image data. The format is automatically determined from the file being
+	//   uploaded. The reader must support seeking and close.
+	// - retries: a set of optional retry options.
+	UploadToDisk(
+		diskID string,
+		size uint64,
+		reader readSeekCloser,
+		retries ...RetryStrategy,
+	) error
+
 	// StartImageDownload starts the download of the image file of a specific disk.
 	// The caller can then wait for the initialization using the Initialized() call:
 	//
-	// <-download.Initialized()
+	//     <-download.Initialized()
 	//
 	// Alternatively, the downloader can use the Read() function to wait for the download to become available
 	// and then read immediately.
 	//
 	// The caller MUST close the returned reader, otherwise the disk will remain locked in the oVirt engine.
-	// The passed context is observed only for the initialization phase.
+	//
+	// Deprecated: please use StartDownloadDisk instead.
 	StartImageDownload(
 		diskID string,
 		format ImageFormat,
 		retries ...RetryStrategy,
 	) (ImageDownload, error)
 
-	// DownloadImage runs StartImageDownload, then waits for the download to be ready before returning the reader.
+	// StartDownloadDisk starts the download of the image file of a specific disk.
+	// The caller can then wait for the initialization using the Initialized() call:
+	//
+	//     <-download.Initialized()
+	//
+	// Alternatively, the downloader can use the Read() function to wait for the download to become available
+	// and then read immediately.
+	//
+	// The caller MUST close the returned reader, otherwise the disk will remain locked in the oVirt engine.
+	StartDownloadDisk(
+		diskID string,
+		format ImageFormat,
+		retries ...RetryStrategy,
+	) (ImageDownload, error)
+
+	// DownloadImage runs StartDownloadDisk, then waits for the download to be ready before returning the reader.
 	// The caller MUST close the ImageDownloadReader in order to properly unlock the disk in the oVirt engine.
+	//
+	// Deprecated: please use DownloadDisk instead.
 	DownloadImage(
+		diskID string,
+		format ImageFormat,
+		retries ...RetryStrategy,
+	) (ImageDownloadReader, error)
+
+	// DownloadDisk runs StartDownloadDisk, then waits for the download to be ready before returning the reader.
+	// The caller MUST close the ImageDownloadReader in order to properly unlock the disk in the oVirt engine.
+	DownloadDisk(
 		diskID string,
 		format ImageFormat,
 		retries ...RetryStrategy,
@@ -89,8 +208,10 @@ type DiskClient interface {
 		params CreateDiskOptionalParameters,
 		retries ...RetryStrategy,
 	) (DiskCreation, error)
+
 	// CreateDisk is a shorthand for calling StartCreateDisk, and then waiting for the disk creation to complete.
 	// Optional parameters can be created using CreateDiskParams().
+	//
 	// Caution! The CreateDisk method may return both an error and a disk that has been created, but has not reached
 	// the ready state. Since the disk is almost certainly in a locked state, this may mean that there is a disk left
 	// behind.
@@ -201,8 +322,6 @@ type ImageDownload interface {
 type UploadImageResult interface {
 	// Disk returns the disk that has been created as the result of the image upload.
 	Disk() Disk
-	// CorrelationID returns the opaque correlation ID for the upload.
-	CorrelationID() string
 }
 
 // Disk is a disk in oVirt.
@@ -268,9 +387,9 @@ type UploadImageProgress interface {
 	// Disk returns the disk created as part of the upload process once the upload is complete. Before the upload
 	// is complete it will return nil.
 	Disk() Disk
-	// CorrelationID returns the correlation ID for the upload.
-	CorrelationID() string
 	// UploadedBytes returns the number of bytes already uploaded.
+	//
+	// Caution! This number may decrease or reset to 0 if the upload has to be retried.
 	UploadedBytes() uint64
 	// TotalBytes returns the total number of bytes to be uploaded.
 	TotalBytes() uint64
@@ -288,6 +407,24 @@ type UploadImageProgress interface {
 // format. It is recommended to write tests only using the raw format as comparing QCOW2 files
 // is complex.
 type ImageFormat string
+
+// Validate returns an error if the image format doesn't have a valid value.
+func (f ImageFormat) Validate() error {
+	switch f {
+	case ImageFormatRaw:
+		return nil
+	case ImageFormatCow:
+		return nil
+	default:
+		return newError(
+			EBadArgument,
+			"invalid image format: %s must be one of: %s, %s",
+			f,
+			ImageFormatRaw,
+			ImageFormatCow,
+		)
+	}
+}
 
 const (
 	// ImageFormatCow is an image conforming to the QCOW2 image format. This image format can use
@@ -401,9 +538,9 @@ func (d disk) StorageDomainID() string {
 }
 
 func (d disk) StartDownload(format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
-	return d.client.StartImageDownload(d.id, format, retries...)
+	return d.client.StartDownloadDisk(d.id, format, retries...)
 }
 
 func (d disk) Download(format ImageFormat, retries ...RetryStrategy) (ImageDownloadReader, error) {
-	return d.client.DownloadImage(d.id, format, retries...)
+	return d.client.DownloadDisk(d.id, format, retries...)
 }

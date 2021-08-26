@@ -15,6 +15,11 @@ func (o *oVirtClient) StartCreateDisk(
 	retries ...RetryStrategy,
 ) (DiskCreation, error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
+
+	if err := format.Validate(); err != nil {
+		return nil, err
+	}
+
 	var result *diskCreation
 	processName := "creating disk"
 	correlationID := ""
