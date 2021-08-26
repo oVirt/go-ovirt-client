@@ -8,7 +8,7 @@ import (
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
-// ExampleDiskClient_CreateDisk is an example of creating a disk. This example works with the test
+// ExampleDiskClient_CreateDisk is an example of creating an empty disk. This example works with the test
 // helper, but can be modified in production.
 func ExampleDiskClient_CreateDisk() {
 	// Create a logger. This can be adapter to use your own logger.
