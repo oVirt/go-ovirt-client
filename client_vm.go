@@ -12,7 +12,6 @@ import (
 type VMClient interface {
 	// CreateVM creates a virtual machine.
 	CreateVM(
-		name string,
 		clusterID string,
 		templateID string,
 		optional OptionalVMParameters,
@@ -52,16 +51,26 @@ type VM interface {
 
 // OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
 // interface is expected to be extended in the future.
-type OptionalVMParameters interface{}
+type OptionalVMParameters interface {
+	// Name returns the name for the new VM.
+	Name() string
+	// Comment returns the comment for the VM.
+	Comment() string
+}
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
 // builder functions. This is placed here for future use.
 type BuildableVMParameters interface {
 	OptionalVMParameters
+
+	// WithName adds a name to the VM.
+	WithName(name string) BuildableVMParameters
+	// WithComment adds a commen to the VM.
+	WithComment(comment string) BuildableVMParameters
 }
 
-// VMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
-func VMParams() BuildableVMParameters {
+// CreateVMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
+func CreateVMParams() BuildableVMParameters {
 	return &vmParams{
 		lock: &sync.Mutex{},
 	}
@@ -69,6 +78,27 @@ func VMParams() BuildableVMParameters {
 
 type vmParams struct {
 	lock *sync.Mutex
+
+	name    string
+	comment string
+}
+
+func (v *vmParams) WithName(name string) BuildableVMParameters {
+	v.name = name
+	return v
+}
+
+func (v *vmParams) WithComment(comment string) BuildableVMParameters {
+	v.comment = comment
+	return v
+}
+
+func (v vmParams) Name() string {
+	return v.name
+}
+
+func (v vmParams) Comment() string {
+	return v.comment
 }
 
 type vm struct {
