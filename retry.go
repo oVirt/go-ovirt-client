@@ -41,7 +41,7 @@ func retry(
 		}
 		for _, r := range retries {
 			if err := r.Continue(err, action); err != nil {
-				logger.Debugf("Error while %s (%v)", action, err)
+				logger.Debugf("Giving up %s (%v)", action, err)
 				return err
 			}
 		}
@@ -71,7 +71,7 @@ func retry(
 		}
 		chosen, _, _ := reflect.Select(chans)
 		if err := retries[chosen].OnWaitExpired(err, action); err != nil {
-			logger.Debugf("Error while %s (%v)", action, err)
+			logger.Debugf("Giving up %s (%v)", action, err)
 			return err
 		}
 	}
