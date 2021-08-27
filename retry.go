@@ -80,10 +80,12 @@ func retry(
 func logRetry(action string, logger ovirtclientlog.Logger, err error) {
 	var e EngineError
 	isPending := false
+	isConflict := false
 	if errors.As(err, &e) {
 		isPending = e.HasCode(EPending)
+		isConflict = e.HasCode(EConflict)
 	}
-	if isPending {
+	if isPending || isConflict {
 		logger.Debugf("Still %s, retrying... (%s)", action, err.Error())
 	} else {
 		logger.Debugf("Failed %s, retrying... (%s)", action, err.Error())

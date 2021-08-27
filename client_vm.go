@@ -48,6 +48,23 @@ type VM interface {
 	GetNIC(id string, retries ...RetryStrategy) (NIC, error)
 	// ListNICs fetches a list of network interfaces attached to this VM. This involves an API call and may be slow.
 	ListNICs(retries ...RetryStrategy) ([]NIC, error)
+
+	// AttachDisk attaches a disk to this VM.
+	AttachDisk(
+		diskID string,
+		diskInterface DiskInterface,
+		params CreateDiskAttachmentOptionalParams,
+		retries ...RetryStrategy,
+	) (DiskAttachment, error)
+	// GetDiskAttachment returns a specific disk attachment for the current VM by ID.
+	GetDiskAttachment(diskAttachmentID string, retries ...RetryStrategy) (DiskAttachment, error)
+	// ListDiskAttachments lists all disk attachments for the current VM.
+	ListDiskAttachments(retries ...RetryStrategy) ([]DiskAttachment, error)
+	// DetachDisk removes a specific disk attachment by the disk attachment ID.
+	DetachDisk(
+		diskAttachmentID string,
+		retries ...RetryStrategy,
+	) error
 }
 
 // OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
@@ -79,6 +96,27 @@ type vm struct {
 	comment    string
 	clusterID  string
 	templateID string
+}
+
+func (v *vm) AttachDisk(
+	diskID string,
+	diskInterface DiskInterface,
+	params CreateDiskAttachmentOptionalParams,
+	retries ...RetryStrategy,
+) (DiskAttachment, error) {
+	return v.client.CreateDiskAttachment(v.id, diskID, diskInterface, params, retries...)
+}
+
+func (v *vm) GetDiskAttachment(diskAttachmentID string, retries ...RetryStrategy) (DiskAttachment, error) {
+	return v.client.GetDiskAttachment(v.id, diskAttachmentID, retries...)
+}
+
+func (v *vm) ListDiskAttachments(retries ...RetryStrategy) ([]DiskAttachment, error) {
+	return v.client.ListDiskAttachments(v.id, retries...)
+}
+
+func (v *vm) DetachDisk(diskAttachmentID string, retries ...RetryStrategy) error {
+	return v.client.RemoveDiskAttachment(v.id, diskAttachmentID, retries...)
 }
 
 func (v *vm) Remove(retries ...RetryStrategy) error {

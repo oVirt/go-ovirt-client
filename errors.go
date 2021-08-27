@@ -74,6 +74,10 @@ const ERelatedOperationInProgress ErrorCode = "related_operation_in_progress"
 // ELocalIO indicates an input/output error on the client side. For example, a disk could not be read.
 const ELocalIO ErrorCode = "local_io_error"
 
+// EConflict indicates an error where you tried to create or update a resource which is already in use in a different,
+// conflicting way. For example, you tried to attach a disk that is already attached.
+const EConflict ErrorCode = "conflict"
+
 // CanAutoRetry returns false if the given error code is permanent and an automatic retry should not be attempted.
 func (e ErrorCode) CanAutoRetry() bool {
 	switch e {
@@ -219,10 +223,6 @@ func realIdentify(err error) EngineError {
 	var authErr *ovirtsdk.AuthError
 	var notFoundErr *ovirtsdk.NotFoundError
 	switch {
-	case errors.As(err, &authErr):
-		fallthrough
-	case strings.Contains(err.Error(), "access_denied"):
-		return wrap(err, EAccessDenied, "access denied, check your credentials")
 	case strings.Contains(err.Error(), "parse non-array sso with response"):
 		return wrap(err,
 			ENotAnOVirtEngine, "invalid credentials, or the URL does not point to an oVirt Engine, check your settings")
@@ -239,6 +239,12 @@ func realIdentify(err error) EngineError {
 		return wrap(err, EDiskLocked, "the disk is locked")
 	case strings.Contains(err.Error(), "Related operation is currently in progress."):
 		return wrap(err, ERelatedOperationInProgress, "a related operation is in progress")
+	case strings.Contains(err.Error(), "409 Conflict"):
+		return wrap(err, EConflict, "conflicting operations")
+	case errors.As(err, &authErr):
+		fallthrough
+	case strings.Contains(err.Error(), "access_denied"):
+		return wrap(err, EAccessDenied, "access denied, check your credentials")
 	default:
 		return nil
 	}
