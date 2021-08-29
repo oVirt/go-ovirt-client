@@ -1,6 +1,7 @@
 package ovirtclient
 
 import (
+	"math/rand"
 	"net/http"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
@@ -44,6 +45,7 @@ type oVirtClient struct {
 	httpClient http.Client
 	logger     Logger
 	url        string
+	nonSecRand *rand.Rand
 }
 
 func (o *oVirtClient) GetSDKClient() *ovirtsdk4.Connection {

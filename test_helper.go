@@ -318,14 +318,8 @@ func (t *testHelper) GetStorageDomainID() string {
 	return t.storageDomainID
 }
 
-var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") // nolint:gochecknoglobals
-
 func (t *testHelper) GenerateRandomID(length uint) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = letters[t.rand.Intn(len(letters))]
-	}
-	return string(b)
+	return generateRandomID(length, t.rand)
 }
 
 // NewTestHelperFromEnv attempts to create a live test helper from environment variables and falls back

@@ -3,6 +3,7 @@ package ovirtclient
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -153,6 +154,7 @@ func NewWithVerify(
 		httpClient: httpClient,
 		logger:     logger,
 		url:        url,
+		nonSecRand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}, nil
 }
 
