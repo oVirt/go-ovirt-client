@@ -25,6 +25,7 @@ func (m *mockClient) CreateVM(name string, clusterID string, templateID string, 
 		id:         id,
 		clusterID:  clusterID,
 		templateID: templateID,
+		status:     VMStatusDown,
 	}
 	m.vms[id] = vm
 	return vm, nil
