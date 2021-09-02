@@ -2,35 +2,27 @@ package ovirtclient_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
+
+	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
 func TestImageUploadDiskCreated(t *testing.T) {
-	testImageFile := "./testimage/image"
-	fh, err := os.Open(testImageFile)
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to open test image file %s (%w)", testImageFile, err))
-	}
+	fh, stat := getTestImageFile(t)
 	defer func() {
 		_ = fh.Close()
 	}()
-
-	stat, err := fh.Stat()
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to stat test image file %s (%w)", testImageFile, err))
-	}
 
 	helper := getHelper(t)
 	client := helper.GetClient()
 
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
 
-	uploadResult, err := client.UploadImage(
-		imageName,
+	uploadResult, err := client.UploadToNewDisk(
 		helper.GetStorageDomainID(),
-		true,
+		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
+		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
 		fh,
 	)
 	if err != nil {
@@ -42,5 +34,40 @@ func TestImageUploadDiskCreated(t *testing.T) {
 	}
 	if err := client.RemoveDisk(disk.ID()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestImageUploadToExistingDisk(t *testing.T) {
+	fh, stat := getTestImageFile(t)
+	defer func() {
+		_ = fh.Close()
+	}()
+
+	helper := getHelper(t)
+	client := helper.GetClient()
+
+	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
+
+	disk, err := client.CreateDisk(
+		helper.GetStorageDomainID(),
+		ovirtclient.ImageFormatRaw,
+		uint64(stat.Size()),
+		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
+	)
+	if disk != nil {
+		defer func() {
+			_ = disk.Remove()
+		}()
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.UploadToDisk(
+		disk.ID(),
+		uint64(stat.Size()),
+		fh,
+	); err != nil {
+		t.Fatal(fmt.Errorf("failed to upload image (%w)", err))
 	}
 }

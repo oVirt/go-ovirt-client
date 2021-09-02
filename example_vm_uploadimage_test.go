@@ -35,11 +35,11 @@ func ExampleDiskClient_uploadImage() {
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
 
 	// Upload image and wait for result.
-	uploadResult, err := client.UploadImage(
-		imageName,
+	uploadResult, err := client.UploadToNewDisk(
 		helper.GetStorageDomainID(),
-		true,
+		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
+		ovirtclient.CreateDiskParams().WithAlias(imageName).WithSparse(true),
 		fh,
 	)
 	if err != nil {
@@ -75,11 +75,11 @@ func ExampleDiskClient_uploadImageWithCancel() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	uploadResult, err := client.StartImageUpload(
-		imageName,
+	uploadResult, err := client.StartUploadToNewDisk(
 		helper.GetStorageDomainID(),
-		true,
+		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
+		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
 		fh,
 		ovirtclient.ContextStrategy(ctx),
 	)

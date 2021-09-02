@@ -11,34 +11,22 @@ import (
 )
 
 func TestImageDownload(t *testing.T) {
-	testImageFile := "./testimage/image"
-	testImageData, err := ioutil.ReadFile(testImageFile)
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to read test image file %s (%w)", testImageFile, err))
-	}
-	fh, err := os.Open(testImageFile)
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to open test image file %s (%w)", testImageFile, err))
-	}
+	testImageData := getTestImageData(t)
+	fh, stat := getTestImageFile(t)
 	defer func() {
 		_ = fh.Close()
 	}()
-
-	stat, err := fh.Stat()
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to stat test image file %s (%w)", testImageFile, err))
-	}
 
 	helper := getHelper(t)
 	client := helper.GetClient()
 
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
 
-	uploadResult, err := client.UploadImage(
-		imageName,
+	uploadResult, err := client.UploadToNewDisk(
 		helper.GetStorageDomainID(),
-		true,
+		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
+		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
 		fh,
 	)
 	if err != nil {
@@ -64,12 +52,34 @@ func TestImageDownload(t *testing.T) {
 	}
 }
 
+const testImageFile = "./testimage/image"
+
+func getTestImageFile(t *testing.T) (*os.File, os.FileInfo) {
+	fh, err := os.Open(testImageFile)
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to open test image file %s (%w)", testImageFile, err))
+	}
+	stat, err := fh.Stat()
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to stat test image file %s (%w)", testImageFile, err))
+	}
+	return fh, stat
+}
+
+func getTestImageData(t *testing.T) []byte {
+	testImageData, err := ioutil.ReadFile(testImageFile)
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to read test image file %s (%w)", testImageFile, err))
+	}
+	return testImageData
+}
+
 func downloadImage(
 	t *testing.T,
 	client ovirtclient.Client,
 	uploadResult ovirtclient.UploadImageResult,
 ) []byte {
-	imageDownload, err := client.DownloadImage(uploadResult.Disk().ID(), ovirtclient.ImageFormatRaw)
+	imageDownload, err := client.DownloadDisk(uploadResult.Disk().ID(), ovirtclient.ImageFormatRaw)
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to download image (%w)", err))
 	}

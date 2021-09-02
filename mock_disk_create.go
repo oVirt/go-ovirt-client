@@ -15,6 +15,26 @@ func (m *mockClient) StartCreateDisk(
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	disk, err := m.createDisk(storageDomainID, format, size, params)
+	if err != nil {
+		return nil, err
+	}
+
+	creation := &mockDiskCreation{
+		client: m,
+		disk:   disk,
+		done:   make(chan struct{}),
+	}
+	creation.do()
+	return creation, nil
+}
+
+func (m *mockClient) createDisk(
+	storageDomainID string,
+	format ImageFormat,
+	size uint64,
+	params CreateDiskOptionalParameters,
+) (*diskWithData, error) {
 	if _, ok := m.storageDomains[storageDomainID]; !ok {
 		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
 	}
@@ -29,9 +49,8 @@ func (m *mockClient) StartCreateDisk(
 			storageDomainID: storageDomainID,
 			status:          DiskStatusLocked,
 		},
-		lock:   &sync.Mutex{},
-		locked: true,
-		data:   nil,
+		lock: &sync.Mutex{},
+		data: nil,
 	}
 
 	if params != nil {
@@ -45,10 +64,7 @@ func (m *mockClient) StartCreateDisk(
 
 	m.disks[disk.id] = disk
 
-	return &mockDiskCreation{
-		client: m,
-		disk:   disk,
-	}, nil
+	return disk, nil
 }
 
 func (m *mockClient) CreateDisk(
@@ -62,35 +78,34 @@ func (m *mockClient) CreateDisk(
 	if err != nil {
 		return nil, err
 	}
+
 	return result.Wait()
 }
 
 type mockDiskCreation struct {
 	client *mockClient
 	disk   *diskWithData
+	done   chan struct{}
 }
 
 func (c *mockDiskCreation) Disk() Disk {
 	c.client.lock.Lock()
 	defer c.client.lock.Unlock()
+
 	return c.disk
 }
 
 func (c *mockDiskCreation) Wait(_ ...RetryStrategy) (Disk, error) {
-	c.client.lock.Lock()
-	if !c.disk.locked {
-		disk := c.disk
-		c.client.lock.Unlock()
-		return disk, nil
-	}
-	c.client.lock.Unlock()
-	time.Sleep(time.Second)
-	c.client.lock.Lock()
-	newDisk := *c.disk
-	newDisk.status = DiskStatusOK
-	newDisk.locked = false
-	c.client.disks[newDisk.id] = &newDisk
-	c.disk = &newDisk
-	c.client.lock.Unlock()
+	<-c.done
+
 	return c.disk, nil
+}
+
+func (c *mockDiskCreation) do() {
+	// Sleep to trigger potential race conditions / improper status handling.
+	time.Sleep(time.Second)
+
+	c.disk.Unlock()
+
+	close(c.done)
 }
