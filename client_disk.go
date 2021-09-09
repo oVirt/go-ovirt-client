@@ -366,6 +366,14 @@ type Disk interface {
 
 	// Remove removes the current disk in the oVirt engine.
 	Remove(retries ...RetryStrategy) error
+
+	// AttachToVM attaches a disk to this VM.
+	AttachToVM(
+		vmID string,
+		diskInterface DiskInterface,
+		params CreateDiskAttachmentOptionalParams,
+		retries ...RetryStrategy,
+	) (DiskAttachment, error)
 }
 
 // DiskStatus shows the status of a disk. Certain operations lock a disk, which is important because the disk can then
@@ -505,11 +513,20 @@ type disk struct {
 	sparse          bool
 }
 
-func (d disk) Remove(retries ...RetryStrategy) error {
+func (d *disk) AttachToVM(
+	vmID string,
+	diskInterface DiskInterface,
+	params CreateDiskAttachmentOptionalParams,
+	retries ...RetryStrategy,
+) (DiskAttachment, error) {
+	return d.client.CreateDiskAttachment(vmID, d.id, diskInterface, params, retries...)
+}
+
+func (d *disk) Remove(retries ...RetryStrategy) error {
 	return d.client.RemoveDisk(d.id, retries...)
 }
 
-func (d disk) TotalSize() uint64 {
+func (d *disk) TotalSize() uint64 {
 	return d.totalSize
 }
 

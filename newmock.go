@@ -48,6 +48,8 @@ func NewMock() MockClient {
 		dataCenters: map[string]*datacenterWithClusters{
 			testDatacenter.ID(): testDatacenter,
 		},
+		diskAttachmentsByVM:   map[string]map[string]*diskAttachment{},
+		diskAttachmentsByDisk: map[string]*diskAttachment{},
 	}
 
 	testCluster.client = client

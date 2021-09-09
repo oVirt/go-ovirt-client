@@ -28,5 +28,6 @@ func (m *mockClient) CreateVM(name string, clusterID string, templateID string, 
 		status:     VMStatusDown,
 	}
 	m.vms[id] = vm
+	m.diskAttachmentsByVM[id] = map[string]*diskAttachment{}
 	return vm, nil
 }

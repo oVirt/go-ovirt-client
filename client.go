@@ -15,6 +15,7 @@ type Client interface {
 	GetURL() string
 
 	DiskClient
+	DiskAttachmentClient
 	VMClient
 	NICClient
 	VNICProfileClient
