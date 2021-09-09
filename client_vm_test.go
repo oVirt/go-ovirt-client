@@ -19,7 +19,11 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	vm, err := client.CreateVM("test", helper.GetClusterID(), helper.GetBlankTemplateID(), ovirtclient.VMParams())
+	vm, err := client.CreateVM(
+		helper.GetClusterID(),
+		helper.GetBlankTemplateID(),
+		ovirtclient.CreateVMParams().WithName("test"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

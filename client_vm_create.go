@@ -6,21 +6,41 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-func (o *oVirtClient) CreateVM(name string, clusterID string, templateID string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
-	if err := validateVMCreationParameters(name, clusterID, templateID, params); err != nil {
+func (o *oVirtClient) CreateVM(
+	clusterID string,
+	templateID string,
+	params OptionalVMParameters,
+	retries ...RetryStrategy,
+) (result VM, err error) {
+	retries = defaultRetries(retries, defaultWriteTimeouts())
+
+	if err := validateVMCreationParameters(clusterID, templateID, params); err != nil {
 		return nil, err
 	}
 
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	if params == nil {
+		params = &vmParams{}
+	}
+
+	message := "creating VM"
+	if name := params.Name(); name != "" {
+		message = fmt.Sprintf("creating VM %s", name)
+	}
+
 	err = retry(
-		fmt.Sprintf("creating VM %s", name),
+		message,
 		o.logger,
 		retries,
 		func() error {
 			builder := ovirtsdk.NewVmBuilder()
 			builder.Cluster(ovirtsdk.NewClusterBuilder().Id(clusterID).MustBuild())
 			builder.Template(ovirtsdk.NewTemplateBuilder().Id(templateID).MustBuild())
-			builder.Name(name)
+			if name := params.Name(); name != "" {
+				builder.Name(name)
+			}
+			if comment := params.Comment(); comment != "" {
+				builder.Comment(comment)
+			}
 			vm, err := builder.Build()
 			if err != nil {
 				return wrap(err, EBug, "failed to build VM")
@@ -48,10 +68,7 @@ func (o *oVirtClient) CreateVM(name string, clusterID string, templateID string,
 	return result, err
 }
 
-func validateVMCreationParameters(name string, clusterID string, templateID string, _ OptionalVMParameters) error {
-	if name == "" {
-		return newError(EBadArgument, "name cannot be empty for VM creation")
-	}
+func validateVMCreationParameters(clusterID string, templateID string, _ OptionalVMParameters) error {
 	if clusterID == "" {
 		return newError(EBadArgument, "cluster ID cannot be empty for VM creation")
 	}
