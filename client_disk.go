@@ -324,8 +324,9 @@ type UploadImageResult interface {
 	Disk() Disk
 }
 
-// Disk is a disk in oVirt.
-type Disk interface {
+// DiskData is the core of a Disk, only exposing data functions, but not the client functions.
+// This can be used for cases where not a full Disk is required, but only the data functionality.
+type DiskData interface {
 	// ID is the unique ID for this disk.
 	ID() string
 	// Alias is the name for this disk set by the user.
@@ -341,6 +342,11 @@ type Disk interface {
 	StorageDomainID() string
 	// Status returns the status the disk is in.
 	Status() DiskStatus
+}
+
+// Disk is a disk in oVirt.
+type Disk interface {
+	DiskData
 
 	// StartDownload starts the download of the image file the current disk.
 	// The caller can then wait for the initialization using the Initialized() call:

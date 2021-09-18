@@ -14,8 +14,8 @@ type StorageDomainClient interface {
 	GetStorageDomain(id string, retries ...RetryStrategy) (StorageDomain, error)
 }
 
-// StorageDomain represents a storage domain returned from the oVirt Engine API.
-type StorageDomain interface {
+// StorageDomainData is the core of StorageDomain, providing only data access functions.
+type StorageDomainData interface {
 	// ID is the unique identified for the storage system connected to oVirt.
 	ID() string
 	// Name is the user-given name for the storage domain.
@@ -27,6 +27,11 @@ type StorageDomain interface {
 	Status() StorageDomainStatus
 	// ExternalStatus returns the external status of a storage domain.
 	ExternalStatus() StorageDomainExternalStatus
+}
+
+// StorageDomain represents a storage domain returned from the oVirt Engine API.
+type StorageDomain interface {
+	StorageDomainData
 }
 
 // StorageDomainStatus represents the status a domain can be in. Either this status field, or the

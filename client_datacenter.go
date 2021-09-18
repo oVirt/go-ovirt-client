@@ -18,11 +18,16 @@ type DatacenterClient interface {
 	ListDatacenterClusters(id string, retries ...RetryStrategy) ([]Cluster, error)
 }
 
+// DatacenterData is the core of a Datacenter when client functions are not required.
+type DatacenterData interface {
+	ID() string
+	Name() string
+}
+
 // Datacenter is a logical entity that defines the set of resources used in a specific environment.
 // See https://www.ovirt.org/documentation/administration_guide/#chap-Data_Centers for details.
 type Datacenter interface {
-	ID() string
-	Name() string
+	DatacenterData
 
 	// Clusters lists the clusters for this datacenter. This is a network call and may be slow.
 	Clusters(retries ...RetryStrategy) ([]Cluster, error)
