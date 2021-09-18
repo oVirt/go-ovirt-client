@@ -203,4 +203,8 @@ You can also get a properly preconfigured HTTP client if you need it:
 httpClient := client.GetHTTPClient()
 ```
 
-**🚧 Warning:** If you code relies on the SDK or HTTP clients you will not be able to use the mock functionality described above for testing.
+**🚧 Warning:** If your code relies on the SDK or HTTP clients you will not be able to use the mock functionality described above for testing.
+
+## Contributing
+
+You want to help out? Awesome! Please head over to our [contribution guide](CONTRIBUTING.md), which explains how this library is built in detail.
