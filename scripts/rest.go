@@ -189,6 +189,8 @@ func setupFlags( // nolint:funlen
 }
 
 func handleTemplateFile(templateFileName string, id string, targetDir string, restItem restItem, nofmt bool) error {
+	// We are working through all template files here, so including these files is intentional
+	// and not a security issue.
 	fh, err := os.Open(templateFileName) // nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", templateFileName, err)

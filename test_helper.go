@@ -480,6 +480,14 @@ func getConnectionParametersForLiveTesting() (string, TLSProvider, error) {
 		configured = true
 		tls.CACertsFromFile(caFile)
 	}
+	if caFile := os.Getenv("OVIRT_CA_DIR"); caFile != "" {
+		configured = true
+		tls.CACertsFromFile(caFile)
+	}
+	if caFile := os.Getenv("OVIRT_CA_FILE"); caFile != "" {
+		configured = true
+		tls.CACertsFromFile(caFile)
+	}
 	if caCert := os.Getenv("OVIRT_CA_CERT"); caCert != "" {
 		configured = true
 		tls.CACertsFromMemory([]byte(caCert))
@@ -487,6 +495,10 @@ func getConnectionParametersForLiveTesting() (string, TLSProvider, error) {
 	if os.Getenv("OVIRT_INSECURE") != "" {
 		configured = true
 		tls.Insecure()
+	}
+	if system := os.Getenv("OVIRT_SYSTEM"); system != "" {
+		configured = true
+		tls.CACertsFromSystem()
 	}
 	if !configured {
 		return "", nil, fmt.Errorf("one of OVIRT_CAFILE, OVIRT_CA_CERT, or OVIRT_INSECURE must be set")
