@@ -342,6 +342,8 @@ type DiskData interface {
 	StorageDomainID() string
 	// Status returns the status the disk is in.
 	Status() DiskStatus
+	// Sparse indicates sparse provisioning on the disk.
+	Sparse() bool
 }
 
 // Disk is a disk in oVirt.
@@ -517,6 +519,10 @@ type disk struct {
 	status          DiskStatus
 	totalSize       uint64
 	sparse          bool
+}
+
+func (d *disk) Sparse() bool {
+	return d.sparse
 }
 
 func (d *disk) AttachToVM(
