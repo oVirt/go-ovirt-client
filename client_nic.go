@@ -16,8 +16,8 @@ type NICClient interface {
 	RemoveNIC(vmid string, id string, retries ...RetryStrategy) error
 }
 
-// NIC represents a network interface.
-type NIC interface {
+// NICData is the core of NIC which only provides data-access functions.
+type NICData interface {
 	// ID is the identifier for this network interface.
 	ID() string
 	// Name is the user-given name of the network interface.
@@ -26,6 +26,11 @@ type NIC interface {
 	VMID() string
 	// VNICProfileID returns the ID of the VNIC profile in use by the NIC.
 	VNICProfileID() string
+}
+
+// NIC represents a network interface.
+type NIC interface {
+	NICData
 
 	// GetVM fetches an up to date copy of the virtual machine this NIC is attached to. This involves an API call and
 	// may be slow.

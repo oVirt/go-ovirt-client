@@ -25,8 +25,8 @@ type VMClient interface {
 	RemoveVM(id string, retries ...RetryStrategy) error
 }
 
-// VM is the implementation of the virtual machine in oVirt.
-type VM interface {
+// VMData is the core of VM providing only data access functions.
+type VMData interface {
 	// ID returns the unique identifier (UUID) of the current virtual machine.
 	ID() string
 	// Name is the user-defined name of the virtual machine.
@@ -39,6 +39,11 @@ type VM interface {
 	TemplateID() string
 	// Status returns the current status of the VM.
 	Status() VMStatus
+}
+
+// VM is the implementation of the virtual machine in oVirt.
+type VM interface {
+	VMData
 
 	// Remove removes the current VM. This involves an API call and may be slow.
 	Remove(retries ...RetryStrategy) error
