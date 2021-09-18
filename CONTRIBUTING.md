@@ -25,7 +25,7 @@ fh, err := os.Open(templateFileName) // nolint:gosec
 
 ## Design principles
 
-This library serves several projects, including the oVirt Terraform provider, the OpenShift CSI driver, etc. Since it is used in many places, the main consideration is **ease of use** and **[providing mocks for tests**.
+This library serves several projects, including the oVirt Terraform provider, the OpenShift CSI driver, etc. Since it is used in many places, the main consideration is **ease of use** and **providing mocks for tests**.
 
 ## Client interfaces
 
@@ -33,7 +33,7 @@ The main point of entry for most people will be the `New()` function located in 
 
 The `Client` interface in [client.go](client.go) aggregates all sub-interfaces, for example the `DiskClient`, `VMClient`, etc. This is done so that an application using this library can rely on a subset of the functionality. This, in turn, enables writing mocks for only a part of the functionality.
 
-Each client function must be implemented in two copies: once of a live connection in the `client_` files, and once for the mock functionality in the `mock_` files.
+Each client function must be implemented in two copies: once for the live connection in the `client_` files, and once for the mock functionality in the `mock_` files.
 
 ## Auto-generated implementations
 

@@ -480,9 +480,9 @@ func getConnectionParametersForLiveTesting() (string, TLSProvider, error) {
 		configured = true
 		tls.CACertsFromFile(caFile)
 	}
-	if caFile := os.Getenv("OVIRT_CA_DIR"); caFile != "" {
+	if caDir := os.Getenv("OVIRT_CA_DIR"); caDir != "" {
 		configured = true
-		tls.CACertsFromFile(caFile)
+		tls.CACertsFromDir(caDir)
 	}
 	if caFile := os.Getenv("OVIRT_CA_FILE"); caFile != "" {
 		configured = true
