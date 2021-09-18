@@ -1,6 +1,7 @@
 package ovirtclient
 
 import (
+	"regexp"
 	"sync"
 
 	ovirtsdk "github.com/ovirt/go-ovirt"
@@ -19,6 +20,9 @@ type VMClient interface {
 	) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
 	GetVM(id string, retries ...RetryStrategy) (VM, error)
+	// UpdateVM updates the virtual machine with the given parameters.
+	// Use UpdateVMParams to obtain a builder for the params.
+	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
 	// ListVMs returns a list of all virtual machines.
 	ListVMs(retries ...RetryStrategy) ([]VM, error)
 	// RemoveVM removes a virtual machine specified by id.
@@ -45,6 +49,9 @@ type VMData interface {
 type VM interface {
 	VMData
 
+	// Update updates the virtual machine with the given parameters. Use UpdateVMParams to
+	// get a builder for the parameters.
+	Update(params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
 	// Remove removes the current VM. This involves an API call and may be slow.
 	Remove(retries ...RetryStrategy) error
 
@@ -88,9 +95,86 @@ type BuildableVMParameters interface {
 	OptionalVMParameters
 
 	// WithName adds a name to the VM.
-	WithName(name string) BuildableVMParameters
-	// WithComment adds a commen to the VM.
-	WithComment(comment string) BuildableVMParameters
+	WithName(name string) (BuildableVMParameters, error)
+	// MustWithName is identical to WithName, but panics instead of returning an error.
+	MustWithName(name string) BuildableVMParameters
+
+	// WithComment adds a common to the VM.
+	WithComment(comment string) (BuildableVMParameters, error)
+	// MustWithComment is identical to WithComment, but panics instead of returning an error.
+	MustWithComment(comment string) BuildableVMParameters
+}
+
+// UpdateVMParameters returns a set of parameters to change on a VM.
+type UpdateVMParameters interface {
+	// Name returns the name for the VM. Return nil if the name should not be changed.
+	Name() *string
+	// Comment returns the comment for the VM. Return nil if the name should not be changed.
+	Comment() *string
+}
+
+// BuildableUpdateVMParameters is a buildable version of UpdateVMParameters.
+type BuildableUpdateVMParameters interface {
+	UpdateVMParameters
+
+	// WithName adds an updated name to the request.
+	WithName(name string) (BuildableUpdateVMParameters, error)
+
+	// MustWithName is identical to WithName, but panics instead of returning an error
+	MustWithName(name string) BuildableUpdateVMParameters
+
+	// WithComment adds a comment to the request
+	WithComment(comment string) (BuildableUpdateVMParameters, error)
+
+	// MustWithComment is identical to WithComment, but panics instead of returning an error.
+	MustWithComment(comment string) BuildableUpdateVMParameters
+}
+
+// UpdateVMParams returns a buildable set of update parameters.
+func UpdateVMParams() BuildableUpdateVMParameters {
+	return &updateVMParams{}
+}
+
+type updateVMParams struct {
+	name    *string
+	comment *string
+}
+
+func (u *updateVMParams) MustWithName(name string) BuildableUpdateVMParameters {
+	builder, err := u.WithName(name)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithComment(comment string) BuildableUpdateVMParameters {
+	builder, err := u.WithComment(comment)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) Name() *string {
+	return u.name
+}
+
+func (u *updateVMParams) Comment() *string {
+	return u.comment
+}
+
+func (u *updateVMParams) WithName(name string) (BuildableUpdateVMParameters, error) {
+	if err := validateVMName(name); err != nil {
+		return nil, err
+	}
+	u.name = &name
+	return u, nil
+}
+
+func (u *updateVMParams) WithComment(comment string) (BuildableUpdateVMParameters, error) {
+	u.comment = &comment
+	return u, nil
 }
 
 // CreateVMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
@@ -107,14 +191,33 @@ type vmParams struct {
 	comment string
 }
 
-func (v *vmParams) WithName(name string) BuildableVMParameters {
-	v.name = name
-	return v
+func (v *vmParams) MustWithName(name string) BuildableVMParameters {
+	builder, err := v.WithName(name)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
-func (v *vmParams) WithComment(comment string) BuildableVMParameters {
+func (v *vmParams) MustWithComment(comment string) BuildableVMParameters {
+	builder, err := v.WithComment(comment)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) WithName(name string) (BuildableVMParameters, error) {
+	if err := validateVMName(name); err != nil {
+		return nil, err
+	}
+	v.name = name
+	return v, nil
+}
+
+func (v *vmParams) WithComment(comment string) (BuildableVMParameters, error) {
 	v.comment = comment
-	return v
+	return v, nil
 }
 
 func (v vmParams) Name() string {
@@ -134,6 +237,38 @@ type vm struct {
 	clusterID  string
 	templateID string
 	status     VMStatus
+}
+
+// withName returns a copy of the VM with the new name. It does not change the original copy to avoid
+// shared state issues.
+func (v *vm) withName(name string) *vm {
+	return &vm{
+		client:     v.client,
+		id:         v.id,
+		name:       name,
+		comment:    v.comment,
+		clusterID:  v.clusterID,
+		templateID: v.templateID,
+		status:     v.status,
+	}
+}
+
+// withComment returns a copy of the VM with the new comment. It does not change the original copy to avoid
+// shared state issues.
+func (v *vm) withComment(comment string) *vm {
+	return &vm{
+		client:     v.client,
+		id:         v.id,
+		name:       v.name,
+		comment:    comment,
+		clusterID:  v.clusterID,
+		templateID: v.templateID,
+		status:     v.status,
+	}
+}
+
+func (v *vm) Update(params UpdateVMParameters, retries ...RetryStrategy) (VM, error) {
+	return v.client.UpdateVM(v.id, params, retries...)
 }
 
 func (v *vm) Status() VMStatus {
@@ -195,6 +330,15 @@ func (v *vm) ID() string {
 
 func (v *vm) Name() string {
 	return v.name
+}
+
+var vmNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_\-.]*$`)
+
+func validateVMName(name string) error {
+	if !vmNameRegexp.MatchString(name) {
+		return newError(EBadArgument, "invalid VM name: %s", name)
+	}
+	return nil
 }
 
 func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {

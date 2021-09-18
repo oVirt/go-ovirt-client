@@ -58,7 +58,7 @@ func assertCanCreateVM(t *testing.T, client ovirtclient.Client, helper ovirtclie
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
 		helper.GetBlankTemplateID(),
-		ovirtclient.CreateVMParams().WithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
 	)
 	if err != nil {
 		t.Fatalf("Failed to create test VM (%v)", err)

@@ -13,7 +13,7 @@ func TestVMNICCreation(t *testing.T) {
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
 		helper.GetBlankTemplateID(),
-		ovirtclient.CreateVMParams().WithName("test"),
+		ovirtclient.CreateVMParams().MustWithName("test"),
 	)
 	if err != nil {
 		t.Fatal(err)
