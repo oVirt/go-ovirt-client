@@ -18,7 +18,7 @@ func (m *mockClient) StartImageUpload(
 		storageDomainID,
 		"",
 		size,
-		CreateDiskParams().WithSparse(sparse).WithAlias(alias),
+		CreateDiskParams().MustWithSparse(sparse).MustWithAlias(alias),
 		reader,
 		retries...,
 	)
@@ -36,7 +36,7 @@ func (m *mockClient) UploadImage(
 		storageDomainID,
 		"",
 		size,
-		CreateDiskParams().WithSparse(sparse).WithAlias(alias),
+		CreateDiskParams().MustWithSparse(sparse).MustWithAlias(alias),
 		reader,
 		retries...,
 	)

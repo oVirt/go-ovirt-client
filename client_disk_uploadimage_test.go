@@ -22,7 +22,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
-		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
+		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 		fh,
 	)
 	if err != nil {
@@ -52,7 +52,7 @@ func TestImageUploadToExistingDisk(t *testing.T) {
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
-		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
+		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 	)
 	if disk != nil {
 		defer func() {
