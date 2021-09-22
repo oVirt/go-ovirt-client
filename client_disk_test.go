@@ -30,7 +30,7 @@ func ExampleDiskClient_CreateDisk() {
 		storageDomainID,
 		imageFormat,
 		uint64(diskSize),
-		ovirtclient.CreateDiskParams().WithAlias("test_disk"),
+		ovirtclient.CreateDiskParams().MustWithAlias("test_disk"),
 	)
 	if err != nil {
 		panic(err)
@@ -43,7 +43,7 @@ func ExampleDiskClient_CreateDisk() {
 	// Output:
 }
 
-func TestDiskCreation(t *testing.T) {
+func TestDiskCreationAndUpdate(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
@@ -53,7 +53,7 @@ func TestDiskCreation(t *testing.T) {
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
 		512,
-		ovirtclient.CreateDiskParams().WithAlias(diskName),
+		ovirtclient.CreateDiskParams().MustWithAlias(diskName),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -66,12 +66,12 @@ func TestDiskCreation(t *testing.T) {
 			disk.Status(),
 		)
 	}
-	defer func() {
+	t.Cleanup(func() {
 		err := disk.Remove()
 		if err != nil {
 			t.Fatalf("Failed to remove disk after disk creation test (%v)", err)
 		}
-	}()
+	})
 
 	checkDiskAfterCreation(disk, t, diskName)
 
@@ -81,6 +81,14 @@ func TestDiskCreation(t *testing.T) {
 	}
 
 	checkDiskAfterCreation(fetchedDisk, t, diskName)
+
+	params := ovirtclient.UpdateDiskParams()
+	params.MustWithAlias("changed_disk_name")
+	updatedDisk, err := fetchedDisk.Update(params)
+	if err != nil {
+		t.Fatalf("failed to update disk (%v)", err)
+	}
+	checkDiskAfterCreation(updatedDisk, t, "changed_disk_name")
 }
 
 func checkDiskAfterCreation(disk ovirtclient.Disk, t *testing.T, name string) {

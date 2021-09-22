@@ -39,7 +39,7 @@ func ExampleDiskClient_uploadImage() {
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
-		ovirtclient.CreateDiskParams().WithAlias(imageName).WithSparse(true),
+		ovirtclient.CreateDiskParams().MustWithAlias(imageName).MustWithSparse(true),
 		fh,
 	)
 	if err != nil {
@@ -79,7 +79,7 @@ func ExampleDiskClient_uploadImageWithCancel() {
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
 		uint64(stat.Size()),
-		ovirtclient.CreateDiskParams().WithSparse(true).WithAlias(imageName),
+		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 		fh,
 		ovirtclient.ContextStrategy(ctx),
 	)

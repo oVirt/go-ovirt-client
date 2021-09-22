@@ -28,7 +28,7 @@ func (o *oVirtClient) UploadImage(
 		storageDomainID,
 		"",
 		size,
-		CreateDiskParams().WithSparse(sparse).WithAlias(alias),
+		CreateDiskParams().MustWithSparse(sparse).MustWithAlias(alias),
 		reader,
 		retries...,
 	)
@@ -68,7 +68,7 @@ func (o *oVirtClient) StartImageUpload(
 		storageDomainID,
 		"",
 		size,
-		CreateDiskParams().WithSparse(sparse).WithAlias(alias),
+		CreateDiskParams().MustWithSparse(sparse).MustWithAlias(alias),
 		reader,
 		retries...,
 	)

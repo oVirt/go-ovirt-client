@@ -20,7 +20,7 @@ func (o *oVirtClient) StartCreateDisk(
 		return nil, err
 	}
 
-	var result *diskCreation
+	var result *diskWait
 	processName := "creating disk"
 	correlationID := ""
 	if params != nil && params.Alias() != "" {
@@ -54,7 +54,7 @@ func (o *oVirtClient) StartCreateDisk(
 				return wrap(err, EUnidentified, "failed to convert SDK disk object")
 			}
 
-			result = &diskCreation{
+			result = &diskWait{
 				lock:          &sync.Mutex{},
 				client:        o,
 				disk:          resultDisk,
@@ -139,39 +139,6 @@ func (o *oVirtClient) CreateDisk(
 	disk, err := result.Wait()
 	if err != nil {
 		o.logger.Warningf("Created disk %s, but failed to wait for it to unlock. (%v)", result.Disk().ID(), err)
-	}
-	return disk, err
-}
-
-type diskCreation struct {
-	client        *oVirtClient
-	disk          Disk
-	correlationID string
-	lock          *sync.Mutex
-}
-
-func (d *diskCreation) Disk() Disk {
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	return d.disk
-}
-
-func (d *diskCreation) Wait(retries ...RetryStrategy) (Disk, error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
-	if err := d.client.waitForJobFinished(d.correlationID, retries); err != nil {
-		return d.disk, err
-	}
-
-	d.lock.Lock()
-	diskID := d.disk.ID()
-	d.lock.Unlock()
-
-	disk, err := d.client.GetDisk(diskID, retries...)
-
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	if disk != nil {
-		d.disk = disk
 	}
 	return disk, err
 }

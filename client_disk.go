@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"io"
+	"sync"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
@@ -223,6 +224,23 @@ type DiskClient interface {
 		retries ...RetryStrategy,
 	) (Disk, error)
 
+	// StartUpdateDisk sends the disk update request to the oVirt API and returns a DiskUpdate
+	// object, which can be used to wait for the update to complete. Use UpdateDiskParams to
+	// obtain a builder for the parameters structure.
+	StartUpdateDisk(
+		id string,
+		params UpdateDiskParameters,
+		retries ...RetryStrategy,
+	) (DiskUpdate, error)
+
+	// UpdateDisk updates the specified disk with the specified parameters. Use UpdateDiskParams to
+	// obtain a builder for the parameters structure.
+	UpdateDisk(
+		id string,
+		params UpdateDiskParameters,
+		retries ...RetryStrategy,
+	) (Disk, error)
+
 	// ListDisks lists all disks.
 	ListDisks(retries ...RetryStrategy) ([]Disk, error)
 	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
@@ -231,11 +249,55 @@ type DiskClient interface {
 	RemoveDisk(diskID string, retries ...RetryStrategy) error
 }
 
+// UpdateDiskParams creates a builder for the params for updating a disk.
+func UpdateDiskParams() BuildableUpdateDiskParameters {
+	return &updateDiskParams{}
+}
+
+// UpdateDiskParameters describes the possible parameters for updating a disk.
+type UpdateDiskParameters interface {
+	// Alias returns the disk alias to set. It can return nil to leave the alias unchanged.
+	Alias() *string
+}
+
+// BuildableUpdateDiskParameters is a buildable version of UpdateDiskParameters.
+type BuildableUpdateDiskParameters interface {
+	UpdateDiskParameters
+
+	// WithAlias changes the params structure to set the alias to the specified value. It returns an error
+	// if the alias is invalid.
+	WithAlias(alias string) (BuildableUpdateDiskParameters, error)
+	// MustWithAlias is identical to WithAlias, but panics instead of returning an error.
+	MustWithAlias(alias string) BuildableUpdateDiskParameters
+}
+
+type updateDiskParams struct {
+	alias *string
+}
+
+func (u *updateDiskParams) Alias() *string {
+	return u.alias
+}
+
+func (u *updateDiskParams) WithAlias(alias string) (BuildableUpdateDiskParameters, error) {
+	u.alias = &alias
+	return u, nil
+}
+
+func (u *updateDiskParams) MustWithAlias(alias string) BuildableUpdateDiskParameters {
+	builder, err := u.WithAlias(alias)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 // CreateDiskOptionalParameters is a structure that serves to hold the optional parameters for DiskClient.CreateDisk.
 type CreateDiskOptionalParameters interface {
 	// Alias is a secondary name for the disk.
 	Alias() string
-	// Sparse returns true if sparse provisioning should be used for disks.
+
+	// Sparse indicates that the disk should be sparse-provisioned.If it returns nil, the default will be used.
 	Sparse() *bool
 }
 
@@ -244,9 +306,14 @@ type BuildableCreateDiskParameters interface {
 	CreateDiskOptionalParameters
 
 	// WithAlias sets the alias of the disk.
-	WithAlias(alias string) BuildableCreateDiskParameters
-	// WithSparse sets the sparse flag on the disk.
-	WithSparse(sparse bool) BuildableCreateDiskParameters
+	WithAlias(alias string) (BuildableCreateDiskParameters, error)
+	// MustWithAlias is the same as WithAlias, but panics instead of returning an error.
+	MustWithAlias(alias string) BuildableCreateDiskParameters
+
+	// WithSparse sets sparse provisioning for the disk.
+	WithSparse(sparse bool) (BuildableCreateDiskParameters, error)
+	// MustWithSparse is the same as WithSparse, but panics instead of returning an error.
+	MustWithSparse(sparse bool) BuildableCreateDiskParameters
 }
 
 // CreateDiskParams creates a buildable set of CreateDiskOptionalParameters for use with
@@ -264,18 +331,34 @@ func (c *createDiskParams) Alias() string {
 	return c.alias
 }
 
-func (c *createDiskParams) WithAlias(alias string) BuildableCreateDiskParameters {
+func (c *createDiskParams) WithAlias(alias string) (BuildableCreateDiskParameters, error) {
 	c.alias = alias
-	return c
+	return c, nil
+}
+
+func (c *createDiskParams) MustWithAlias(alias string) BuildableCreateDiskParameters {
+	builder, err := c.WithAlias(alias)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (c *createDiskParams) Sparse() *bool {
 	return c.sparse
 }
 
-func (c *createDiskParams) WithSparse(sparse bool) BuildableCreateDiskParameters {
+func (c *createDiskParams) WithSparse(sparse bool) (BuildableCreateDiskParameters, error) {
 	c.sparse = &sparse
-	return c
+	return c, nil
+}
+
+func (c *createDiskParams) MustWithSparse(sparse bool) BuildableCreateDiskParameters {
+	builder, err := c.WithSparse(sparse)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 // DiskCreation is a process object that lets you query the status of the disk creation.
@@ -283,6 +366,15 @@ type DiskCreation interface {
 	// Disk returns the disk that has been created, even if it is not yet ready.
 	Disk() Disk
 	// Wait waits until the disk creation is complete and returns when it is done. It returns the created disk and
+	// an error if one happened.
+	Wait(retries ...RetryStrategy) (Disk, error)
+}
+
+// DiskUpdate is an object to monitor the progress of an update.
+type DiskUpdate interface {
+	// Disk returns the disk as it was during the last update call.
+	Disk() Disk
+	// Wait waits until the disk update is complete and returns when it is done. It returns the created disk and
 	// an error if one happened.
 	Wait(retries ...RetryStrategy) (Disk, error)
 }
@@ -382,6 +474,20 @@ type Disk interface {
 		params CreateDiskAttachmentOptionalParams,
 		retries ...RetryStrategy,
 	) (DiskAttachment, error)
+
+	// StartUpdate starts an update to the disk. The returned DiskUpdate can be used to wait
+	// for the update to complete. Use UpdateDiskParams() to obtain a buildable structure.
+	StartUpdate(
+		params UpdateDiskParameters,
+		retries ...RetryStrategy,
+	) (DiskUpdate, error)
+
+	// Update updates the current disk with the specified parameters.
+	// Use UpdateDiskParams() to obtain a buildable structure.
+	Update(
+		params UpdateDiskParameters,
+		retries ...RetryStrategy,
+	) (Disk, error)
 }
 
 // DiskStatus shows the status of a disk. Certain operations lock a disk, which is important because the disk can then
@@ -521,6 +627,14 @@ type disk struct {
 	sparse          bool
 }
 
+func (d *disk) Update(params UpdateDiskParameters, retries ...RetryStrategy) (Disk, error) {
+	return d.client.UpdateDisk(d.id, params, retries...)
+}
+
+func (d *disk) StartUpdate(params UpdateDiskParameters, retries ...RetryStrategy) (DiskUpdate, error) {
+	return d.client.StartUpdateDisk(d.id, params, retries...)
+}
+
 func (d *disk) Sparse() bool {
 	return d.sparse
 }
@@ -572,4 +686,37 @@ func (d disk) StartDownload(format ImageFormat, retries ...RetryStrategy) (Image
 
 func (d disk) Download(format ImageFormat, retries ...RetryStrategy) (ImageDownloadReader, error) {
 	return d.client.DownloadDisk(d.id, format, retries...)
+}
+
+type diskWait struct {
+	client        *oVirtClient
+	disk          Disk
+	correlationID string
+	lock          *sync.Mutex
+}
+
+func (d *diskWait) Disk() Disk {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	return d.disk
+}
+
+func (d *diskWait) Wait(retries ...RetryStrategy) (Disk, error) {
+	retries = defaultRetries(retries, defaultWriteTimeouts())
+	if err := d.client.waitForJobFinished(d.correlationID, retries); err != nil {
+		return d.disk, err
+	}
+
+	d.lock.Lock()
+	diskID := d.disk.ID()
+	d.lock.Unlock()
+
+	disk, err := d.client.GetDisk(diskID, retries...)
+
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	if disk != nil {
+		d.disk = disk
+	}
+	return disk, err
 }

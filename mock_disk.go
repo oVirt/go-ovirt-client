@@ -27,3 +27,21 @@ func (d *diskWithData) Unlock() {
 	defer d.lock.Unlock()
 	d.status = DiskStatusOK
 }
+
+func (d *diskWithData) WithAlias(alias *string) *diskWithData {
+	return &diskWithData{
+		disk{
+			client:          d.client,
+			id:              d.id,
+			alias:           *alias,
+			provisionedSize: d.provisionedSize,
+			format:          d.format,
+			storageDomainID: d.storageDomainID,
+			status:          d.status,
+			totalSize:       d.totalSize,
+			sparse:          d.sparse,
+		},
+		d.lock,
+		d.data,
+	}
+}
