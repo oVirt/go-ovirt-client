@@ -131,6 +131,16 @@ type EngineError interface {
 	CanAutoRetry() bool
 }
 
+// HasErrorCode returns true if the specified error has the specified error code.
+func HasErrorCode(err error, code ErrorCode) bool {
+	var e EngineError
+	if errors.As(err, &e) {
+		return e.HasCode(code)
+	}
+	e = realIdentify(err)
+	return e.HasCode(code)
+}
+
 type engineError struct {
 	message string
 	code    ErrorCode
