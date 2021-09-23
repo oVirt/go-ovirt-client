@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"io"
+	"strings"
 	"sync"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
@@ -553,20 +554,17 @@ type ImageFormat string
 
 // Validate returns an error if the image format doesn't have a valid value.
 func (f ImageFormat) Validate() error {
-	switch f {
-	case ImageFormatRaw:
-		return nil
-	case ImageFormatCow:
-		return nil
-	default:
-		return newError(
-			EBadArgument,
-			"invalid image format: %s must be one of: %s, %s",
-			f,
-			ImageFormatRaw,
-			ImageFormatCow,
-		)
+	for _, format := range ImageFormatValues() {
+		if format == f {
+			return nil
+		}
 	}
+	return newError(
+		EBadArgument,
+		"invalid image format: %s must be one of: %s",
+		f,
+		strings.Join(ImageFormatValues().Strings(), ", "),
+	)
 }
 
 const (
