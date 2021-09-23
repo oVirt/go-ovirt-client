@@ -439,3 +439,36 @@ const (
 	// It is possible that the virtual machine process will fail to run.
 	VMStatusWaitForLaunch VMStatus = "wait_for_launch"
 )
+
+// VMStatusList is a list of VMStatus.
+type VMStatusList []VMStatus
+
+// VMStatusValues returns all possible VMStatus values.
+func VMStatusValues() VMStatusList {
+	return []VMStatus{
+		VMStatusDown,
+		VMStatusImageLocked,
+		VMStatusMigrating,
+		VMStatusNotResponding,
+		VMStatusPaused,
+		VMStatusPoweringDown,
+		VMStatusPoweringUp,
+		VMStatusRebooting,
+		VMStatusRestoringState,
+		VMStatusSavingState,
+		VMStatusSuspended,
+		VMStatusUnassigned,
+		VMStatusUnknown,
+		VMStatusUp,
+		VMStatusWaitForLaunch,
+	}
+}
+
+// Strings creates a string list of the values.
+func (l VMStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
+}

@@ -1,6 +1,8 @@
 package ovirtclient
 
 import (
+	"strings"
+
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
@@ -36,22 +38,42 @@ const (
 	DiskInterfaceVirtIOSCSI DiskInterface = "virtio_scsi"
 )
 
+// DiskInterfaceList is a list of DiskInterface.
+type DiskInterfaceList []DiskInterface
+
+// DiskInterfaceValues returns all possible DiskInterface values.
+func DiskInterfaceValues() DiskInterfaceList {
+	return []DiskInterface{
+		DiskInterfaceIDE,
+		DiskInterfaceSATA,
+		DiskInterfacesPAPRvSCSI,
+		DiskInterfaceVirtIO,
+		DiskInterfaceVirtIOSCSI,
+	}
+}
+
+// Strings creates a string list of the values.
+func (l DiskInterfaceList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
+}
+
 // Validate checks if the DiskInterface actually has a valid value.
 func (d DiskInterface) Validate() error {
-	switch d {
-	case DiskInterfaceIDE:
-		return nil
-	case DiskInterfaceSATA:
-		return nil
-	case DiskInterfacesPAPRvSCSI:
-		return nil
-	case DiskInterfaceVirtIO:
-		return nil
-	case DiskInterfaceVirtIOSCSI:
-		return nil
-	default:
-		return newError(EBadArgument, "invalid disk interface: %s", d)
+	for _, format := range DiskInterfaceValues() {
+		if format == d {
+			return nil
+		}
 	}
+	return newError(
+		EBadArgument,
+		"invalid disk interface: %s must be one of: %s",
+		d,
+		strings.Join(DiskInterfaceValues().Strings(), ", "),
+	)
 }
 
 // CreateDiskAttachmentOptionalParams are the optional parameters for creating a disk attachment.

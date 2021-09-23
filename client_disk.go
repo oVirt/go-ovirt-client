@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"io"
+	"strings"
 	"sync"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
@@ -504,6 +505,27 @@ const (
 	DiskStatusIllegal DiskStatus = "illegal"
 )
 
+// DiskStatusList is a list of DiskStatus values.
+type DiskStatusList []DiskStatus
+
+// DiskStatusValues returns all possible values for DiskStatus.
+func DiskStatusValues() DiskStatusList {
+	return []DiskStatus{
+		DiskStatusOK,
+		DiskStatusLocked,
+		DiskStatusIllegal,
+	}
+}
+
+// Strings returns a list of strings.
+func (l DiskStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
+}
+
 // UploadImageProgress is a tracker for the upload progress happening in the background.
 type UploadImageProgress interface {
 	// Disk returns the disk created as part of the upload process once the upload is complete. Before the upload
@@ -532,20 +554,17 @@ type ImageFormat string
 
 // Validate returns an error if the image format doesn't have a valid value.
 func (f ImageFormat) Validate() error {
-	switch f {
-	case ImageFormatRaw:
-		return nil
-	case ImageFormatCow:
-		return nil
-	default:
-		return newError(
-			EBadArgument,
-			"invalid image format: %s must be one of: %s, %s",
-			f,
-			ImageFormatRaw,
-			ImageFormatCow,
-		)
+	for _, format := range ImageFormatValues() {
+		if format == f {
+			return nil
+		}
 	}
+	return newError(
+		EBadArgument,
+		"invalid image format: %s must be one of: %s",
+		f,
+		strings.Join(ImageFormatValues().Strings(), ", "),
+	)
 }
 
 const (
@@ -556,6 +575,26 @@ const (
 	// ImageFormatRaw is not actually a format, it only contains the raw bytes on the block device.
 	ImageFormatRaw ImageFormat = "raw"
 )
+
+// ImageFormatList is a list of ImageFormat values.
+type ImageFormatList []ImageFormat
+
+// ImageFormatValues returns all possible ImageFormat values.
+func ImageFormatValues() ImageFormatList {
+	return []ImageFormat{
+		ImageFormatCow,
+		ImageFormatRaw,
+	}
+}
+
+// Strings creates a string list of the values.
+func (l ImageFormatList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
+}
 
 func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 	id, ok := sdkDisk.Id()

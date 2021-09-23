@@ -68,6 +68,35 @@ const (
 	StorageDomainStatusNA StorageDomainStatus = ""
 )
 
+// StorageDomainStatusList is a list of StorageDomainStatus.
+type StorageDomainStatusList []StorageDomainStatus
+
+// StorageDomainStatusValues returns all possible StorageDomainStatus values.
+func StorageDomainStatusValues() StorageDomainStatusList {
+	return []StorageDomainStatus{
+		StorageDomainStatusActivating,
+		StorageDomainStatusActive,
+		StorageDomainStatusDetaching,
+		StorageDomainStatusInactive,
+		StorageDomainStatusLocked,
+		StorageDomainStatusMaintenance,
+		StorageDomainStatusMixed,
+		StorageDomainStatusPreparingForMaintenance,
+		StorageDomainStatusUnattached,
+		StorageDomainStatusUnknown,
+		StorageDomainStatusNA,
+	}
+}
+
+// Strings creates a string list of the values.
+func (l StorageDomainStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
+}
+
 // StorageDomainExternalStatus represents the status of an external storage domain. This status is updated externally.
 //
 // Note: this is not well-defined as the oVirt model has only a very generic description. See
@@ -93,6 +122,30 @@ const (
 	// administrator.
 	StorageDomainExternalStatusWarning StorageDomainExternalStatus = "warning"
 )
+
+// StorageDomainExternalStatusList is a list of StorageDomainStatus.
+type StorageDomainExternalStatusList []StorageDomainExternalStatus
+
+// StorageDomainExternalStatusValues returns all possible StorageDomainExternalStatus values.
+func StorageDomainExternalStatusValues() StorageDomainExternalStatusList {
+	return []StorageDomainExternalStatus{
+		StorageDomainExternalStatusNA,
+		StorageDomainExternalStatusError,
+		StorageDomainExternalStatusFailure,
+		StorageDomainExternalStatusInfo,
+		StorageDomainExternalStatusOk,
+		StorageDomainExternalStatusWarning,
+	}
+}
+
+// Strings creates a string list of the values.
+func (l StorageDomainExternalStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
+}
 
 func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client Client) (StorageDomain, error) {
 	id, ok := sdkStorageDomain.Id()
