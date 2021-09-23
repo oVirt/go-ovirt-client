@@ -36,6 +36,17 @@ const (
 	DiskInterfaceVirtIOSCSI DiskInterface = "virtio_scsi"
 )
 
+// DiskInterfaceValues returns all possible DiskInterface values.
+func DiskInterfaceValues() []DiskInterface {
+	return []DiskInterface{
+		DiskInterfaceIDE,
+		DiskInterfaceSATA,
+		DiskInterfacesPAPRvSCSI,
+		DiskInterfaceVirtIO,
+		DiskInterfaceVirtIOSCSI,
+	}
+}
+
 // Validate checks if the DiskInterface actually has a valid value.
 func (d DiskInterface) Validate() error {
 	switch d {

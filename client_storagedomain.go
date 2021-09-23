@@ -68,6 +68,23 @@ const (
 	StorageDomainStatusNA StorageDomainStatus = ""
 )
 
+// StorageDomainStatusValues returns all possible StorageDomainStatus values.
+func StorageDomainStatusValues() []StorageDomainStatus {
+	return []StorageDomainStatus{
+		StorageDomainStatusActivating,
+		StorageDomainStatusActive,
+		StorageDomainStatusDetaching,
+		StorageDomainStatusInactive,
+		StorageDomainStatusLocked,
+		StorageDomainStatusMaintenance,
+		StorageDomainStatusMixed,
+		StorageDomainStatusPreparingForMaintenance,
+		StorageDomainStatusUnattached,
+		StorageDomainStatusUnknown,
+		StorageDomainStatusNA,
+	}
+}
+
 // StorageDomainExternalStatus represents the status of an external storage domain. This status is updated externally.
 //
 // Note: this is not well-defined as the oVirt model has only a very generic description. See
@@ -93,6 +110,18 @@ const (
 	// administrator.
 	StorageDomainExternalStatusWarning StorageDomainExternalStatus = "warning"
 )
+
+// StorageDomainExternalStatusValues returns all possible StorageDomainExternalStatus values.
+func StorageDomainExternalStatusValues() []StorageDomainExternalStatus {
+	return []StorageDomainExternalStatus{
+		StorageDomainExternalStatusNA,
+		StorageDomainExternalStatusError,
+		StorageDomainExternalStatusFailure,
+		StorageDomainExternalStatusInfo,
+		StorageDomainExternalStatusOk,
+		StorageDomainExternalStatusWarning,
+	}
+}
 
 func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client Client) (StorageDomain, error) {
 	id, ok := sdkStorageDomain.Id()

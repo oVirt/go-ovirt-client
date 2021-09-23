@@ -76,6 +76,28 @@ const (
 	HostStatusUp HostStatus = "up"
 )
 
+// HostStatusValues returns all possible HostStatus values.
+func HostStatusValues() []HostStatus {
+	return []HostStatus{
+		HostStatusConnecting,
+		HostStatusDown,
+		HostStatusError,
+		HostStatusInitializing,
+		HostStatusInstallFailed,
+		HostStatusInstalling,
+		HostStatusInstallingOS,
+		HostStatusKDumping,
+		HostStatusMaintenance,
+		HostStatusNonOperational,
+		HostStatusNonResponsive,
+		HostStatusPendingApproval,
+		HostStatusPreparingForMaintenance,
+		HostStatusReboot,
+		HostStatusUnassigned,
+		HostStatusUp,
+	}
+}
+
 func convertSDKHost(sdkHost *ovirtsdk4.Host, client Client) (Host, error) {
 	id, ok := sdkHost.Id()
 	if !ok {

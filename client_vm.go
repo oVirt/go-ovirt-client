@@ -439,3 +439,24 @@ const (
 	// It is possible that the virtual machine process will fail to run.
 	VMStatusWaitForLaunch VMStatus = "wait_for_launch"
 )
+
+// VMStatusValues returns all possible VMStatus values.
+func VMStatusValues() []VMStatus {
+	return []VMStatus{
+		VMStatusDown,
+		VMStatusImageLocked,
+		VMStatusMigrating,
+		VMStatusNotResponding,
+		VMStatusPaused,
+		VMStatusPoweringDown,
+		VMStatusPoweringUp,
+		VMStatusRebooting,
+		VMStatusRestoringState,
+		VMStatusSavingState,
+		VMStatusSuspended,
+		VMStatusUnassigned,
+		VMStatusUnknown,
+		VMStatusUp,
+		VMStatusWaitForLaunch,
+	}
+}

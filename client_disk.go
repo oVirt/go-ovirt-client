@@ -504,6 +504,15 @@ const (
 	DiskStatusIllegal DiskStatus = "illegal"
 )
 
+// DiskStatusValues returns all possible values for DiskStatus.
+func DiskStatusValues() []DiskStatus {
+	return []DiskStatus{
+		DiskStatusOK,
+		DiskStatusLocked,
+		DiskStatusIllegal,
+	}
+}
+
 // UploadImageProgress is a tracker for the upload progress happening in the background.
 type UploadImageProgress interface {
 	// Disk returns the disk created as part of the upload process once the upload is complete. Before the upload
@@ -556,6 +565,14 @@ const (
 	// ImageFormatRaw is not actually a format, it only contains the raw bytes on the block device.
 	ImageFormatRaw ImageFormat = "raw"
 )
+
+// ImageFormatValues returns all possible ImageFormat values.
+func ImageFormatValues() []ImageFormat {
+	return []ImageFormat{
+		ImageFormatCow,
+		ImageFormatRaw,
+	}
+}
 
 func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 	id, ok := sdkDisk.Id()
