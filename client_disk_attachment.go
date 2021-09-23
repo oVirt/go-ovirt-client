@@ -36,8 +36,11 @@ const (
 	DiskInterfaceVirtIOSCSI DiskInterface = "virtio_scsi"
 )
 
+// DiskInterfaceList is a list of DiskInterface.
+type DiskInterfaceList []DiskInterface
+
 // DiskInterfaceValues returns all possible DiskInterface values.
-func DiskInterfaceValues() []DiskInterface {
+func DiskInterfaceValues() DiskInterfaceList {
 	return []DiskInterface{
 		DiskInterfaceIDE,
 		DiskInterfaceSATA,
@@ -45,6 +48,15 @@ func DiskInterfaceValues() []DiskInterface {
 		DiskInterfaceVirtIO,
 		DiskInterfaceVirtIOSCSI,
 	}
+}
+
+// Strings creates a string list of the values.
+func (l DiskInterfaceList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
 }
 
 // Validate checks if the DiskInterface actually has a valid value.

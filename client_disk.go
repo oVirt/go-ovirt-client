@@ -504,13 +504,25 @@ const (
 	DiskStatusIllegal DiskStatus = "illegal"
 )
 
+// DiskStatusList is a list of DiskStatus values.
+type DiskStatusList []DiskStatus
+
 // DiskStatusValues returns all possible values for DiskStatus.
-func DiskStatusValues() []DiskStatus {
+func DiskStatusValues() DiskStatusList {
 	return []DiskStatus{
 		DiskStatusOK,
 		DiskStatusLocked,
 		DiskStatusIllegal,
 	}
+}
+
+// Strings returns a list of strings.
+func (l DiskStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
 }
 
 // UploadImageProgress is a tracker for the upload progress happening in the background.
@@ -566,12 +578,24 @@ const (
 	ImageFormatRaw ImageFormat = "raw"
 )
 
+// ImageFormatList is a list of ImageFormat values.
+type ImageFormatList []ImageFormat
+
 // ImageFormatValues returns all possible ImageFormat values.
-func ImageFormatValues() []ImageFormat {
+func ImageFormatValues() ImageFormatList {
 	return []ImageFormat{
 		ImageFormatCow,
 		ImageFormatRaw,
 	}
+}
+
+// Strings creates a string list of the values.
+func (l ImageFormatList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
 }
 
 func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {

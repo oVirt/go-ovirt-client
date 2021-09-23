@@ -68,8 +68,11 @@ const (
 	StorageDomainStatusNA StorageDomainStatus = ""
 )
 
+// StorageDomainStatusList is a list of StorageDomainStatus.
+type StorageDomainStatusList []StorageDomainStatus
+
 // StorageDomainStatusValues returns all possible StorageDomainStatus values.
-func StorageDomainStatusValues() []StorageDomainStatus {
+func StorageDomainStatusValues() StorageDomainStatusList {
 	return []StorageDomainStatus{
 		StorageDomainStatusActivating,
 		StorageDomainStatusActive,
@@ -83,6 +86,15 @@ func StorageDomainStatusValues() []StorageDomainStatus {
 		StorageDomainStatusUnknown,
 		StorageDomainStatusNA,
 	}
+}
+
+// Strings creates a string list of the values.
+func (l StorageDomainStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
 }
 
 // StorageDomainExternalStatus represents the status of an external storage domain. This status is updated externally.
@@ -111,8 +123,11 @@ const (
 	StorageDomainExternalStatusWarning StorageDomainExternalStatus = "warning"
 )
 
+// StorageDomainExternalStatusList is a list of StorageDomainStatus.
+type StorageDomainExternalStatusList []StorageDomainExternalStatus
+
 // StorageDomainExternalStatusValues returns all possible StorageDomainExternalStatus values.
-func StorageDomainExternalStatusValues() []StorageDomainExternalStatus {
+func StorageDomainExternalStatusValues() StorageDomainExternalStatusList {
 	return []StorageDomainExternalStatus{
 		StorageDomainExternalStatusNA,
 		StorageDomainExternalStatusError,
@@ -121,6 +136,15 @@ func StorageDomainExternalStatusValues() []StorageDomainExternalStatus {
 		StorageDomainExternalStatusOk,
 		StorageDomainExternalStatusWarning,
 	}
+}
+
+// Strings creates a string list of the values.
+func (l StorageDomainExternalStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
 }
 
 func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client Client) (StorageDomain, error) {

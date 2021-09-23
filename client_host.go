@@ -76,8 +76,11 @@ const (
 	HostStatusUp HostStatus = "up"
 )
 
+// HostStatusList is a list of HostStatus.
+type HostStatusList []HostStatus
+
 // HostStatusValues returns all possible HostStatus values.
-func HostStatusValues() []HostStatus {
+func HostStatusValues() HostStatusList {
 	return []HostStatus{
 		HostStatusConnecting,
 		HostStatusDown,
@@ -96,6 +99,15 @@ func HostStatusValues() []HostStatus {
 		HostStatusUnassigned,
 		HostStatusUp,
 	}
+}
+
+// Strings creates a string list of the values.
+func (l HostStatusList) Strings() []string {
+	result := make([]string, len(l))
+	for i, status := range l {
+		result[i] = string(status)
+	}
+	return result
 }
 
 func convertSDKHost(sdkHost *ovirtsdk4.Host, client Client) (Host, error) {
