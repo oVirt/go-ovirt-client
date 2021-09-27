@@ -7,7 +7,7 @@ import (
 // NICClient defines the methods related to dealing with network interfaces.
 type NICClient interface {
 	// CreateNIC adds a new NIC to a VM specified in vmid.
-	CreateNIC(vmid string, name string, vnicProfileID string, retries ...RetryStrategy) (NIC, error)
+	CreateNIC(vmid string, name string, vnicProfileID string, optional OptionalNICParameters, retries ...RetryStrategy) (NIC, error)
 	// GetNIC returns one specific NIC with the ID specified in id, attached to a VM with the ID specified in vmid.
 	GetNIC(vmid string, id string, retries ...RetryStrategy) (NIC, error)
 	// ListNICs lists all NICs attached to the VM specified in vmid.
@@ -15,6 +15,22 @@ type NICClient interface {
 	// RemoveNIC removes the network interface specified.
 	RemoveNIC(vmid string, id string, retries ...RetryStrategy) error
 }
+
+// OptionalNICParameters is an interface that declares the source of optional parameters for NIC creation.
+type OptionalNICParameters interface{}
+
+// BuildableNICParameters is a modifiable version of OptionalNICParameters. You can use CreateNICParams() to create a
+// new copy, or implement your own.
+type BuildableNICParameters interface {
+	OptionalNICParameters
+}
+
+// CreateNICParams returns a buildable structure of OptionalNICParameters.
+func CreateNICParams() BuildableNICParameters {
+	return &nicParams{}
+}
+
+type nicParams struct{}
 
 // NICData is the core of NIC which only provides data-access functions.
 type NICData interface {

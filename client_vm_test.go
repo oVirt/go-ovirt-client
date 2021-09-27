@@ -74,3 +74,27 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 		t.Fatalf("updated VM comment %s does not match update parameters", fetchedVM.Comment())
 	}
 }
+
+func assertCanCreateVM(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	params ovirtclient.OptionalVMParameters,
+) ovirtclient.VM {
+	client := helper.GetClient()
+	vm, err := client.CreateVM(
+		helper.GetClusterID(),
+		helper.GetBlankTemplateID(),
+		params,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create test VM (%v)", err)
+	}
+	t.Cleanup(
+		func() {
+			if err := vm.Remove(); err != nil {
+				t.Fatalf("Failed to remove test VM %s (%v)", vm.ID(), err)
+			}
+		},
+	)
+	return vm
+}
