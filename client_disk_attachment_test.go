@@ -12,7 +12,11 @@ func TestDiskAttachmentCreation(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	vm := assertCanCreateVM(t, client, helper)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+	)
 	disk := assertCanCreateDisk(t, client, helper)
 	assertDiskAttachmentCount(t, vm, 0)
 	attachment := assertCanAttachDisk(t, vm, disk)
@@ -25,8 +29,16 @@ func TestDiskAttachmentCannotBeAttachedToSecondVM(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	vm1 := assertCanCreateVM(t, client, helper)
-	vm2 := assertCanCreateVM(t, client, helper)
+	vm1 := assertCanCreateVM(
+		t,
+		helper,
+		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+	)
+	vm2 := assertCanCreateVM(
+		t,
+		helper,
+		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+	)
 	disk := assertCanCreateDisk(t, client, helper)
 	_ = assertCanAttachDisk(t, vm1, disk)
 	assertCannotAttachDisk(t, vm2, disk, ovirtclient.EConflict)
@@ -52,25 +64,6 @@ func assertCanCreateDisk(t *testing.T, client ovirtclient.Client, helper ovirtcl
 		t.Fatalf("Failed to create test disk (%v)", err)
 	}
 	return disk
-}
-
-func assertCanCreateVM(t *testing.T, client ovirtclient.Client, helper ovirtclient.TestHelper) ovirtclient.VM {
-	vm, err := client.CreateVM(
-		helper.GetClusterID(),
-		helper.GetBlankTemplateID(),
-		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create test VM (%v)", err)
-	}
-	t.Cleanup(
-		func() {
-			if err := vm.Remove(); err != nil {
-				t.Fatalf("Failed to remove test VM %s (%v)", vm.ID(), err)
-			}
-		},
-	)
-	return vm
 }
 
 func assertCanDetachDisk(t *testing.T, attachment ovirtclient.DiskAttachment) {
