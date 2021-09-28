@@ -4,7 +4,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateNIC(vmid string, name string, vnicProfileID string, _ OptionalNICParameters, _ ...RetryStrategy) (NIC, error) {
+func (m *mockClient) CreateNIC(
+	vmid string,
+	vnicProfileID string,
+	name string,
+	_ OptionalNICParameters,
+	_ ...RetryStrategy,
+) (NIC, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

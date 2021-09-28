@@ -7,7 +7,13 @@ import (
 // NICClient defines the methods related to dealing with network interfaces.
 type NICClient interface {
 	// CreateNIC adds a new NIC to a VM specified in vmid.
-	CreateNIC(vmid string, name string, vnicProfileID string, optional OptionalNICParameters, retries ...RetryStrategy) (NIC, error)
+	CreateNIC(
+		vmid string,
+		vnicProfileID string,
+		name string,
+		optional OptionalNICParameters,
+		retries ...RetryStrategy,
+	) (NIC, error)
 	// GetNIC returns one specific NIC with the ID specified in id, attached to a VM with the ID specified in vmid.
 	GetNIC(vmid string, id string, retries ...RetryStrategy) (NIC, error)
 	// ListNICs lists all NICs attached to the VM specified in vmid.
