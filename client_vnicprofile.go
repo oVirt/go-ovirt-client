@@ -8,11 +8,30 @@ import (
 
 // VNICProfileClient defines the methods related to dealing with virtual NIC profiles.
 type VNICProfileClient interface {
+	// CreateVNICProfile creates a new VNIC profile with the specified name and network ID.
+	CreateVNICProfile(name string, networkID string, params OptionalVNICProfileParameters, retries ...RetryStrategy) (VNICProfile, error)
 	// GetVNICProfile returns a single VNIC Profile based on the ID
 	GetVNICProfile(id string, retries ...RetryStrategy) (VNICProfile, error)
 	// ListVNICProfiles lists all VNIC Profiles.
 	ListVNICProfiles(retries ...RetryStrategy) ([]VNICProfile, error)
+	// RemoveVNICProfile removes a VNIC profile
+	RemoveVNICProfile(id string, retries ...RetryStrategy) error
 }
+
+// OptionalVNICProfileParameters is a set of parameters for creating VNICProfiles that are optional.
+type OptionalVNICProfileParameters interface{}
+
+// BuildableVNICProfileParameters is a buildable version of OptionalVNICProfileParameters.
+type BuildableVNICProfileParameters interface {
+	OptionalVNICProfileParameters
+}
+
+// CreateVNICProfileParams creats a buildable set of optional parameters for VNICProfile creation.
+func CreateVNICProfileParams() BuildableVNICProfileParameters {
+	return &vnicProfileParams{}
+}
+
+type vnicProfileParams struct{}
 
 // VNICProfileData is the core of VNICProfile, providing only data access functions.
 type VNICProfileData interface {
@@ -31,6 +50,8 @@ type VNICProfile interface {
 
 	// Network fetches the network object from the oVirt engine. This is an API call and may be slow.
 	Network(retries ...RetryStrategy) (Network, error)
+	// Remove removes the current VNIC profile.
+	Remove(retries ...RetryStrategy) error
 }
 
 func convertSDKVNICProfile(sdkObject *ovirtsdk.VnicProfile, client Client) (VNICProfile, error) {
@@ -61,10 +82,15 @@ func convertSDKVNICProfile(sdkObject *ovirtsdk.VnicProfile, client Client) (VNIC
 }
 
 type vnicProfile struct {
+	client Client
+
 	id        string
-	client    Client
 	networkID string
 	name      string
+}
+
+func (v vnicProfile) Remove(retries ...RetryStrategy) error {
+	return v.client.RemoveVNICProfile(v.id, retries...)
 }
 
 func (v vnicProfile) Network(retries ...RetryStrategy) (Network, error) {
