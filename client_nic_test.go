@@ -1,25 +1,20 @@
 package ovirtclient_test
 
 import (
-	"fmt"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
-func TestVMNICCreation(t *testing.T) {
-	helper := getHelper(t)
-
-	vm := assertCanCreateVM(
-		t,
-		helper,
-		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("nic_test_%s", helper.GenerateRandomID(5))),
-	)
-	assertNICCount(t, vm, 0)
-	nic := assertCanCreateNIC(t, helper, vm, "test", ovirtclient.CreateNICParams())
-	assertNICCount(t, vm, 1)
-	assertCanRemoveNIC(t, nic)
-	assertNICCount(t, vm, 0)
+func assertCanUpdateNICName(t *testing.T, nic ovirtclient.NIC, name string) ovirtclient.NIC {
+	newNIC, err := nic.Update(ovirtclient.UpdateNICParams().MustWithName(name))
+	if err != nil {
+		t.Fatalf("failed to update NIC (%v)", err)
+	}
+	if newNIC.Name() != name {
+		t.Fatalf("NIC name not changed after update call")
+	}
+	return newNIC
 }
 
 func assertCanCreateNIC(
@@ -53,4 +48,15 @@ func assertNICCount(t *testing.T, vm ovirtclient.VM, n int) {
 	if len(nics) != n {
 		t.Fatalf("unexpected number of NICs after NIC removal on VM %s: %d instead of %d", vm.ID(), len(nics), n)
 	}
+}
+
+func assertCanUpdateNICVNICProfile(t *testing.T, nic ovirtclient.NIC, vnicProfileID string) ovirtclient.NIC {
+	newNIC, err := nic.Update(ovirtclient.UpdateNICParams().MustWithVNICProfileID(vnicProfileID))
+	if err != nil {
+		t.Fatalf("failed to update NIC with new VNIC profile ID (%v)", err)
+	}
+	if newNIC.VNICProfileID() != vnicProfileID {
+		t.Fatalf("VNIC profile ID not changed after update")
+	}
+	return newNIC
 }

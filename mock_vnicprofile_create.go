@@ -17,6 +17,12 @@ func (m *mockClient) CreateVNICProfile(
 		return nil, newError(ENotFound, "network not found")
 	}
 
+	for _, vnicProfile := range m.vnicProfiles {
+		if vnicProfile.name == name {
+			return nil, newError(EConflict, "VNIC profile name is already in use")
+		}
+	}
+
 	id := m.GenerateUUID()
 	m.vnicProfiles[id] = &vnicProfile{
 		client: m,
