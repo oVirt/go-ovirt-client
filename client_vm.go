@@ -301,7 +301,7 @@ func (v *vm) Remove(retries ...RetryStrategy) error {
 }
 
 func (v *vm) CreateNIC(name string, vnicProfileID string, params OptionalNICParameters, retries ...RetryStrategy) (NIC, error) {
-	return v.client.CreateNIC(v.id, name, vnicProfileID, params, retries...)
+	return v.client.CreateNIC(v.id, vnicProfileID, name, params, retries...)
 }
 
 func (v *vm) GetNIC(id string, retries ...RetryStrategy) (NIC, error) {
