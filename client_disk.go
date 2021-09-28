@@ -489,6 +489,13 @@ type Disk interface {
 		params UpdateDiskParameters,
 		retries ...RetryStrategy,
 	) (Disk, error)
+
+	// ListSnapshots lists all snapshots for the current disk.
+	ListSnapshots(retries ...RetryStrategy) ([]DiskSnapshot, error)
+	// GetSnapshot retrieves a single snapshot from the current disk and returns it.
+	GetSnapshot(id string, retries ...RetryStrategy) (DiskSnapshot, error)
+	// RemoveSnapshot removes a snapshot from the current disk.
+	RemoveSnapshot(id string, retries ...RetryStrategy) error
 }
 
 // DiskStatus shows the status of a disk. Certain operations lock a disk, which is important because the disk can then
