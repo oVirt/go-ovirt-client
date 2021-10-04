@@ -171,7 +171,7 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 		}
 		for _, info := range files {
 			if info.IsDir() {
-				return nil
+				continue
 			}
 			if len(dir.patterns) > 0 {
 				matches := false
