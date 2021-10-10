@@ -10,7 +10,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 	vmID string,
 	diskID string,
 	diskInterface DiskInterface,
-	_ CreateDiskAttachmentOptionalParams,
+	params CreateDiskAttachmentOptionalParams,
 	retries ...RetryStrategy,
 ) (result DiskAttachment, err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
@@ -26,6 +26,15 @@ func (o *oVirtClient) CreateDiskAttachment(
 			attachmentBuilder.Disk(ovirtsdk.NewDiskBuilder().Id(diskID).MustBuild())
 			attachmentBuilder.Interface(ovirtsdk.DiskInterface(diskInterface))
 			attachmentBuilder.Vm(ovirtsdk.NewVmBuilder().Id(vmID).MustBuild())
+			attachmentBuilder.Active(true)
+			if params != nil {
+				if active := params.Active(); active != nil {
+					attachmentBuilder.Active(*active)
+				}
+				if bootable := params.Bootable(); bootable != nil {
+					attachmentBuilder.Bootable(*params.Bootable())
+				}
+			}
 			attachment := attachmentBuilder.MustBuild()
 
 			addRequest := o.conn.SystemService().VmsService().VmService(vmID).DiskAttachmentsService().Add()

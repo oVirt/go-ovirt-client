@@ -246,6 +246,8 @@ type DiskClient interface {
 	ListDisks(retries ...RetryStrategy) ([]Disk, error)
 	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
 	GetDisk(diskID string, retries ...RetryStrategy) (Disk, error)
+	// ListDisksByAlias fetches a disks with a specific name from the oVirt Engine.
+	ListDisksByAlias(alias string, retries ...RetryStrategy) ([]Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
 	RemoveDisk(diskID string, retries ...RetryStrategy) error
 }
@@ -259,6 +261,9 @@ func UpdateDiskParams() BuildableUpdateDiskParameters {
 type UpdateDiskParameters interface {
 	// Alias returns the disk alias to set. It can return nil to leave the alias unchanged.
 	Alias() *string
+	// ProvisionedSize returns the disk provisioned size to set.
+	// It can return nil to leave the provisioned size unchanged.
+	ProvisionedSize() *uint64
 }
 
 // BuildableUpdateDiskParameters is a buildable version of UpdateDiskParameters.
@@ -270,10 +275,17 @@ type BuildableUpdateDiskParameters interface {
 	WithAlias(alias string) (BuildableUpdateDiskParameters, error)
 	// MustWithAlias is identical to WithAlias, but panics instead of returning an error.
 	MustWithAlias(alias string) BuildableUpdateDiskParameters
+
+	// WithProvisionedSize changes the params structure to set the provisioned size to the specified value.
+	// It returns an error if the provisioned size is invalid.
+	WithProvisionedSize(size uint64) (BuildableUpdateDiskParameters, error)
+	// MustWithProvisionedSize is identical to WithProvisionedSize, but panics instead of returning an error.
+	MustWithProvisionedSize(size uint64) BuildableUpdateDiskParameters
 }
 
 type updateDiskParams struct {
-	alias *string
+	alias           *string
+	provisionedSize *uint64
 }
 
 func (u *updateDiskParams) Alias() *string {
@@ -287,6 +299,23 @@ func (u *updateDiskParams) WithAlias(alias string) (BuildableUpdateDiskParameter
 
 func (u *updateDiskParams) MustWithAlias(alias string) BuildableUpdateDiskParameters {
 	builder, err := u.WithAlias(alias)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateDiskParams) ProvisionedSize() *uint64 {
+	return u.provisionedSize
+}
+
+func (u *updateDiskParams) WithProvisionedSize(size uint64) (BuildableUpdateDiskParameters, error) {
+	u.provisionedSize = &size
+	return u, nil
+}
+
+func (u *updateDiskParams) MustWithProvisionedSize(size uint64) BuildableUpdateDiskParameters {
+	builder, err := u.WithProvisionedSize(size)
 	if err != nil {
 		panic(err)
 	}
