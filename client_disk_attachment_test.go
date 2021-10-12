@@ -77,6 +77,19 @@ func assertCanAttachDisk(t *testing.T, vm ovirtclient.VM, disk ovirtclient.Disk)
 	if err != nil {
 		t.Fatalf("Failed to create disk attachment (%v)", err)
 	}
+	if attachment.VMID() != vm.ID() {
+		t.Fatalf("Mismatching VM ID after creation (%s != %s)", attachment.VMID(), vm.ID())
+	}
+	if attachment.DiskID() != disk.ID() {
+		t.Fatalf("Mismatching disk ID after creation (%s != %s)", attachment.DiskID(), disk.ID())
+	}
+	if attachment.DiskInterface() != ovirtclient.DiskInterfaceVirtIO {
+		t.Fatalf(
+			"Mismatching disk interface after creation (%s != %s)",
+			attachment.DiskInterface(),
+			ovirtclient.DiskInterfaceVirtIO,
+		)
+	}
 	return attachment
 }
 

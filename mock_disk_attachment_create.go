@@ -29,6 +29,7 @@ func (m *mockClient) CreateDiskAttachment(
 		id:     m.GenerateUUID(),
 		vmid:   vm.ID(),
 		diskID: disk.ID(),
+		diskInterface: diskInterface,
 	}
 
 	for _, diskAttachment := range m.diskAttachmentsByVM[vm.ID()] {
