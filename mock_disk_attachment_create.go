@@ -25,10 +25,11 @@ func (m *mockClient) CreateDiskAttachment(
 	}
 
 	attachment := &diskAttachment{
-		client: m,
-		id:     m.GenerateUUID(),
-		vmid:   vm.ID(),
-		diskID: disk.ID(),
+		client:        m,
+		id:            m.GenerateUUID(),
+		vmid:          vm.ID(),
+		diskID:        disk.ID(),
+		diskInterface: diskInterface,
 	}
 	attachment.active = true
 	if params != nil {
