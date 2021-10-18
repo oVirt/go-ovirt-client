@@ -19,6 +19,7 @@ func (m *mockClient) StartUpdateDisk(id string, params UpdateDiskParameters, _ .
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	var err error
 	disk, ok := m.disks[id]
 	if !ok {
 		return nil, newError(ENotFound, "disk with ID %s not found", id)
@@ -28,6 +29,12 @@ func (m *mockClient) StartUpdateDisk(id string, params UpdateDiskParameters, _ .
 	}
 	if alias := params.Alias(); alias != nil {
 		disk = disk.WithAlias(alias)
+	}
+	if ps := params.ProvisionedSize(); ps != nil {
+		disk, err = disk.withProvisionedSize(*ps)
+		if err != nil {
+			return nil, err
+		}
 	}
 	update := &mockDiskUpdate{
 		client: m,

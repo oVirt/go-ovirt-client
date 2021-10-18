@@ -4,7 +4,7 @@ func (m *mockClient) CreateDiskAttachment(
 	vmID string,
 	diskID string,
 	diskInterface DiskInterface,
-	_ CreateDiskAttachmentOptionalParams,
+	params CreateDiskAttachmentOptionalParams,
 	_ ...RetryStrategy,
 ) (DiskAttachment, error) {
 	m.lock.Lock()
@@ -31,7 +31,15 @@ func (m *mockClient) CreateDiskAttachment(
 		diskID:        disk.ID(),
 		diskInterface: diskInterface,
 	}
-
+	attachment.active = true
+	if params != nil {
+		if bootable := params.Bootable(); bootable != nil {
+			attachment.bootable = *bootable
+		}
+		if active := params.Active(); active != nil {
+			attachment.active = *active
+		}
+	}
 	for _, diskAttachment := range m.diskAttachmentsByVM[vm.ID()] {
 		if diskAttachment.DiskID() == diskID {
 			return nil, newError(EConflict, "disk %s is already attached to VM %s", diskID, vmID)

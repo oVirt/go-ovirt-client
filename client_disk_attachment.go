@@ -77,17 +77,71 @@ func (d DiskInterface) Validate() error {
 }
 
 // CreateDiskAttachmentOptionalParams are the optional parameters for creating a disk attachment.
-type CreateDiskAttachmentOptionalParams interface{}
+type CreateDiskAttachmentOptionalParams interface {
+	// Bootable defines whether the disk is bootable.
+	Bootable() *bool
 
-// CreateDiskAttachmentBuildableParams is a buildable version of CreateDiskAttachmentOptionalParams.
-type CreateDiskAttachmentBuildableParams interface{}
+	// Active defines whether the disk is active in the virtual machine it’s attached to.
+	Active() *bool
+}
+
+// BuildableCreateDiskAttachmentParams is a buildable version of CreateDiskAttachmentOptionalParams.
+type BuildableCreateDiskAttachmentParams interface {
+	CreateDiskAttachmentOptionalParams
+	// WithBootable sets whether the disk is bootable.
+	WithBootable(bootable bool) (BuildableCreateDiskAttachmentParams, error)
+	// MustWithBootable is the same as WithBootable, but panics instead of returning an error.
+	MustWithBootable(bootable bool) BuildableCreateDiskAttachmentParams
+
+	// WithActive sets whether the disk is active is visible to the virtual machine or not. default is true
+	WithActive(active bool) (BuildableCreateDiskAttachmentParams, error)
+	// MustWithActive is the same as WithActive, but panics instead of returning an error.
+	MustWithActive(active bool) BuildableCreateDiskAttachmentParams
+}
 
 // CreateDiskAttachmentParams creates a buildable set of parameters for creating a disk attachment.
-func CreateDiskAttachmentParams() CreateDiskAttachmentBuildableParams {
+func CreateDiskAttachmentParams() BuildableCreateDiskAttachmentParams {
 	return &createDiskAttachmentParams{}
 }
 
-type createDiskAttachmentParams struct{}
+type createDiskAttachmentParams struct {
+	bootable *bool
+	active   *bool
+}
+
+func (c createDiskAttachmentParams) Bootable() *bool {
+	return c.bootable
+}
+
+func (c createDiskAttachmentParams) Active() *bool {
+	return c.active
+}
+
+func (c createDiskAttachmentParams) WithBootable(bootable bool) (BuildableCreateDiskAttachmentParams, error) {
+	c.bootable = &bootable
+	return c, nil
+}
+
+func (c createDiskAttachmentParams) MustWithBootable(bootable bool) BuildableCreateDiskAttachmentParams {
+	builder, err := c.WithBootable(bootable)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (c createDiskAttachmentParams) WithActive(active bool) (BuildableCreateDiskAttachmentParams, error) {
+	c.active = &active
+	return c, nil
+}
+
+func (c createDiskAttachmentParams) MustWithActive(active bool) BuildableCreateDiskAttachmentParams {
+	builder, err := c.WithActive(active)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
 
 // DiskAttachment links together a Disk and a VM.
 type DiskAttachment interface {
@@ -99,6 +153,10 @@ type DiskAttachment interface {
 	DiskID() string
 	// DiskInterface describes the means by which a disk will appear to the VM.
 	DiskInterface() DiskInterface
+	// Bootable defines whether the disk is bootable
+	Bootable() bool
+	// Active defines whether the disk is active in the virtual machine it’s attached to.
+	Active() bool
 
 	// VM fetches the virtual machine this attachment belongs to.
 	VM(retries ...RetryStrategy) (VM, error)
@@ -116,6 +174,8 @@ type diskAttachment struct {
 	vmid          string
 	diskID        string
 	diskInterface DiskInterface
+	active        bool
+	bootable      bool
 }
 
 func (d *diskAttachment) DiskInterface() DiskInterface {
@@ -136,6 +196,14 @@ func (d *diskAttachment) VMID() string {
 
 func (d *diskAttachment) DiskID() string {
 	return d.diskID
+}
+
+func (d *diskAttachment) Bootable() bool {
+	return d.bootable
+}
+
+func (d *diskAttachment) Active() bool {
+	return d.active
 }
 
 func (d *diskAttachment) VM(retries ...RetryStrategy) (VM, error) {
@@ -171,6 +239,14 @@ func convertSDKDiskAttachment(object *ovirtsdk4.DiskAttachment, o *oVirtClient) 
 	if !ok {
 		return nil, newFieldNotFound("disk attachment", "disk interface")
 	}
+	bootable, ok := object.Bootable()
+	if !ok {
+		return nil, newFieldNotFound("bootable on disk attachment", "bootable")
+	}
+	active, ok := object.Active()
+	if !ok {
+		return nil, newFieldNotFound("active on disk attachment", "active")
+	}
 	return &diskAttachment{
 		client: o,
 
@@ -178,5 +254,7 @@ func convertSDKDiskAttachment(object *ovirtsdk4.DiskAttachment, o *oVirtClient) 
 		vmid:          vmID,
 		diskID:        diskID,
 		diskInterface: DiskInterface(diskInterface),
+		bootable:      bootable,
+		active:        active,
 	}, nil
 }
