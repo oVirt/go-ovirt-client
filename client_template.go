@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
+	"sync"
 )
 
 //go:generate go run scripts/rest.go -i "Template" -n "template"
@@ -10,6 +11,9 @@ import (
 type TemplateClient interface {
 	ListTemplates(retries ...RetryStrategy) ([]Template, error)
 	GetTemplate(id string, retries ...RetryStrategy) (Template, error)
+	CopyTemplateDiskToStorageDomain(diskId string,
+		storageDomainId string,
+		retries ...RetryStrategy) (result Disk, err error)
 }
 
 // Template is a set of prepared configurations for VMs.
@@ -61,3 +65,39 @@ func (t template) Name() string {
 func (t template) Description() string {
 	return t.description
 }
+
+
+type templateDiskCopyWait struct {
+	client        *oVirtClient
+	disk          Disk
+	template	  Template
+	correlationID string
+	lock          *sync.Mutex
+}
+
+func (d *templateDiskCopyWait) Disk() Disk {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	return d.disk
+}
+
+func (d *templateDiskCopyWait) Wait(retries ...RetryStrategy) (Disk, error) {
+	retries = defaultRetries(retries, defaultWriteTimeouts())
+	if err := d.client.waitForJobFinished(d.correlationID, retries); err != nil {
+		return d.disk, err
+	}
+
+	d.lock.Lock()
+	diskID := d.disk.ID()
+	d.lock.Unlock()
+
+	disk, err := d.client.GetDisk(diskID, retries...)
+
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	if disk != nil {
+		d.disk = disk
+	}
+	return disk, err
+}
+
