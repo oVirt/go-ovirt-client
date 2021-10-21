@@ -12,6 +12,8 @@ type StorageDomainClient interface {
 	ListStorageDomains(retries ...RetryStrategy) ([]StorageDomain, error)
 	// GetStorageDomain returns a single storage domain, or an error if the storage domain could not be found.
 	GetStorageDomain(id string, retries ...RetryStrategy) (StorageDomain, error)
+	// GetStorageDomainDisk return a single disk from the storage domain or an error if a disk cannot be found
+	GetStorageDomainDisk(id string, diskId string, retries ...RetryStrategy) (result Disk, err error)
 }
 
 // StorageDomainData is the core of StorageDomain, providing only data access functions.
