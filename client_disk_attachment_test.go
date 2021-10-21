@@ -57,7 +57,9 @@ func assertCanCreateDisk(t *testing.T, helper ovirtclient.TestHelper) ovirtclien
 		t.Cleanup(
 			func() {
 				if err := disk.Remove(); err != nil {
-					t.Fatalf("Failed to remove test disk %s (%v)", disk.ID(), err)
+					if !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
+						t.Fatalf("Failed to remove test disk %s (%v)", disk.ID(), err)
+					}
 				}
 			},
 		)
