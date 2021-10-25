@@ -30,23 +30,23 @@ func main() {
 
     // Create an ovirtclient.TLSProvider implementation. This allows for simple
     // TLS configuration.
-	tls := ovirtclient.TLS()
+    tls := ovirtclient.TLS()
 
-	// Add certificates from an in-memory byte slice. Certificates must be in PEM format.
-	tls.CACertsFromMemory(caCerts)
-	
-	// Add certificates from a single file. Certificates must be in PEM format.
-	tls.CACertsFromFile("/path/to/file.pem")
+    // Add certificates from an in-memory byte slice. Certificates must be in PEM format.
+    tls.CACertsFromMemory(caCerts)
+    
+    // Add certificates from a single file. Certificates must be in PEM format.
+    tls.CACertsFromFile("/path/to/file.pem")
 
-	// Add certificates from a directory. Optionally, regular expressions can be passed that must match the file
-	// names.
-	tls.CACertsFromDir("/path/to/certs", regexp.MustCompile(`\.pem`)) 
+    // Add certificates from a directory. Optionally, regular expressions can be passed that must match the file
+    // names.
+    tls.CACertsFromDir("/path/to/certs", regexp.MustCompile(`\.pem`)) 
 
-	// Add system certificates
-	tls.CACertsFromSystem()
+    // Add system certificates
+    tls.CACertsFromSystem()
 
-	// Disable certificate verification. This is a bad idea, please don't do this.
-	tls.Insecure()
+    // Disable certificate verification. This is a bad idea, please don't do this.
+    tls.Insecure()
 
     // Create a new goVirt instance:
     client, err := ovirtclient.New(
@@ -84,7 +84,7 @@ Either it sets up test fixtures in the mock client, or it sets up a live connect
 domain, cluster, etc. for testing purposes.
 
 The easiest way to set up the test helper is using environment variables. To do that, you can use the
-ovirtclient.NewTestHelperFromEnv() function:
+`ovirtclient.NewTestHelperFromEnv()` function:
 
 ```go
 helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
@@ -93,7 +93,7 @@ helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
 This function will inspect environment variables to determine if a connection to a live oVirt engine can be estabilshed.
 The following environment variables are supported:
 
-- `OVIRT_URL`: URL of the oVirt engine.
+- `OVIRT_URL`: URL of the oVirt engine API.
 - `OVIRT_USERNAME`: The username for the oVirt engine.
 - `OVIRT_PASSWORD`: The password for the oVirt engine
 - `OVIRT_CAFILE`: A file containing the CA certificate in PEM format.
@@ -124,7 +124,7 @@ func TestSomething(t *testing.T) {
 
     // Create the test helper
     helper, err := ovirtclient.NewTestHelper(
-        "https://localhost/ovirt-engine/",
+        "https://localhost/ovirt-engine/api",
         "admin@internal",
         "super-secret",
         ovirtclient.TLS().CACertsFromSystem(),
