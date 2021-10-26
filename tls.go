@@ -41,6 +41,9 @@ type BuildableTLSProvider interface {
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
 	// or not supported on the platform.
 	CACertsFromSystem() BuildableTLSProvider
+
+	// CACertsFromPool adds certificates from an existing pool.
+	CACertsFromPool(certPool *x509.CertPool) BuildableTLSProvider
 }
 
 // TLS creates a BuildableTLSProvider that can be used to easily add trusted CA certificates and generally follows best
@@ -57,6 +60,7 @@ type standardTLSProvider struct {
 	caCerts     [][]byte
 	files       []string
 	directories []standardTLSProviderDirectory
+	certPool    *x509.CertPool
 	system      bool
 	configured  bool
 }
@@ -109,6 +113,14 @@ func (s *standardTLSProvider) CACertsFromSystem() BuildableTLSProvider {
 	return s
 }
 
+func (s *standardTLSProvider) CACertsFromPool(certPool *x509.CertPool) BuildableTLSProvider {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.configured = true
+	s.certPool = certPool
+	return s
+}
+
 func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -141,9 +153,12 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 		InsecureSkipVerify: false,
 	}
 
-	certPool, err := s.createCertPool()
-	if err != nil {
-		return nil, err
+	certPool := s.certPool
+	if certPool == nil {
+		var err error
+		if certPool, err = s.createCertPool(); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.addCertsFromMemory(certPool); err != nil {
 		return nil, err
