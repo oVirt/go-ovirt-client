@@ -41,9 +41,6 @@ type BuildableTLSProvider interface {
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
 	// or not supported on the platform.
 	CACertsFromSystem() BuildableTLSProvider
-
-	// CACertsFromPool adds certificates from an existing pool.
-	CACertsFromPool(certPool *x509.CertPool) BuildableTLSProvider
 }
 
 // TLS creates a BuildableTLSProvider that can be used to easily add trusted CA certificates and generally follows best
@@ -51,6 +48,15 @@ type BuildableTLSProvider interface {
 func TLS() BuildableTLSProvider {
 	return &standardTLSProvider{
 		lock: &sync.Mutex{},
+	}
+}
+
+// TLSWithCertPool creates a BuildableTLSProvider from a pre-configured CertPool.
+func TLSWithCertPool(certPool *x509.CertPool) BuildableTLSProvider {
+	return &standardTLSProvider{
+		lock:       &sync.Mutex{},
+		certPool:   certPool,
+		configured: true,
 	}
 }
 
@@ -110,14 +116,6 @@ func (s *standardTLSProvider) CACertsFromSystem() BuildableTLSProvider {
 	defer s.lock.Unlock()
 	s.configured = true
 	s.system = true
-	return s
-}
-
-func (s *standardTLSProvider) CACertsFromPool(certPool *x509.CertPool) BuildableTLSProvider {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.configured = true
-	s.certPool = certPool
 	return s
 }
 
