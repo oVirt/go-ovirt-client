@@ -154,3 +154,19 @@ func (h host) ClusterID() string {
 func (h host) Status() HostStatus {
 	return h.status
 }
+
+func (h host) convertToSDK() (*ovirtsdk4.Host, error) {
+	hostBuilder := ovirtsdk4.NewHostBuilder()
+	cluster, err := ovirtsdk4.NewClusterBuilder().Id(h.clusterID).Build()
+	if err != nil {
+		return nil, newError(EBug, "failed building cluster with ID %s", h.clusterID)
+	}
+	hostBuilder.Id(h.id)
+	hostBuilder.Cluster(cluster)
+	hostBuilder.Status(ovirtsdk4.HostStatus(h.status))
+	host, err := hostBuilder.Build()
+	if err != nil {
+		return nil, newError(EBug, "failed building host")
+	}
+	return host, nil
+}

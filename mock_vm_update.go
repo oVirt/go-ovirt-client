@@ -10,7 +10,7 @@ func (m *mockClient) UpdateVM(id string, params UpdateVMParameters, _ ...RetrySt
 
 	vm := m.vms[id]
 	if name := params.Name(); name != nil {
-		vm = vm.withName(*name)
+		vm.name = *name
 	}
 	if comment := params.Comment(); comment != nil {
 		vm = vm.withComment(*comment)

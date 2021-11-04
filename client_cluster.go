@@ -7,8 +7,8 @@ import (
 //go:generate go run scripts/rest.go -i "Cluster" -n "cluster"
 
 // ClusterClient is a part of the Client that deals with clusters in the oVirt Engine. A cluster is a logical grouping
-// of hosts that share the same storage domains and have the same type of CPU (either Intel or AMD). If the hosts have
-// different generations of CPU models, they use only the features present in all models.
+// of hosts that share the same storage domains and have the same type of cpu (either Intel or AMD). If the hosts have
+// different generations of cpu models, they use only the features present in all models.
 //
 // See https://www.ovirt.org/documentation/administration_guide/#chap-Clusters for details.
 type ClusterClient interface {

@@ -19,11 +19,13 @@ func ExampleVMClient_create() {
 	clusterID := helper.GetClusterID()
 	// Use the blank template as a starting point.
 	templateID := helper.GetBlankTemplateID()
+	// The name that the VM will have
+	name := "exampleVM"
 	// Create the optional parameters.
 	params := ovirtclient.CreateVMParams()
 
 	// Create the VM...
-	vm, err := client.CreateVM(clusterID, templateID, params)
+	vm, err := client.CreateVM(clusterID, templateID, name, params)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create VM (%v)", err))
 	}
