@@ -18,8 +18,11 @@ func ExampleDiskClient_uploadImage() {
 	if err != nil {
 		panic(fmt.Errorf("failed to open image file (%w)", err))
 	}
-	defer func() {
-		_ = fh.Close()
+	// Skip gosec linting because we are throwing a panic anyway.
+	defer func() { //nolint:gosec
+		if err = fh.Close(); err != nil {
+			panic(err)
+		}
 	}()
 
 	// Get the file size
@@ -55,8 +58,11 @@ func ExampleDiskClient_uploadImageWithCancel() {
 	if err != nil {
 		panic(fmt.Errorf("failed to open image file (%w)", err))
 	}
-	defer func() {
-		_ = fh.Close()
+	// Skip gosec linting because we are throwing a panic anyway.
+	defer func() { //nolint:gosec
+		if err = fh.Close(); err != nil {
+			panic(err)
+		}
 	}()
 
 	// Get the file size

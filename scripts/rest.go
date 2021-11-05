@@ -195,7 +195,9 @@ func handleTemplateFile(templateFileName string, id string, targetDir string, re
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", templateFileName, err)
 	}
-	defer func() {
+	// We are skipping gosec linting for G307/CWE-703 because this code is only used for
+	// generating code and the process will terminate in short order anyway.
+	defer func() { //nolint:gosec
 		_ = fh.Close()
 	}()
 	data, err := ioutil.ReadAll(fh)
@@ -222,14 +224,14 @@ func handleTemplateFile(templateFileName string, id string, targetDir string, re
 }
 
 func runGoFmt(t string) error {
-	cmd := exec.Command("gofmt", "-w", t) // nolint:gosec
+	cmd := exec.Command("gofmt", "-w", t)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func runGoLint(t string) error {
-	cmd := exec.Command("golangci-lint", "run", t) // nolint:gosec
+	cmd := exec.Command("golangci-lint", "run", t)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
@@ -253,7 +255,9 @@ func renderTemplate(tplText string, file string, restItem restItem) error {
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", file, err)
 	}
-	defer func() {
+	// We are skipping gosec linting for G307/CWE-703 because this code is only used for
+	// generating code and the process will terminate in short order anyway.
+	defer func() { //nolint:gosec
 		if err := fh.Close(); err != nil {
 			panic(fmt.Errorf("failed to close %s (%w)", file, err))
 		}

@@ -13,7 +13,9 @@ import (
 func TestImageDownload(t *testing.T) {
 	testImageData := getTestImageData(t)
 	fh, stat := getTestImageFile(t)
-	defer func() {
+	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
+	// left open won't cause any problems.
+	defer func() { //nolint:gosec
 		_ = fh.Close()
 	}()
 

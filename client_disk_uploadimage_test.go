@@ -9,7 +9,9 @@ import (
 
 func TestImageUploadDiskCreated(t *testing.T) {
 	fh, stat := getTestImageFile(t)
-	defer func() {
+	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
+	// left open won't cause any problems.
+	defer func() { //nolint:gosec
 		_ = fh.Close()
 	}()
 
@@ -39,7 +41,9 @@ func TestImageUploadDiskCreated(t *testing.T) {
 
 func TestImageUploadToExistingDisk(t *testing.T) {
 	fh, stat := getTestImageFile(t)
-	defer func() {
+	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
+	// left open won't cause any problems.
+	defer func() { //nolint:gosec
 		_ = fh.Close()
 	}()
 
