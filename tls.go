@@ -51,12 +51,22 @@ func TLS() BuildableTLSProvider {
 	}
 }
 
+// TLSWithCertPool creates a BuildableTLSProvider from a pre-configured CertPool.
+func TLSWithCertPool(certPool *x509.CertPool) BuildableTLSProvider {
+	return &standardTLSProvider{
+		lock:       &sync.Mutex{},
+		certPool:   certPool,
+		configured: true,
+	}
+}
+
 type standardTLSProvider struct {
 	lock        *sync.Mutex
 	insecure    bool
 	caCerts     [][]byte
 	files       []string
 	directories []standardTLSProviderDirectory
+	certPool    *x509.CertPool
 	system      bool
 	configured  bool
 }
@@ -141,9 +151,12 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 		InsecureSkipVerify: false,
 	}
 
-	certPool, err := s.createCertPool()
-	if err != nil {
-		return nil, err
+	certPool := s.certPool
+	if certPool == nil {
+		var err error
+		if certPool, err = s.createCertPool(); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.addCertsFromMemory(certPool); err != nil {
 		return nil, err
