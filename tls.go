@@ -41,6 +41,10 @@ type BuildableTLSProvider interface {
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
 	// or not supported on the platform.
 	CACertsFromSystem() BuildableTLSProvider
+
+	// CACertsFromCertPool sets a certificate pool to use as a source for certificates. This is incompatible with  the
+	// CACertsFromSystem call as both create a certificate pool.
+	CACertsFromCertPool(*x509.CertPool) BuildableTLSProvider
 }
 
 // TLS creates a BuildableTLSProvider that can be used to easily add trusted CA certificates and generally follows best
@@ -48,15 +52,6 @@ type BuildableTLSProvider interface {
 func TLS() BuildableTLSProvider {
 	return &standardTLSProvider{
 		lock: &sync.Mutex{},
-	}
-}
-
-// TLSWithCertPool creates a BuildableTLSProvider from a pre-configured CertPool.
-func TLSWithCertPool(certPool *x509.CertPool) BuildableTLSProvider {
-	return &standardTLSProvider{
-		lock:       &sync.Mutex{},
-		certPool:   certPool,
-		configured: true,
 	}
 }
 
@@ -81,6 +76,14 @@ func (s *standardTLSProvider) Insecure() TLSProvider {
 	defer s.lock.Unlock()
 	s.configured = true
 	s.insecure = true
+	return s
+}
+
+func (s *standardTLSProvider) CACertsFromCertPool(certPool *x509.CertPool) BuildableTLSProvider {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.configured = true
+	s.certPool = certPool
 	return s
 }
 
@@ -251,6 +254,12 @@ func (s *standardTLSProvider) addCertsFromMemory(certPool *x509.CertPool) error 
 }
 
 func (s *standardTLSProvider) createCertPool() (*x509.CertPool, error) {
+	if s.system && s.certPool != nil {
+		return nil, newError(ETLSError, "both system and cert pool are specified, these options are incompatible")
+	}
+	if s.certPool != nil {
+		return s.certPool, nil
+	}
 	if !s.system {
 		return x509.NewCertPool(), nil
 	}

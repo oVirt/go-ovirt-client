@@ -20,59 +20,68 @@ You can then create a client instance like this:
 package main
 
 import (
-    "github.com/ovirt/go-client-log"
-    "github.com/ovirt/go-ovirt-client"
+	"crypto/x509"
+
+	"github.com/ovirt/go-client-log"
+	"github.com/ovirt/go-ovirt-client"
 )
 
 func main() {
-    // Create a logger that logs to the standard Go log here:
-    logger := ovirtclientlog.NewGoLogLogger(nil)
+	// Create a logger that logs to the standard Go log here:
+	logger := ovirtclientlog.NewGoLogLogger(nil)
 
-    // Create an ovirtclient.TLSProvider implementation. This allows for simple
-    // TLS configuration.
-    tls := ovirtclient.TLS()
+	// Create an ovirtclient.TLSProvider implementation. This allows for simple
+	// TLS configuration.
+	tls := ovirtclient.TLS()
 
-    // Add certificates from an in-memory byte slice. Certificates must be in PEM format.
-    tls.CACertsFromMemory(caCerts)
-    
-    // Add certificates from a single file. Certificates must be in PEM format.
-    tls.CACertsFromFile("/path/to/file.pem")
+	// Add certificates from an in-memory byte slice. Certificates must be in PEM format.
+	tls.CACertsFromMemory(caCerts)
 
-    // Add certificates from a directory. Optionally, regular expressions can be passed that must match the file
-    // names.
-    tls.CACertsFromDir("/path/to/certs", regexp.MustCompile(`\.pem`)) 
+	// Add certificates from a single file. Certificates must be in PEM format.
+	tls.CACertsFromFile("/path/to/file.pem")
 
-    // Add system certificates
-    tls.CACertsFromSystem()
+	// Add certificates from a directory. Optionally, regular expressions can be passed that must match the file
+	// names.
+	tls.CACertsFromDir(
+		"/path/to/certs",
+		regexp.MustCompile(`\.pem`),
+	)
 
-    // Disable certificate verification. This is a bad idea, please don't do this.
-    tls.Insecure()
+	// Add system certificates. This doesn't work on Windows.
+	tls.CACertsFromSystem()
 
-    // Create a new goVirt instance:
-    client, err := ovirtclient.New(
-        // URL to your oVirt engine API here:
-        "https://your-ovirt-engine/ovirt-engine/api/",
-        // Username here:
-        "admin@internal",
-        // Password here:
-        "password-here",
-        // Pass the TLS provider here:
-        tls,
-        // Pass the logger here:
-        logger,
-        // Pass in extra settings here. Must implement the ovirtclient.ExtraSettings interface.
-        nil,
-    )
-    if err != nil {
-        // Handle error, here in a really crude way:
-        panic(err)
-    }
-    // Use client. Please use the code completion in your IDE to
-    // discover the functions. Each is well documented.
-    upload, err := client.StartUploadToNewDisk(
-        //...
-    )
-    //....
+	// Add a custom cert pool as a source of certificates. This option is
+	// incompatible with CACertsFromSystem.
+	tls.CACertsFromCertPool(x509.NewCertPool())
+
+	// Disable certificate verification. This is a bad idea, please don't do this.
+	tls.Insecure()
+
+	// Create a new goVirt instance:
+	client, err := ovirtclient.New(
+		// URL to your oVirt engine API here:
+		"https://your-ovirt-engine/ovirt-engine/api/",
+		// Username here:
+		"admin@internal",
+		// Password here:
+		"password-here",
+		// Pass the TLS provider here:
+		tls,
+		// Pass the logger here:
+		logger,
+		// Pass in extra settings here. Must implement the ovirtclient.ExtraSettings interface.
+		nil,
+	)
+	if err != nil {
+		// Handle error, here in a really crude way:
+		panic(err)
+	}
+	// Use client. Please use the code completion in your IDE to
+	// discover the functions. Each is well documented.
+	upload, err := client.StartUploadToNewDisk(
+		//...
+	)
+	//....
 }
 ```
 
