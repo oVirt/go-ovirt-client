@@ -43,7 +43,7 @@ type BuildableTLSProvider interface {
 	CACertsFromSystem() BuildableTLSProvider
 
 	// CACertsFromCertPool sets a certificate pool to use as a source for certificates. This is incompatible with  the
-	// CACertsFromSystem call as both create a certificate pool.
+	// CACertsFromSystem call as both create a certificate pool. This function must not be called twice.
 	CACertsFromCertPool(*x509.CertPool) BuildableTLSProvider
 }
 
@@ -82,6 +82,9 @@ func (s *standardTLSProvider) Insecure() TLSProvider {
 func (s *standardTLSProvider) CACertsFromCertPool(certPool *x509.CertPool) BuildableTLSProvider {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.certPool != nil {
+		panic(newError(EConflict, "the CACertsFromCertPool function has been called twice"))
+	}
 	s.configured = true
 	s.certPool = certPool
 	return s
