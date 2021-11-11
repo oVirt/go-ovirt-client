@@ -188,6 +188,9 @@ Now you need to add your oVirt engine certificate to your system trust root.
 If you don't want to, or can't add the certificate to the system trust root, you can also directly provide it
 to the client.
 
+    // Add certificates from a certificate pool you have previously initialized.
+    tls.CACertsFromCertPool(certpool)
+
     // Add certificates from an in-memory byte slice. Certificates must be in PEM format.
     tls.CACertsFromMemory([]byte("-----BEGIN CERTIFICATE-----\n..."))
 
