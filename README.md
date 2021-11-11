@@ -52,7 +52,7 @@ func main() {
 
 	// Add a custom cert pool as a source of certificates. This option is
 	// incompatible with CACertsFromSystem.
-	tls.CACertsFromCertPool(x509.NewCertPool())
+	// tls.CACertsFromCertPool(x509.NewCertPool())
 
 	// Disable certificate verification. This is a bad idea, please don't do this.
 	tls.Insecure()
