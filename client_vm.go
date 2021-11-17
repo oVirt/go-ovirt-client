@@ -39,6 +39,8 @@ type VMClient interface {
 	WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (VM, error)
 	// ListVMs returns a list of all virtual machines.
 	ListVMs(retries ...RetryStrategy) ([]VM, error)
+	// SearchVMs lists all virtual machines matching a certain criteria specified in params.
+	SearchVMs(params VMSearchParameters, retries ...RetryStrategy) ([]VM, error)
 	// RemoveVM removes a virtual machine specified by id.
 	RemoveVM(id string, retries ...RetryStrategy) error
 }
@@ -121,6 +123,106 @@ type VM interface {
 		diskAttachmentID string,
 		retries ...RetryStrategy,
 	) error
+}
+
+// VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
+// is declared as a pointer, where a nil value will mean that parameter will not be searched for.
+// All parameters are used together as an AND filter.
+type VMSearchParameters interface {
+	// Name will match the name of the virtual machine exactly.
+	Name() *string
+	// Statuses will return a list of acceptable statuses for this VM search.
+	Statuses() *VMStatusList
+	// NotStatuses will return a list of not acceptable statuses for this VM search.
+	NotStatuses() *VMStatusList
+}
+
+// BuildableVMSearchParameters is a buildable version of VMSearchParameters.
+type BuildableVMSearchParameters interface {
+	VMSearchParameters
+
+	// WithName sets the name to search for.
+	WithName(name string) BuildableVMSearchParameters
+	// WithStatus adds a single status to the filter.
+	WithStatus(status VMStatus) BuildableVMSearchParameters
+	// WithNotStatus excludes a VM status from the search.
+	WithNotStatus(status VMStatus) BuildableVMSearchParameters
+	// WithStatuses will return the statuses the returned VMs should be in.
+	WithStatuses(list VMStatusList) BuildableVMSearchParameters
+	// WithNotStatuses will return the statuses the returned VMs should not be in.
+	WithNotStatuses(list VMStatusList) BuildableVMSearchParameters
+}
+
+// VMSearchParams creates a buildable set of search parameters for easier use.
+func VMSearchParams() BuildableVMSearchParameters {
+	return &vmSearchParams{
+		lock: &sync.Mutex{},
+	}
+}
+
+type vmSearchParams struct {
+	lock *sync.Mutex
+
+	name        *string
+	statuses    *VMStatusList
+	notStatuses *VMStatusList
+}
+
+func (v *vmSearchParams) WithStatus(status VMStatus) BuildableVMSearchParameters {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	newStatuses := append(*v.statuses, status)
+	v.statuses = &newStatuses
+	return v
+}
+
+func (v *vmSearchParams) WithNotStatus(status VMStatus) BuildableVMSearchParameters {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	newNotStatuses := append(*v.notStatuses, status)
+	v.statuses = &newNotStatuses
+	return v
+}
+
+func (v *vmSearchParams) Name() *string {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	return v.name
+}
+
+func (v *vmSearchParams) Statuses() *VMStatusList {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	return v.statuses
+}
+
+func (v *vmSearchParams) NotStatuses() *VMStatusList {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	return v.notStatuses
+}
+
+func (v *vmSearchParams) WithName(name string) BuildableVMSearchParameters {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	v.name = &name
+	return v
+}
+
+func (v *vmSearchParams) WithStatuses(list VMStatusList) BuildableVMSearchParameters {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	newStatuses := list.Copy()
+	v.statuses = &newStatuses
+	return v
+}
+
+func (v *vmSearchParams) WithNotStatuses(list VMStatusList) BuildableVMSearchParameters {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	newNotStatuses := list.Copy()
+	v.notStatuses = &newNotStatuses
+	return v
 }
 
 // OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
@@ -634,8 +736,37 @@ const (
 	VMStatusWaitForLaunch VMStatus = "wait_for_launch"
 )
 
+// Validate validates if a VMStatus has a valid value.
+func (s VMStatus) Validate() error {
+	for _, v := range VMStatusValues() {
+		if v == s {
+			return nil
+		}
+	}
+	return newError(EBadArgument, "invalid value for VM status: %s", s)
+}
+
 // VMStatusList is a list of VMStatus.
 type VMStatusList []VMStatus
+
+// Copy creates a separate copy of the current status list.
+func (l VMStatusList) Copy() VMStatusList {
+	result := make([]VMStatus, len(l))
+	for i, s := range l {
+		result[i] = s
+	}
+	return result
+}
+
+// Validate validates the list of statuses.
+func (l VMStatusList) Validate() error {
+	for _, s := range l {
+		if err := s.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // VMStatusValues returns all possible VMStatus values.
 func VMStatusValues() VMStatusList {
