@@ -46,12 +46,6 @@ func (o *oVirtClient) CreateVM(
 					return wrap(err, EUnidentified, "failed setting auto pining policy for VM %s", vm.ID())
 				}
 			}
-			if tags := params.Tags(); tags != nil {
-				err = o.handleVMTags(tags, vm.ID())
-				if err != nil {
-					return wrap(err, EUnidentified, "failed setting tags for VM %s", vm.ID())
-				}
-			}
 			result, err = o.GetVM(vm.ID(), retries...)
 			if err != nil {
 				return newError(EUnidentified, "failed getting VM after creation")
@@ -210,7 +204,7 @@ func validateVMCreationParameters(clusterID string, templateID string, name stri
 		}
 	}
 	if placementPolicy := params.PlacementPolicy(); placementPolicy != nil {
-		if err := placementPolicy.affinity.Validate(); err != nil {
+		if err := placementPolicy.Affinity().Validate(); err != nil {
 			return wrap(err, EBadArgument, "invalid VM placementPolicy settings")
 		}
 	}

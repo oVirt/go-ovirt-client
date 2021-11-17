@@ -37,7 +37,7 @@ func (m *mockClient) CreateVM(clusterID string, templateID string, name string, 
 		vm.comment = *comment
 	}
 	if cpu := params.CPU(); cpu != nil {
-		vm.cpu = *cpu
+		vm.cpu = cpu
 	}
 	if memoryMB := params.MemoryMB(); memoryMB != nil {
 		vm.memoryMB = *memoryMB
@@ -62,9 +62,6 @@ func (m *mockClient) CreateVM(clusterID string, templateID string, name string, 
 	}
 	if initialization := params.Initialization(); initialization != nil {
 		vm.initialization = initialization
-	}
-	if tags := params.Tags(); tags != nil {
-		vm.tags = tags
 	}
 
 	m.vms[id] = vm

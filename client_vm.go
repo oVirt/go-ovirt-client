@@ -1,8 +1,10 @@
 package ovirtclient
 
 import (
+	"fmt"
 	ovirtsdk "github.com/ovirt/go-ovirt"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -36,6 +38,9 @@ type VMClient interface {
 	// StartVM starts an existing VM with the given ID and waits till it reaches status UP,
 	// it returns an error if one happened
 	StartVM(id string, retries ...RetryStrategy) (VM, error)
+	// StopVM stops an existing VM with the given ID and waits till it reaches status Down,
+	// it returns an error if one happened
+	StopVM(id string, retries ...RetryStrategy) (VM, error)
 }
 
 // VMData is the core of VM providing only data access functions.
@@ -52,8 +57,8 @@ type VMData interface {
 	TemplateID() string
 	// Status returns the current status of the VM.
 	Status() VMStatus
-	// CPU returns the VM cpu, made of (Sockets * Cores * Threads)
-	CPU() cpu
+	// cpu returns the VM cpu, made of (Sockets * Cores * Threads)
+	CPU() CPU
 	// MemoryMB returns the size of a VM's memory in MiBs.
 	MemoryMB() uint64
 	// VMType returns the type of the VM, values can be: desktop, server or high_performance.
@@ -61,14 +66,14 @@ type VMData interface {
 	// AutoPinningPolicy returns the auto pining policy set for the VM, values can be: none, resize_and_pin.
 	AutoPinningPolicy() VMAutoPinningPolicy
 	//PlacementPolicy returns the vm placement policy configuration.
-	PlacementPolicy() *vmPlacementPolicy
+	PlacementPolicy() VMPlacementPolicy
 	// Hugepages returns the size of a VM's hugepages custom property in KiBs.
 	Hugepages() *VMHugepages
 	// GuaranteedMemoryMB returns the amount of memory, in MiBs,
 	// that is guaranteed to not be drained by the balloon mechanism.
 	GuaranteedMemoryMB() *uint64
-	//initialization returns the virtual machine’s initialization configuration.
-	Initialization() *initialization
+	//Initialization returns the virtual machine’s initialization configuration.
+	Initialization() Initialization
 	//Tags defines is a list of tags which are assigned to the machine
 	Tags() []string
 }
@@ -106,15 +111,20 @@ type VM interface {
 		retries ...RetryStrategy,
 	) error
 	// AddToAffinityGroup adds the VM to an existing affinity group.
-	AddToAffinityGroup(affinityGroupID string, retries ...RetryStrategy)
+	// it returns an error if one happened
+	AddToAffinityGroup(affinityGroupID string, retries ...RetryStrategy) error
 	// RemoveFromAffinityGroup removes the VM to an existing affinity group.
-	RemoveFromAffinityGroup(affinityGroupID string, retries ...RetryStrategy)
+	// it returns an error if one happened
+	RemoveFromAffinityGroup(affinityGroupID string, retries ...RetryStrategy) error
 	// WaitForStatus waits till VM reaches the desired status,
 	// it returns an error if one happened
 	WaitForStatus(desiredStatus VMStatus, retries ...RetryStrategy) error
-	// StartVM starts the existing VM and waits till it reaches status UP,
+	// Start starts the existing VM and waits till it reaches status UP,
 	// it returns an error if one happened
-	StartVM(retries ...RetryStrategy) error
+	Start(retries ...RetryStrategy) error
+	// Stop stops the existing VM and waits till it reaches status UP,
+	// it returns an error if one happened
+	Stop(retries ...RetryStrategy) error
 }
 
 // OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
@@ -122,8 +132,8 @@ type VM interface {
 type OptionalVMParameters interface {
 	// Comment returns the comment for the VM.
 	Comment() *string
-	// CPU defines the VM cpu, made of (Sockets * Cores * Threads)
-	CPU() *cpu
+	// cpu defines the VM cpu, made of (Sockets * Cores * Threads)
+	CPU() CPU
 	// MemoryMB is the size of a VM's memory in MiBs.
 	MemoryMB() *uint64
 	// VMType represent what the virtual machine is optimized for, can be one of the following:
@@ -137,17 +147,15 @@ type OptionalVMParameters interface {
 	// the VM will consume the host cpu cores(number-of-host-cores - 1), regardless of the VM cpu settings.
 	AutoPinningPolicy() *VMAutoPinningPolicy
 	//PlacementPolicy specifies the hosts which the VM can be schedualled on and how.
-	PlacementPolicy() *vmPlacementPolicy
+	PlacementPolicy() VMPlacementPolicy
 	// Hugepages is the size of a VM's hugepages to use in KiBs.
 	// Only 2048 and 1048576 supported.
 	Hugepages() *VMHugepages
 	// GuaranteedMemoryMB defines amount of memory, in MiBs,
 	// that is guaranteed to not be drained by the balloon mechanism.
 	GuaranteedMemoryMB() *uint64
-	//initialization defines the virtual machine’s initialization configuration.
-	Initialization() *initialization
-	//Tags defines is a list of tags which are assigned to the machine
-	Tags() []string
+	//Initialization defines the virtual machine’s initialization configuration.
+	Initialization() Initialization
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -163,9 +171,9 @@ type BuildableVMParameters interface {
 	MustWithComment(comment string) BuildableVMParameters
 
 	// WithCPU sets the cpu settings of the VM.
-	WithCPU(cpu cpu) (BuildableVMParameters, error)
+	WithCPU(cpu CPU) (BuildableVMParameters, error)
 	// MustWithCPU is identical to WithCPU, but panics instead of returning an error.
-	MustWithCPU(cpu cpu) BuildableVMParameters
+	MustWithCPU(cpu CPU) BuildableVMParameters
 
 	// WithMemoryMB sets the memory settings of the VM.
 	WithMemoryMB(memoryMB uint64) (BuildableVMParameters, error)
@@ -183,9 +191,9 @@ type BuildableVMParameters interface {
 	MustWithAutoPinningPolicy(autoPinningPolicy VMAutoPinningPolicy) BuildableVMParameters
 
 	// WithPlacementPolicy sets the placement policy of the VM.
-	WithPlacementPolicy(placementPolicy vmPlacementPolicy) (BuildableVMParameters, error)
+	WithPlacementPolicy(placementPolicy VMPlacementPolicy) (BuildableVMParameters, error)
 	// MustWithPlacementPolicy is identical to WithPlacementPolicy, but panics instead of returning an error.
-	MustWithPlacementPolicy(placementPolicy vmPlacementPolicy) BuildableVMParameters
+	MustWithPlacementPolicy(placementPolicy VMPlacementPolicy) BuildableVMParameters
 
 	// WithHugepages sets the hugepages settings of the VM.
 	WithHugepages(hugepages VMHugepages) (BuildableVMParameters, error)
@@ -198,14 +206,9 @@ type BuildableVMParameters interface {
 	MustWithGuaranteedMemoryMB(guaranteedMemory uint64) BuildableVMParameters
 
 	// WithInitialization sets the virtual machine’s initialization configuration.
-	WithInitialization(initialization initialization) (BuildableVMParameters, error)
+	WithInitialization(initialization Initialization) (BuildableVMParameters, error)
 	// MustWithInitialization is identical to WithInitialization, but panics instead of returning an error.
-	MustWithInitialization(initialization initialization) BuildableVMParameters
-
-	// WithTags sets the virtual machine’s tags.
-	WithTags(tags []string) (BuildableVMParameters, error)
-	// MustWithTags is identical to WithTags, but panics instead of returning an error.
-	MustWithTags(tags []string) BuildableVMParameters
+	MustWithInitialization(initialization Initialization) BuildableVMParameters
 }
 
 // UpdateVMParameters returns a set of parameters to change on a VM.
@@ -291,15 +294,14 @@ type vmParams struct {
 	lock *sync.Mutex
 
 	comment            *string
-	cpu                *cpu
+	cpu                CPU
 	memoryMB           *uint64
 	vmType             *VMType
 	autoPinningPolicy  *VMAutoPinningPolicy
-	placementPolicy    *vmPlacementPolicy
+	placementPolicy    VMPlacementPolicy
 	hugepages          *VMHugepages
 	guaranteedMemoryMB *uint64
-	initialization     *initialization
-	tags               []string
+	initialization     Initialization
 }
 
 // CopyVMParams creates a new copy of params that can be used to construct the optional VM parameters.
@@ -309,7 +311,7 @@ func (v *vmParams) Copy() BuildableVMParameters {
 		newparams.WithComment(*comment)
 	}
 	if cpu := v.CPU(); cpu != nil {
-		newparams.WithCPU(*cpu)
+		newparams.WithCPU(cpu)
 	}
 	if memoryMB := v.MemoryMB(); memoryMB != nil {
 		newparams.WithMemoryMB(*memoryMB)
@@ -321,7 +323,7 @@ func (v *vmParams) Copy() BuildableVMParameters {
 		newparams.WithAutoPinningPolicy(*autoPinningPolicy)
 	}
 	if placementPolicy := v.PlacementPolicy(); placementPolicy != nil {
-		newparams.WithPlacementPolicy(*placementPolicy)
+		newparams.WithPlacementPolicy(placementPolicy)
 	}
 	if hugepages := v.Hugepages(); hugepages != nil {
 		newparams.WithHugepages(*hugepages)
@@ -330,10 +332,7 @@ func (v *vmParams) Copy() BuildableVMParameters {
 		newparams.WithGuaranteedMemoryMB(*guaranteedMemoryMB)
 	}
 	if init := v.Initialization(); init != nil {
-		newparams.WithInitialization(*init)
-	}
-	if tags := v.Tags(); tags != nil {
-		newparams.WithTags(tags)
+		newparams.WithInitialization(init)
 	}
 	return newparams
 }
@@ -343,8 +342,8 @@ func (v *vmParams) WithComment(comment string) (BuildableVMParameters, error) {
 	return v, nil
 }
 
-func (v *vmParams) WithCPU(cpu cpu) (BuildableVMParameters, error) {
-	v.cpu = &cpu
+func (v *vmParams) WithCPU(cpu CPU) (BuildableVMParameters, error) {
+	v.cpu = cpu
 	return v, nil
 }
 
@@ -369,11 +368,11 @@ func (v *vmParams) WithAutoPinningPolicy(autoPinningPolicy VMAutoPinningPolicy) 
 	return v, nil
 }
 
-func (v *vmParams) WithPlacementPolicy(placementPolicy vmPlacementPolicy) (BuildableVMParameters, error) {
-	if err := placementPolicy.affinity.Validate(); err != nil {
+func (v *vmParams) WithPlacementPolicy(placementPolicy VMPlacementPolicy) (BuildableVMParameters, error) {
+	if err := placementPolicy.Affinity().Validate(); err != nil {
 		return nil, err
 	}
-	v.placementPolicy = &placementPolicy
+	v.placementPolicy = placementPolicy
 	return v, nil
 }
 
@@ -390,13 +389,8 @@ func (v *vmParams) WithGuaranteedMemoryMB(guaranteedMemory uint64) (BuildableVMP
 	return v, nil
 }
 
-func (v *vmParams) WithInitialization(initialization initialization) (BuildableVMParameters, error) {
-	v.initialization = &initialization
-	return v, nil
-}
-
-func (v *vmParams) WithTags(tags []string) (BuildableVMParameters, error) {
-	v.tags = tags
+func (v *vmParams) WithInitialization(initialization Initialization) (BuildableVMParameters, error) {
+	v.initialization = initialization
 	return v, nil
 }
 
@@ -408,7 +402,7 @@ func (v *vmParams) MustWithComment(comment string) BuildableVMParameters {
 	return builder
 }
 
-func (v *vmParams) MustWithCPU(cpu cpu) BuildableVMParameters {
+func (v *vmParams) MustWithCPU(cpu CPU) BuildableVMParameters {
 	builder, err := v.WithCPU(cpu)
 	if err != nil {
 		panic(err)
@@ -440,7 +434,7 @@ func (v *vmParams) MustWithAutoPinningPolicy(autoPinningPolicy VMAutoPinningPoli
 	return builder
 }
 
-func (v *vmParams) MustWithPlacementPolicy(placementPolicy vmPlacementPolicy) BuildableVMParameters {
+func (v *vmParams) MustWithPlacementPolicy(placementPolicy VMPlacementPolicy) BuildableVMParameters {
 	builder, err := v.WithPlacementPolicy(placementPolicy)
 	if err != nil {
 		panic(err)
@@ -463,16 +457,8 @@ func (v *vmParams) MustWithGuaranteedMemoryMB(guaranteedMemory uint64) Buildable
 	return builder
 }
 
-func (v *vmParams) MustWithInitialization(initialization initialization) BuildableVMParameters {
+func (v *vmParams) MustWithInitialization(initialization Initialization) BuildableVMParameters {
 	builder, err := v.WithInitialization(initialization)
-	if err != nil {
-		panic(err)
-	}
-	return builder
-}
-
-func (v *vmParams) MustWithTags(tags []string) BuildableVMParameters {
-	builder, err := v.WithTags(tags)
 	if err != nil {
 		panic(err)
 	}
@@ -483,7 +469,7 @@ func (v vmParams) Comment() *string {
 	return v.comment
 }
 
-func (v *vmParams) CPU() *cpu {
+func (v *vmParams) CPU() CPU {
 	return v.cpu
 }
 
@@ -499,7 +485,7 @@ func (v *vmParams) AutoPinningPolicy() *VMAutoPinningPolicy {
 	return v.autoPinningPolicy
 }
 
-func (v *vmParams) PlacementPolicy() *vmPlacementPolicy {
+func (v *vmParams) PlacementPolicy() VMPlacementPolicy {
 	return v.placementPolicy
 }
 
@@ -511,12 +497,8 @@ func (v *vmParams) GuaranteedMemoryMB() *uint64 {
 	return v.guaranteedMemoryMB
 }
 
-func (v *vmParams) Initialization() *initialization {
+func (v *vmParams) Initialization() Initialization {
 	return v.initialization
-}
-
-func (v *vmParams) Tags() []string {
-	return v.tags
 }
 
 type vm struct {
@@ -528,14 +510,14 @@ type vm struct {
 	clusterID          string
 	templateID         string
 	status             VMStatus
-	cpu                cpu
+	cpu                CPU
 	memoryMB           uint64
 	vmType             VMType
 	autoPiningPolicy   VMAutoPinningPolicy
-	placementPolicy    *vmPlacementPolicy
+	placementPolicy    VMPlacementPolicy
 	hugepages          *VMHugepages
 	guaranteedMemoryMB *uint64
-	initialization     *initialization
+	initialization     Initialization
 	tags               []string
 }
 
@@ -589,16 +571,12 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	if !ok {
 		return nil, newFieldNotFound("vm", "vmtype")
 	}
-	var hugepages *VMHugepages
-	hugepagesStr, ok := HugepagesFromVM(sdkObject)
+	hugepages, ok := hugepagesFromVM(sdkObject)
 	if ok {
-		hugepagesVal := VMHugepages(hugepagesStr)
-		hugepages = &hugepagesVal
 		if err := hugepages.Validate(); err != nil {
 			return nil, err
 		}
 	}
-
 	memoryPolicy, ok := sdkObject.MemoryPolicy()
 	if !ok {
 		return nil, newFieldNotFound("vm", "memoryPolicy")
@@ -608,7 +586,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		return nil, newFieldNotFound("vm", "guaranteedMemory")
 	}
 	guaranteedMemoryConverted := convertByteTMib(uint64(guaranteedMemory))
-	var vmInitialization *initialization
+	var vmInitialization Initialization
 	sdkInitialization, ok := sdkObject.Initialization()
 	if ok {
 		vmInitialization, err = ConvertSDKInitialization(*sdkInitialization)
@@ -617,7 +595,6 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		}
 	}
 	// TODO: Extract to a seperate method
-	// TODO: check what is returned when there is no tags on a vm
 	tagsSDK, ok := sdkObject.Tags()
 	if !ok {
 		return nil, newFieldNotFound("vm", "tags")
@@ -649,7 +626,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		clusterID:          clusterID,
 		templateID:         templateID,
 		status:             VMStatus(status),
-		cpu:                *cpu,
+		cpu:                cpu,
 		memoryMB:           mem,
 		vmType:             VMType(vmtype),
 		hugepages:          hugepages,
@@ -685,7 +662,7 @@ func (v *vm) TemplateID() string {
 	return v.templateID
 }
 
-func (v *vm) CPU() cpu {
+func (v *vm) CPU() CPU {
 	return v.cpu
 }
 
@@ -701,7 +678,7 @@ func (v *vm) AutoPinningPolicy() VMAutoPinningPolicy {
 	return v.autoPiningPolicy
 }
 
-func (v *vm) PlacementPolicy() *vmPlacementPolicy {
+func (v *vm) PlacementPolicy() VMPlacementPolicy {
 	return v.placementPolicy
 }
 
@@ -713,7 +690,7 @@ func (v *vm) GuaranteedMemoryMB() *uint64 {
 	return v.guaranteedMemoryMB
 }
 
-func (v *vm) Initialization() *initialization {
+func (v *vm) Initialization() Initialization {
 	return v.initialization
 }
 
@@ -746,7 +723,7 @@ func (v *vm) withComment(comment string) *vm {
 
 // withCPU returns a copy of the VM with the new cpu. It does not change the original copy to avoid
 // shared state issues.
-func (v *vm) withCPU(cpu cpu) *vm {
+func (v *vm) withCPU(cpu CPU) *vm {
 	return &vm{
 		client:             v.client,
 		id:                 v.id,
@@ -838,7 +815,7 @@ func (v *vm) withAutoPinningPolicy(autoPiningPolicy VMAutoPinningPolicy) *vm {
 
 // withPlacementPolicy returns a copy of the VM with the new vm placement policy. It does not change the original copy to avoid
 // shared state issues.
-func (v *vm) withPlacementPolicy(placementPolicy vmPlacementPolicy) *vm {
+func (v *vm) withPlacementPolicy(placementPolicy VMPlacementPolicy) *vm {
 	return &vm{
 		client:             v.client,
 		id:                 v.id,
@@ -851,7 +828,7 @@ func (v *vm) withPlacementPolicy(placementPolicy vmPlacementPolicy) *vm {
 		memoryMB:           v.memoryMB,
 		vmType:             v.vmType,
 		autoPiningPolicy:   v.autoPiningPolicy,
-		placementPolicy:    &placementPolicy,
+		placementPolicy:    placementPolicy,
 		hugepages:          v.hugepages,
 		guaranteedMemoryMB: v.guaranteedMemoryMB,
 		initialization:     v.initialization,
@@ -907,7 +884,7 @@ func (v *vm) withGuaranteedMemoryMB(guaranteedMemoryMB uint64) *vm {
 
 // withInitialization returns a copy of the VM with the new initialization. It does not change the original copy to avoid
 // shared state issues.
-func (v *vm) withInitialization(initialization initialization) *vm {
+func (v *vm) withInitialization(initialization Initialization) *vm {
 	return &vm{
 		client:             v.client,
 		id:                 v.id,
@@ -923,7 +900,7 @@ func (v *vm) withInitialization(initialization initialization) *vm {
 		placementPolicy:    v.placementPolicy,
 		hugepages:          v.hugepages,
 		guaranteedMemoryMB: v.guaranteedMemoryMB,
-		initialization:     &initialization,
+		initialization:     initialization,
 		tags:               v.tags,
 	}
 }
@@ -997,12 +974,12 @@ func (v *vm) ListNICs(retries ...RetryStrategy) ([]NIC, error) {
 }
 
 //TODO: implement
-
-func (v *vm) AddToAffinityGroup(affinityGroupID string, retries ...RetryStrategy) {
+func (v *vm) AddToAffinityGroup(affinityGroupID string, retries ...RetryStrategy) error {
 	panic("implement me")
 }
 
-func (v *vm) RemoveFromAffinityGroup(affinityGroupID string, retries ...RetryStrategy) {
+//TODO: implement
+func (v *vm) RemoveFromAffinityGroup(affinityGroupID string, retries ...RetryStrategy) error {
 	panic("implement me")
 }
 
@@ -1014,10 +991,18 @@ func (v *vm) WaitForStatus(desiredStatus VMStatus, retries ...RetryStrategy) err
 	return nil
 }
 
-func (v *vm) StartVM(retries ...RetryStrategy) error {
+func (v *vm) Start(retries ...RetryStrategy) error {
 	_, err := v.client.StartVM(v.id, retries...)
 	if err != nil {
 		return wrap(err, EUnidentified, "failed to start VM")
+	}
+	return nil
+}
+
+func (v *vm) Stop(retries ...RetryStrategy) error {
+	_, err := v.client.StopVM(v.id, retries...)
+	if err != nil {
+		return wrap(err, EUnidentified, "failed to stop VM")
 	}
 	return nil
 }
@@ -1165,7 +1150,7 @@ const (
 	// The following configuration changes are set automatically:
 	//	- Enable headless mode.
 	//	- Enable serial console.
-	//	- Enable pass-through host CPU.
+	//	- Enable pass-through host cpu.
 	//	- Enable I/O threads.
 	//	- Enable I/O threads pinning and set the pinning topology.
 	//	- Enable the paravirtualized random number generator PCI (virtio-rng) device.
@@ -1200,12 +1185,12 @@ func VMTypeValues() VMTypeList {
 	}
 }
 
-// VmAffinity represent if and how the vm will migrate between hosts.
-type VmAffinity string
+// VMAffinity represent if and how the vm will migrate between hosts.
+type VMAffinity string
 
 // Validate returns an error if the VM affinity policy doesn't have a valid value.
-func (a VmAffinity) Validate() error {
-	for _, affinity := range VmAffinityValues() {
+func (a VMAffinity) Validate() error {
+	for _, affinity := range VMAffinityValues() {
 		if affinity == a {
 			return nil
 		}
@@ -1214,24 +1199,24 @@ func (a VmAffinity) Validate() error {
 		EBadArgument,
 		"invalid vm affinity policy: %s must be one of: %s",
 		a,
-		strings.Join(VmAffinityValues().Strings(), ", "),
+		strings.Join(VMAffinityValues().Strings(), ", "),
 	)
 }
 
 const (
-	// VmAffinityMigratable indicates that the VM can be migrated by the oVirt engine or the user between the allowed hosts.
-	VmAffinityMigratable VmAffinity = "migratable"
-	// VmAffinityUserMigratable indicates that the VM can only be migrated manually by the user between the allowed hosts.
-	VmAffinityUserMigratable VmAffinity = "user_migratable"
-	// VmAffinityPinned indicates that the VM can't be migrated between the allowed hosts.
-	VmAffinityPinned VmAffinity = "pinned"
+	// VMAffinityMigratable indicates that the VM can be migrated by the oVirt engine or the user between the allowed hosts.
+	VMAffinityMigratable VMAffinity = "migratable"
+	// VMAffinityUserMigratable indicates that the VM can only be migrated manually by the user between the allowed hosts.
+	VMAffinityUserMigratable VMAffinity = "user_migratable"
+	// VMAffinityPinned indicates that the VM can't be migrated between the allowed hosts.
+	VMAffinityPinned VMAffinity = "pinned"
 )
 
-// VmAffinityList is a list of VmAffinity.
-type VmAffinityList []VmAffinity
+// VMAffinityList is a list of VMAffinity.
+type VMAffinityList []VMAffinity
 
 // Strings creates a string list of the values.
-func (l VmAffinityList) Strings() []string {
+func (l VMAffinityList) Strings() []string {
 	result := make([]string, len(l))
 	for i, policy := range l {
 		result[i] = string(policy)
@@ -1239,12 +1224,12 @@ func (l VmAffinityList) Strings() []string {
 	return result
 }
 
-// VmAffinityValues returns all possible VmAffinity values.
-func VmAffinityValues() VmAffinityList {
-	return []VmAffinity{
-		VmAffinityUserMigratable,
-		VmAffinityMigratable,
-		VmAffinityPinned,
+// VMAffinityValues returns all possible VMAffinity values.
+func VMAffinityValues() VMAffinityList {
+	return []VMAffinity{
+		VMAffinityUserMigratable,
+		VMAffinityMigratable,
+		VMAffinityPinned,
 	}
 }
 
@@ -1294,7 +1279,7 @@ func VMAutoPinningPolicyValues() VMAutoPinningPolicyList {
 }
 
 // VMHugepages represent the size of a VM's hugepages custom property in KiBs
-type VMHugepages string
+type VMHugepages uint64
 
 // Validate returns an error if the VM hugepages doesn't have a valid value.
 func (h VMHugepages) Validate() error {
@@ -1315,7 +1300,7 @@ func (h VMHugepages) Validate() error {
 func (h VMHugepages) ConvertToCustomProp() (*ovirtsdk.CustomProperty, error) {
 	customProp, err := ovirtsdk.NewCustomPropertyBuilder().
 		Name("hugepages").
-		Value(string(h)).
+		Value(fmt.Sprint(h)).
 		Build()
 	if err != nil {
 		return nil, newError(EBug, "failed building custom property hugepages")
@@ -1324,10 +1309,10 @@ func (h VMHugepages) ConvertToCustomProp() (*ovirtsdk.CustomProperty, error) {
 }
 
 const (
-	// VMHugepagesSmall represents the small value of supported hugepages setting which is 2048 Kib.
-	VMHugepagesSmall VMHugepages = "2048"
-	// VMHugepagesLarge represents the small value of supported hugepages setting which is 1048576 Kib.
-	VMHugepagesLarge VMHugepages = "1048576"
+	// VMHugePages2M represents the small value of supported hugepages setting which is 2048 Kib.
+	VMHugePages2M VMHugepages = 2048
+	// VMHugePages1G represents the small value of supported hugepages setting which is 1048576 Kib.
+	VMHugePages1G VMHugepages = 1048576
 )
 
 // VMHugepagesList is a list of VMHugepages.
@@ -1336,8 +1321,8 @@ type VMHugepagesList []VMHugepages
 // Strings creates a string list of the values.
 func (l VMHugepagesList) Strings() []string {
 	result := make([]string, len(l))
-	for i, policy := range l {
-		result[i] = string(policy)
+	for i, hugepage := range l {
+		result[i] = fmt.Sprint(hugepage)
 	}
 	return result
 }
@@ -1345,49 +1330,76 @@ func (l VMHugepagesList) Strings() []string {
 // VMHugepagesValues returns all possible VMHugepages values.
 func VMHugepagesValues() VMHugepagesList {
 	return []VMHugepages{
-		VMHugepagesSmall,
-		VMHugepagesLarge,
+		VMHugePages2M,
+		VMHugePages1G,
 	}
 }
 
-func HugepagesFromVM(vm *ovirtsdk.Vm) (string, bool) {
+func hugepagesFromVM(vm *ovirtsdk.Vm) (*VMHugepages, bool) {
 	var hugepagesVal string
 	customProperties, ok := vm.CustomProperties()
 	if !ok {
-		return "", false
+		return nil, false
 	}
 	for _, c := range customProperties.Slice() {
 		customPropertieName, ok := c.Name()
 		if !ok {
-			return "", false
+			return nil, false
 		}
 		if customPropertieName == "hugepages" {
 			hugepagesVal, ok = c.Value()
 			if !ok {
-				return "", false
+				return nil, false
 			}
+			break
 		}
 	}
-	return hugepagesVal, true
+	hugepagesUint, err := strconv.ParseUint(hugepagesVal, 10, 64)
+	if err != nil {
+		return nil, false
+	}
+	hugepages := VMHugepages(hugepagesUint)
+	return &hugepages, true
+}
+
+type VMPlacementPolicy interface {
+	// WithHosts sets the selected hosts which the vm can be scheduled on.
+	WithHosts(hosts []Host) VMPlacementPolicy
+	// WithVmAffinity sets the VM affinity of the VM placement policy.
+	WithVmAffinity(affinity VMAffinity) VMPlacementPolicy
+	//Hosts returns the Host of the VM placement policy.
+	Hosts() []Host
+	//Affinity returns the VM affinity of the VM placement policy.
+	Affinity() VMAffinity
+	//ConvertToSDK converts VM placement policy to the oVirt SDK object of a VmPlacementPolicy.
+	ConvertToSDK() (*ovirtsdk.VmPlacementPolicy, error)
 }
 
 type vmPlacementPolicy struct {
 	hosts    []Host
-	affinity *VmAffinity
+	affinity *VMAffinity
 }
 
-func NewVmPlacementPolicy() *vmPlacementPolicy {
+func NewVmPlacementPolicy() VMPlacementPolicy {
 	return &vmPlacementPolicy{}
 }
 
-func (v *vmPlacementPolicy) WithHosts(hosts []Host) *vmPlacementPolicy {
+func (v *vmPlacementPolicy) WithHosts(hosts []Host) VMPlacementPolicy {
 	v.hosts = hosts
 	return v
 }
 
-func (v *vmPlacementPolicy) WithVmAffinity(affinity VmAffinity) *vmPlacementPolicy {
+func (v *vmPlacementPolicy) WithVmAffinity(affinity VMAffinity) VMPlacementPolicy {
 	v.affinity = &affinity
 	return v
+}
+
+func (v *vmPlacementPolicy) Hosts() []Host {
+	return v.hosts
+}
+
+func (v *vmPlacementPolicy) Affinity() VMAffinity {
+	return *v.affinity
 }
 
 func (v *vmPlacementPolicy) ConvertToSDK() (*ovirtsdk.VmPlacementPolicy, error) {
@@ -1419,7 +1431,7 @@ func (v *vmPlacementPolicy) ConvertToSDK() (*ovirtsdk.VmPlacementPolicy, error) 
 	return placementPolicy, nil
 }
 
-func ConvertSDKVmPlacementPolicy(vmPlacementPolicy ovirtsdk.VmPlacementPolicy, client Client) (*vmPlacementPolicy, error) {
+func ConvertSDKVmPlacementPolicy(vmPlacementPolicy ovirtsdk.VmPlacementPolicy, client Client) (VMPlacementPolicy, error) {
 	placementPolicy := NewVmPlacementPolicy()
 	sdkHosts, ok := vmPlacementPolicy.Hosts()
 	if ok {
@@ -1435,9 +1447,20 @@ func ConvertSDKVmPlacementPolicy(vmPlacementPolicy ovirtsdk.VmPlacementPolicy, c
 	}
 	affinity, ok := vmPlacementPolicy.Affinity()
 	if ok {
-		placementPolicy.WithVmAffinity(VmAffinity(affinity))
+		placementPolicy.WithVmAffinity(VMAffinity(affinity))
 	}
 	return placementPolicy, nil
+}
+
+type CPU interface {
+	//WithSockets sets the amount of sockets for the CPU
+	WithSockets(sockets uint64) CPU
+	//WithCores sets the amount of cores for the CPU
+	WithCores(cores uint64) CPU
+	//WithThreads sets the amount of threads for the CPU
+	WithThreads(threads uint64) CPU
+	//ConvertToSDK converts CPU to the oVirt SDK object of a CPU.
+	ConvertToSDK() (*ovirtsdk.Cpu, error)
 }
 
 // cpu defines the VM cpu, made of (Sockets * Cores * Threads)
@@ -1450,12 +1473,27 @@ type cpu struct {
 	threads uint64
 }
 
-func NewCPU(sockets uint64, cores uint64, threads uint64) *cpu {
+func NewCPU() CPU {
 	return &cpu{
-		sockets: sockets,
-		cores:   cores,
-		threads: threads,
+		sockets: 1,
+		cores:   1,
+		threads: 1,
 	}
+}
+
+func (c *cpu) WithSockets(sockets uint64) CPU {
+	c.sockets = sockets
+	return c
+}
+
+func (c *cpu) WithCores(cores uint64) CPU {
+	c.cores = cores
+	return c
+}
+
+func (c *cpu) WithThreads(threads uint64) CPU {
+	c.threads = threads
+	return c
 }
 
 func (c *cpu) ConvertToSDK() (*ovirtsdk.Cpu, error) {
@@ -1476,24 +1514,37 @@ func (c *cpu) ConvertToSDK() (*ovirtsdk.Cpu, error) {
 	return cpu, nil
 }
 
-func ConvertSDKCPU(cpu ovirtsdk.Cpu) (*cpu, error) {
+func ConvertSDKCPU(cpu ovirtsdk.Cpu) (CPU, error) {
+	c := NewCPU()
 	topology, ok := cpu.Topology()
 	if !ok {
 		return nil, newError(EBug, "cpu with not topology set")
 	}
-	cores, ok := topology.Cores()
-	if !ok {
-		return nil, newError(EBug, "topology with not coeres set")
-	}
 	sockets, ok := topology.Sockets()
 	if !ok {
-		return nil, newError(EBug, "topology with not coeres set")
+		return nil, newError(EBug, "topology with not cores set")
 	}
+	c.WithSockets(uint64(sockets))
+	cores, ok := topology.Cores()
+	if !ok {
+		return nil, newError(EBug, "topology with not cores set")
+	}
+	c.WithCores(uint64(cores))
 	threads, ok := topology.Threads()
 	if !ok {
-		return nil, newError(EBug, "topology with not coeres set")
+		return nil, newError(EBug, "topology with not cores set")
 	}
-	return NewCPU(uint64(sockets), uint64(cores), uint64(threads)), nil
+	c.WithThreads(uint64(threads))
+	return c, nil
+}
+
+type Initialization interface {
+	//WithCustomScript sets the customScript to run when the VM initializes
+	WithCustomScript(customScript string) Initialization
+	//WithHostname sets the hostname of the VM
+	WithHostname(hostname string) Initialization
+	//ConvertToSDK converts CPU to the oVirt SDK object of a CPU.
+	ConvertToSDK() (*ovirtsdk.Initialization, error)
 }
 
 // initialization defines to the virtual machine’s initialization configuration.
@@ -1504,16 +1555,16 @@ type initialization struct {
 	hostname     *string
 }
 
-func NewInitialization() *initialization {
+func NewInitialization() Initialization {
 	return &initialization{}
 }
 
-func (i *initialization) WithCustomScript(customScript string) *initialization {
+func (i *initialization) WithCustomScript(customScript string) Initialization {
 	i.customScript = &customScript
 	return i
 }
 
-func (i *initialization) WithHostname(hostname string) *initialization {
+func (i *initialization) WithHostname(hostname string) Initialization {
 	i.hostname = &hostname
 	return i
 }
@@ -1533,7 +1584,7 @@ func (i *initialization) ConvertToSDK() (*ovirtsdk.Initialization, error) {
 	return init, nil
 }
 
-func ConvertSDKInitialization(initialization ovirtsdk.Initialization) (*initialization, error) {
+func ConvertSDKInitialization(initialization ovirtsdk.Initialization) (Initialization, error) {
 	init := NewInitialization()
 	customScript, ok := initialization.CustomScript()
 	if ok {

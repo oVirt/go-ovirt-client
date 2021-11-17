@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) StartVM(id string, retries ...RetryStrategy) (VM, error) {
+func (o *oVirtClient) StopVM(id string, retries ...RetryStrategy) (VM, error) {
 	retries = defaultRetries(retries, defaultReadTimeouts())
 	vm, err := o.GetVM(id, retries...)
 	if err != nil {
@@ -15,22 +15,22 @@ func (o *oVirtClient) StartVM(id string, retries ...RetryStrategy) (VM, error) {
 		)
 	}
 	err = retry(
-		fmt.Sprintf("starting vm %s", id),
+		fmt.Sprintf("stopping vm %s", id),
 		o.logger,
 		retries,
 		func() error {
-			_, err = o.conn.SystemService().VmsService().VmService(id).Start().Send()
+			_, err = o.conn.SystemService().VmsService().VmService(id).Stop().Send()
 			if err != nil {
 				return wrap(
 					err,
 					EUnidentified,
-					"vm with ID %s failed to start",
+					"vm with ID %s failed to stop",
 					id,
 				)
 			}
-			err = vm.WaitForStatus(VMStatusUp, retries...)
+			err = vm.WaitForStatus(VMStatusDown, retries...)
 			if err != nil {
-				return newError(EUnidentified, "failed waiting for VM %s to reach status UP", id)
+				return wrap(err, EUnidentified, "failed waiting for VM %s to reach status Down", id)
 			}
 			return nil
 		})

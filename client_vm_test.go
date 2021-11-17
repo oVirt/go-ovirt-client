@@ -8,8 +8,8 @@ import (
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
-const DummyString = "test"
-const DummyMemoryMib = 1024
+const dummyString = "test"
+const dummyMemoryMib = 1024
 
 func TestVMListShouldNotFail(t *testing.T) {
 	helper := getHelper(t)
@@ -34,17 +34,17 @@ func TestVMCreation(t *testing.T) {
 
 	newBaseCreateParams := func() ovirtclient.BuildableVMParameters {
 		return ovirtclient.CreateVMParams().
-			MustWithComment(DummyString).
+			MustWithComment(dummyString).
 			MustWithVMType(ovirtclient.VMTypeDesktop).
-			MustWithCPU(*ovirtclient.NewCPU(1, 8, 1)).
-			MustWithMemoryMB(DummyMemoryMib)
+			MustWithCPU(ovirtclient.NewCPU().WithSockets(1).WithCores(8).WithThreads(1)).
+			MustWithMemoryMB(dummyMemoryMib)
 	}
 	newBaseFieldToExpectedValue := func() map[string]interface{} {
 		return map[string]interface{}{
-			"comment":  DummyString,
+			"comment":  dummyString,
 			"vmType":   ovirtclient.VMTypeDesktop,
-			"cpu":      *ovirtclient.NewCPU(1, 8, 1),
-			"memoryMB": DummyMemoryMib,
+			"cpu":      ovirtclient.NewCPU().WithSockets(1).WithCores(8).WithThreads(1),
+			"memoryMB": dummyMemoryMib,
 		}
 	}
 	testCases := []testCase{
@@ -80,10 +80,10 @@ func TestVMCreation(t *testing.T) {
 		{
 			name:                "VM with valid small hugepages",
 			shouldSucceedCreate: true,
-			createVMParams:      newBaseCreateParams().MustWithHugepages(ovirtclient.VMHugepagesSmall),
+			createVMParams:      newBaseCreateParams().MustWithHugepages(ovirtclient.VMHugePages2M),
 			expected: func() map[string]interface{} {
 				expected := newBaseFieldToExpectedValue()
-				expected["hugepages"] = ovirtclient.VMHugepagesSmall
+				expected["hugepages"] = ovirtclient.VMHugePages2M
 				return expected
 			},
 			assertFunction: baseVMAssertFunction,
@@ -91,10 +91,10 @@ func TestVMCreation(t *testing.T) {
 		{
 			name:                "VM with valid large hugepages",
 			shouldSucceedCreate: true,
-			createVMParams:      newBaseCreateParams().MustWithHugepages(ovirtclient.VMHugepagesLarge),
+			createVMParams:      newBaseCreateParams().MustWithHugepages(ovirtclient.VMHugePages1G),
 			expected: func() map[string]interface{} {
 				expected := newBaseFieldToExpectedValue()
-				expected["hugepages"] = ovirtclient.VMHugepagesLarge
+				expected["hugepages"] = ovirtclient.VMHugePages1G
 				return expected
 			},
 			assertFunction: baseVMAssertFunction,
@@ -102,10 +102,10 @@ func TestVMCreation(t *testing.T) {
 		{
 			name:                "VM with valid GuaranteedMemory",
 			shouldSucceedCreate: true,
-			createVMParams:      newBaseCreateParams().MustWithGuaranteedMemoryMB(DummyMemoryMib),
+			createVMParams:      newBaseCreateParams().MustWithGuaranteedMemoryMB(dummyMemoryMib),
 			expected: func() map[string]interface{} {
 				expected := newBaseFieldToExpectedValue()
-				expected["guaranteedMemoryMB"] = DummyMemoryMib
+				expected["guaranteedMemoryMB"] = dummyMemoryMib
 				return expected
 			},
 			assertFunction: baseVMAssertFunction,
@@ -147,10 +147,10 @@ func TestVMCreation(t *testing.T) {
 			name:                "VM with valid initialization - just hostname",
 			shouldSucceedCreate: true,
 			createVMParams: newBaseCreateParams().
-				MustWithInitialization(*ovirtclient.NewInitialization().WithHostname(DummyString)),
+				MustWithInitialization(ovirtclient.NewInitialization().WithHostname(dummyString)),
 			expected: func() map[string]interface{} {
 				expected := newBaseFieldToExpectedValue()
-				expected["initialization"] = *ovirtclient.NewInitialization().WithHostname(DummyString)
+				expected["initialization"] = ovirtclient.NewInitialization().WithHostname(dummyString)
 				return expected
 			},
 			assertFunction: baseVMAssertFunction,
@@ -173,7 +173,7 @@ func TestVMCreation(t *testing.T) {
 		vm, err := client.CreateVM(
 			helper.GetClusterID(),
 			helper.GetBlankTemplateID(),
-			fmt.Sprintf("%s_%s", DummyString, helper.GenerateRandomID(5)),
+			fmt.Sprintf("%s_%s", dummyString, helper.GenerateRandomID(5)),
 			tc.createVMParams)
 		if !tc.shouldSucceedCreate {
 			if err == nil {
@@ -206,7 +206,7 @@ func TestVMUpdate(t *testing.T) {
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
 		helper.GetBlankTemplateID(),
-		DummyString,
+		dummyString,
 		ovirtclient.CreateVMParams(),
 	)
 	if err != nil {
@@ -270,7 +270,7 @@ func assertCanCreateVM(
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
 		helper.GetBlankTemplateID(),
-		DummyString,
+		dummyString,
 		params,
 	)
 	if err != nil {
@@ -315,7 +315,7 @@ func baseVMAssertFunction(vm ovirtclient.VM, fieldToExpectedValue map[string]int
 				return fmt.Errorf(msg, field, value, vm.AutoPinningPolicy())
 			}
 		case "placementPolicy":
-			if placementPolicy := vm.PlacementPolicy(); !reflect.DeepEqual(*placementPolicy, value) {
+			if placementPolicy := vm.PlacementPolicy(); !reflect.DeepEqual(placementPolicy, value) {
 				return fmt.Errorf(msg, field, value, placementPolicy)
 			}
 		case "hugepages":
@@ -327,7 +327,7 @@ func baseVMAssertFunction(vm ovirtclient.VM, fieldToExpectedValue map[string]int
 				return fmt.Errorf(msg, field, value, guaranteedMemoryMB)
 			}
 		case "initialization":
-			if initialization := vm.Initialization(); !reflect.DeepEqual(*initialization, value) {
+			if initialization := vm.Initialization(); !reflect.DeepEqual(initialization, value) {
 				return fmt.Errorf(msg, field, value, initialization)
 			}
 		case "tags":
