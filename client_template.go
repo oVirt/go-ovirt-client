@@ -8,8 +8,13 @@ import (
 
 // TemplateClient represents the portion of the client that deals with VM templates.
 type TemplateClient interface {
+	// ListTemplates returns all templates stored in the oVirt engine.
 	ListTemplates(retries ...RetryStrategy) ([]Template, error)
+	// GetTemplate returns a template by its ID.
 	GetTemplate(id string, retries ...RetryStrategy) (Template, error)
+	// GetBlankTemplate finds a blank template in the oVirt engine and returns it. If no blank template is present,
+	// this function will return an error.
+	GetBlankTemplate(retries ...RetryStrategy) (Template, error)
 }
 
 // Template is a set of prepared configurations for VMs.
@@ -20,6 +25,10 @@ type Template interface {
 	Name() string
 	// Description is a longer description for the template.
 	Description() string
+
+	// IsBlank returns true, if the template either has the ID of all zeroes, or if the template has no settings, disks,
+	// or other settings. This function only checks the details supported by go-ovirt-client.
+	IsBlank() bool
 }
 
 func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template, client Client) (Template, error) {
@@ -48,6 +57,10 @@ type template struct {
 	id          string
 	name        string
 	description string
+}
+
+func (t template) IsBlank() bool {
+	return t.id == blankTemplateID
 }
 
 func (t template) ID() string {
