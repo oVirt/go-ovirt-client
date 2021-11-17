@@ -17,7 +17,7 @@ func NewMock() MockClient {
 	testNetwork := generateTestNetwork(testDatacenter)
 	testVNICProfile := generateTestVNICProfile(testNetwork)
 	blankTemplate := &template{
-		id:          BlankTemplateID,
+		id:          blankTemplateID,
 		name:        "Blank",
 		description: "Blank template",
 	}

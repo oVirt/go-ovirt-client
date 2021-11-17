@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -332,17 +331,11 @@ func createTestClient(
 }
 
 func findBlankTemplateID(client Client) (string, error) {
-	templates, err := client.ListTemplates()
+	template, err := client.GetBlankTemplate()
 	if err != nil {
-		return "", fmt.Errorf("failed to list templates (%w)", err)
+		return "", fmt.Errorf("failed to find blank template for testing (%w)", err)
 	}
-	for _, template := range templates {
-		if template.ID() == BlankTemplateID ||
-			strings.Contains(template.Description(), "Blank template") {
-			return template.ID(), nil
-		}
-	}
-	return "", fmt.Errorf("failed to find blank template for testing")
+	return template.ID(), nil
 }
 
 func verifyBlankTemplateID(client Client, templateID string) error {
