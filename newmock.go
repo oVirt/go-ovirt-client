@@ -12,6 +12,7 @@ func NewMock() MockClient {
 	testCluster := generateTestCluster()
 	testHost := generateTestHost(testCluster)
 	testStorageDomain := generateTestStorageDomain()
+	secondaryStorageDomain := generateTestStorageDomain()
 	testDatacenter := generateTestDatacenter(testCluster)
 	testNetwork := generateTestNetwork(testDatacenter)
 	testVNICProfile := generateTestVNICProfile(testNetwork)
@@ -26,7 +27,8 @@ func NewMock() MockClient {
 		lock: &sync.Mutex{},
 		vms:  map[string]*vm{},
 		storageDomains: map[string]*storageDomain{
-			testStorageDomain.ID(): testStorageDomain,
+			testStorageDomain.ID():      testStorageDomain,
+			secondaryStorageDomain.ID(): secondaryStorageDomain,
 		},
 		disks: map[string]*diskWithData{},
 		clusters: map[string]*cluster{
@@ -56,6 +58,7 @@ func NewMock() MockClient {
 	testHost.client = client
 	blankTemplate.client = client
 	testStorageDomain.client = client
+	secondaryStorageDomain.client = client
 	testDatacenter.client = client
 	testNetwork.client = client
 	testVNICProfile.client = client
