@@ -15,6 +15,7 @@ type VMClient interface {
 	CreateVM(
 		clusterID string,
 		templateID string,
+		name string,
 		optional OptionalVMParameters,
 		retries ...RetryStrategy,
 	) (VM, error)
@@ -83,8 +84,6 @@ type VM interface {
 // OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
 // interface is expected to be extended in the future.
 type OptionalVMParameters interface {
-	// Name returns the name for the new VM.
-	Name() string
 	// Comment returns the comment for the VM.
 	Comment() string
 }
@@ -93,11 +92,6 @@ type OptionalVMParameters interface {
 // builder functions. This is placed here for future use.
 type BuildableVMParameters interface {
 	OptionalVMParameters
-
-	// WithName adds a name to the VM.
-	WithName(name string) (BuildableVMParameters, error)
-	// MustWithName is identical to WithName, but panics instead of returning an error.
-	MustWithName(name string) BuildableVMParameters
 
 	// WithComment adds a common to the VM.
 	WithComment(comment string) (BuildableVMParameters, error)
