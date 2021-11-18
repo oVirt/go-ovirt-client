@@ -44,6 +44,22 @@ type VMData interface {
 	TemplateID() string
 	// Status returns the current status of the VM.
 	Status() VMStatus
+	// CPU returns the CPU structure of a VM.
+	CPU() VMCPU
+}
+
+// VMCPU is the CPU configuration of a VM.
+type VMCPU interface {
+	// Topo is the desired CPU topology for this VM.
+	Topo() VMCPUTopo
+}
+
+type vmCPU struct {
+	topo VMCPUTopo
+}
+
+func (v vmCPU) Topo() VMCPUTopo {
+	return v.topo
 }
 
 // VM is the implementation of the virtual machine in oVirt.
@@ -86,6 +102,9 @@ type VM interface {
 type OptionalVMParameters interface {
 	// Comment returns the comment for the VM.
 	Comment() string
+
+	// CPU contains the CPU topology, if any.
+	CPU() VMCPUTopo
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -97,6 +116,17 @@ type BuildableVMParameters interface {
 	WithComment(comment string) (BuildableVMParameters, error)
 	// MustWithComment is identical to WithComment, but panics instead of returning an error.
 	MustWithComment(comment string) BuildableVMParameters
+
+	// WithCPU adds a VMCPUTopo to the VM.
+	WithCPU(cpu VMCPUTopo) (BuildableVMParameters, error)
+	// MustWithCPU adds a VMCPUTopo and panics if an error happens.
+	MustWithCPU(cpu VMCPUTopo) BuildableVMParameters
+	// WithCPUParameters is a simplified function that calls NewVMCPUTopo and adds the CPU topology to
+	// the VM.
+	WithCPUParameters(cores, threads, sockets uint) (BuildableVMParameters, error)
+	// MustWithCPUParameters is a simplified function that calls MustNewVMCPUTopo and adds the CPU topology to
+	// the VM.
+	MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters
 }
 
 // UpdateVMParameters returns a set of parameters to change on a VM.
@@ -105,6 +135,61 @@ type UpdateVMParameters interface {
 	Name() *string
 	// Comment returns the comment for the VM. Return nil if the name should not be changed.
 	Comment() *string
+}
+
+// VMCPUTopo contains the CPU topology information about a VM.
+type VMCPUTopo interface {
+	// Cores is the number of CPU cores.
+	Cores() uint
+	// Threads is the number of CPU threads in a core.
+	Threads() uint
+	// Sockets is the number of sockets.
+	Sockets() uint
+}
+
+// NewVMCPUTopo creates a new VMCPUTopo from the specified parameters.
+func NewVMCPUTopo(cores uint, threads uint, sockets uint) (VMCPUTopo, error) {
+	if cores == 0 {
+		return nil, newError(EBadArgument, "number of cores must be positive")
+	}
+	if threads == 0 {
+		return nil, newError(EBadArgument, "number of threads must be positive")
+	}
+	if sockets == 0 {
+		return nil, newError(EBadArgument, "number of sockets must be positive")
+	}
+	return &vmCPUTopo{
+		cores:   cores,
+		threads: threads,
+		sockets: sockets,
+	}, nil
+}
+
+// MustNewVMCPUTopo is equivalent to NewVMCPUTopo, but panics instead of returning an error.
+func MustNewVMCPUTopo(cores uint, threads uint, sockets uint) VMCPUTopo {
+	topo, err := NewVMCPUTopo(cores, threads, sockets)
+	if err != nil {
+		panic(err)
+	}
+	return topo
+}
+
+type vmCPUTopo struct {
+	cores   uint
+	threads uint
+	sockets uint
+}
+
+func (v *vmCPUTopo) Cores() uint {
+	return v.cores
+}
+
+func (v *vmCPUTopo) Threads() uint {
+	return v.threads
+}
+
+func (v *vmCPUTopo) Sockets() uint {
+	return v.sockets
 }
 
 // BuildableUpdateVMParameters is a buildable version of UpdateVMParameters.
@@ -183,6 +268,36 @@ type vmParams struct {
 
 	name    string
 	comment string
+	cpu     VMCPUTopo
+}
+
+func (v *vmParams) CPU() VMCPUTopo {
+	return v.cpu
+}
+
+func (v *vmParams) WithCPU(cpu VMCPUTopo) (BuildableVMParameters, error) {
+	v.cpu = cpu
+	return v, nil
+}
+
+func (v *vmParams) MustWithCPU(cpu VMCPUTopo) BuildableVMParameters {
+	builder, err := v.WithCPU(cpu)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) WithCPUParameters(cores, threads, sockets uint) (BuildableVMParameters, error) {
+	cpu, err := NewVMCPUTopo(cores, threads, sockets)
+	if err != nil {
+		return nil, err
+	}
+	return v.WithCPU(cpu)
+}
+
+func (v *vmParams) MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters {
+	return v.MustWithCPU(MustNewVMCPUTopo(cores, threads, sockets))
 }
 
 func (v *vmParams) MustWithName(name string) BuildableVMParameters {
@@ -231,6 +346,11 @@ type vm struct {
 	clusterID  string
 	templateID string
 	status     VMStatus
+	cpu        VMCPU
+}
+
+func (v *vm) CPU() VMCPU {
+	return v.cpu
 }
 
 // withName returns a copy of the VM with the new name. It does not change the original copy to avoid
@@ -244,6 +364,7 @@ func (v *vm) withName(name string) *vm {
 		clusterID:  v.clusterID,
 		templateID: v.templateID,
 		status:     v.status,
+		cpu:        v.cpu,
 	}
 }
 
@@ -258,6 +379,7 @@ func (v *vm) withComment(comment string) *vm {
 		clusterID:  v.clusterID,
 		templateID: v.templateID,
 		status:     v.status,
+		cpu:        v.cpu,
 	}
 }
 
@@ -368,6 +490,10 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	if !ok {
 		return nil, newFieldNotFound("template in VM", "template ID")
 	}
+	cpu, err := convertSDKVMCPU(sdkObject)
+	if err != nil {
+		return nil, err
+	}
 
 	return &vm{
 		id:         id,
@@ -377,7 +503,39 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		client:     client,
 		templateID: templateID,
 		status:     VMStatus(status),
+		cpu:        cpu,
 	}, nil
+}
+
+func convertSDKVMCPU(sdkObject *ovirtsdk.Vm) (*vmCPU, error) {
+	sdkCPU, ok := sdkObject.Cpu()
+	if !ok {
+		return nil, newFieldNotFound("VM", "CPU")
+	}
+	cpuTopo, ok := sdkCPU.Topology()
+	if !ok {
+		return nil, newFieldNotFound("CPU in VM", "CPU topo")
+	}
+	cores, ok := cpuTopo.Cores()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "cores")
+	}
+	threads, ok := cpuTopo.Threads()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "threads")
+	}
+	sockets, ok := cpuTopo.Sockets()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "sockets")
+	}
+	cpu := &vmCPU{
+		topo: &vmCPUTopo{
+			uint(cores),
+			uint(threads),
+			uint(sockets),
+		},
+	}
+	return cpu, nil
 }
 
 // VMStatus represents the status of a VM.
