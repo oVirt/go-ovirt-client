@@ -9,12 +9,13 @@ import (
 func (o *oVirtClient) CreateVM(
 	clusterID string,
 	templateID string,
+	name string,
 	params OptionalVMParameters,
 	retries ...RetryStrategy,
 ) (result VM, err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
 
-	if err := validateVMCreationParameters(clusterID, templateID, params); err != nil {
+	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
 		return nil, err
 	}
 
@@ -22,10 +23,7 @@ func (o *oVirtClient) CreateVM(
 		params = &vmParams{}
 	}
 
-	message := "creating VM"
-	if name := params.Name(); name != "" {
-		message = fmt.Sprintf("creating VM %s", name)
-	}
+	message := fmt.Sprintf("creating VM %s", name)
 
 	err = retry(
 		message,
@@ -35,9 +33,7 @@ func (o *oVirtClient) CreateVM(
 			builder := ovirtsdk.NewVmBuilder()
 			builder.Cluster(ovirtsdk.NewClusterBuilder().Id(clusterID).MustBuild())
 			builder.Template(ovirtsdk.NewTemplateBuilder().Id(templateID).MustBuild())
-			if name := params.Name(); name != "" {
-				builder.Name(name)
-			}
+			builder.Name(name)
 			if comment := params.Comment(); comment != "" {
 				builder.Comment(comment)
 			}
@@ -68,7 +64,10 @@ func (o *oVirtClient) CreateVM(
 	return result, err
 }
 
-func validateVMCreationParameters(clusterID string, templateID string, _ OptionalVMParameters) error {
+func validateVMCreationParameters(clusterID string, templateID string, name string, _ OptionalVMParameters) error {
+	if name == "" {
+		return newError(EBadArgument, "name cannot be empty for VM creation")
+	}
 	if clusterID == "" {
 		return newError(EBadArgument, "cluster ID cannot be empty for VM creation")
 	}

@@ -4,11 +4,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateVM(clusterID string, templateID string, params OptionalVMParameters, _ ...RetryStrategy) (VM, error) {
+func (m *mockClient) CreateVM(clusterID string, templateID string, name string, params OptionalVMParameters, _ ...RetryStrategy) (VM, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if err := validateVMCreationParameters(clusterID, templateID, params); err != nil {
+	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
 		return nil, err
 	}
 	if _, ok := m.clusters[clusterID]; !ok {
@@ -21,12 +21,15 @@ func (m *mockClient) CreateVM(clusterID string, templateID string, params Option
 	if params == nil {
 		params = &vmParams{}
 	}
+	if name == "" {
+		return nil, newError(EBadArgument, "The name parameter is required for VM creation.")
+	}
 
 	id := uuid.Must(uuid.NewUUID()).String()
 	vm := &vm{
 		client:     m,
 		id:         id,
-		name:       params.Name(),
+		name:       name,
 		comment:    params.Comment(),
 		clusterID:  clusterID,
 		templateID: templateID,

@@ -22,7 +22,8 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
 		helper.GetBlankTemplateID(),
-		ovirtclient.CreateVMParams().MustWithName("test"),
+		"test",
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -78,12 +79,14 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 func assertCanCreateVM(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
+	name string,
 	params ovirtclient.OptionalVMParameters,
 ) ovirtclient.VM {
 	client := helper.GetClient()
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
 		helper.GetBlankTemplateID(),
+		name,
 		params,
 	)
 	if err != nil {

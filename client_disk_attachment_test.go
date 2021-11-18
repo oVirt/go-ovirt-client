@@ -15,7 +15,8 @@ func TestDiskAttachmentCreation(t *testing.T) {
 	vm := assertCanCreateVM(
 		t,
 		helper,
-		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+		fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
 	)
 	disk := assertCanCreateDisk(t, client, helper)
 	assertDiskAttachmentCount(t, vm, 0)
@@ -32,12 +33,14 @@ func TestDiskAttachmentCannotBeAttachedToSecondVM(t *testing.T) {
 	vm1 := assertCanCreateVM(
 		t,
 		helper,
-		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+		fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
 	)
 	vm2 := assertCanCreateVM(
 		t,
 		helper,
-		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5))),
+		fmt.Sprintf("disk_attachment_test_%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
 	)
 	disk := assertCanCreateDisk(t, client, helper)
 	_ = assertCanAttachDisk(t, vm1, disk)
