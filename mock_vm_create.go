@@ -25,6 +25,25 @@ func (m *mockClient) CreateVM(clusterID string, templateID string, name string, 
 		return nil, newError(EBadArgument, "The name parameter is required for VM creation.")
 	}
 
+	var cpu VMCPU
+	if cpuParams := params.CPU(); cpuParams != nil {
+		cpu = &vmCPU{
+			topo: &vmCPUTopo{
+				cores:   cpuParams.Cores(),
+				sockets: cpuParams.Sockets(),
+				threads: cpuParams.Threads(),
+			},
+		}
+	} else {
+		cpu = &vmCPU{
+			topo: &vmCPUTopo{
+				cores:   1,
+				sockets: 1,
+				threads: 1,
+			},
+		}
+	}
+
 	id := uuid.Must(uuid.NewUUID()).String()
 	vm := &vm{
 		client:     m,
@@ -34,6 +53,7 @@ func (m *mockClient) CreateVM(clusterID string, templateID string, name string, 
 		clusterID:  clusterID,
 		templateID: templateID,
 		status:     VMStatusDown,
+		cpu:        cpu,
 	}
 	m.vms[id] = vm
 	m.diskAttachmentsByVM[id] = map[string]*diskAttachment{}
