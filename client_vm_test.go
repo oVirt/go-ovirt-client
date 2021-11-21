@@ -105,6 +105,21 @@ func TestVMCreationWithCPU(t *testing.T) {
 	}
 }
 
+// TestVMStartStop creates a micro VM with a tiny operating system, starts it and then stops it. The OS doesn't support
+// ACPI, so shutdown cannot be tested.
+func TestVMStartStop(t *testing.T) {
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(t, helper, "test", nil)
+	disk := assertCanCreateDisk(t, helper)
+	assertCanAttachDisk(t, vm, disk)
+	assertCanUploadDiskImage(t, helper, disk)
+	assertCanStartVM(t, vm)
+	assertVMWillStart(t, vm)
+	assertCanStopVM(t, vm)
+	assertVMWillStop(t, vm)
+}
+
 func assertCanCreateVM(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
@@ -129,4 +144,33 @@ func assertCanCreateVM(
 		},
 	)
 	return vm
+}
+
+func assertCanStartVM(t *testing.T, vm ovirtclient.VM) {
+	if err := vm.Start(); err != nil {
+		t.Fatalf("Failed to start VM (%v)", err)
+	}
+	t.Cleanup(func() {
+		if err := vm.Stop(true); err != nil {
+			t.Fatalf("Failed to stop VM %s after test (%v)", vm.ID(), err)
+		}
+	})
+}
+
+func assertVMWillStart(t *testing.T, vm ovirtclient.VM) {
+	if _, err := vm.WaitForStatus(ovirtclient.VMStatusUp); err != nil {
+		t.Fatalf("Failed to wait for VM status to reach up. (%v)", err)
+	}
+}
+
+func assertCanStopVM(t *testing.T, vm ovirtclient.VM) {
+	if err := vm.Stop(false); err != nil {
+		t.Fatalf("Failed to stop VM (%v)", err)
+	}
+}
+
+func assertVMWillStop(t *testing.T, vm ovirtclient.VM) {
+	if _, err := vm.WaitForStatus(ovirtclient.VMStatusDown); err != nil {
+		t.Fatalf("Failed to wait for VM status to reach down. (%v)", err)
+	}
 }

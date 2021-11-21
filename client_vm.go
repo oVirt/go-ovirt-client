@@ -24,6 +24,19 @@ type VMClient interface {
 	// UpdateVM updates the virtual machine with the given parameters.
 	// Use UpdateVMParams to obtain a builder for the params.
 	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
+	// StartVM triggers a VM start. The actual VM startup will take time and should be waited for via the
+	// WaitForVMStatus call.
+	StartVM(id string, retries ...RetryStrategy) error
+	// StopVM triggers a VM power-off. The actual VM stop will take time and should be waited for via the
+	// WaitForVMStatus call. The force parameter will cause the shutdown to proceed even if a backup is currently
+	// running.
+	StopVM(id string, force bool, retries ...RetryStrategy) error
+	// ShutdownVM triggers a VM shutdown. The actual VM shutdown will take time and should be waited for via the
+	// WaitForVMStatus call. The force parameter will cause the shutdown to proceed even if a backup is currently
+	// running.
+	ShutdownVM(id string, force bool, retries ...RetryStrategy) error
+	// WaitForVMStatus waits for the VM to reach the desired status.
+	WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (VM, error)
 	// ListVMs returns a list of all virtual machines.
 	ListVMs(retries ...RetryStrategy) ([]VM, error)
 	// RemoveVM removes a virtual machine specified by id.
@@ -71,6 +84,19 @@ type VM interface {
 	Update(params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
 	// Remove removes the current VM. This involves an API call and may be slow.
 	Remove(retries ...RetryStrategy) error
+
+	// Start will cause a VM to start. The actual start process takes some time and should be checked via WaitForStatus.
+	Start(retries ...RetryStrategy) error
+	// Stop will cause the VM to power-off. The force parameter will cause the VM to stop even if a backup is currently
+	// running.
+	Stop(force bool, retries ...RetryStrategy) error
+	// Shutdown will cause the VM to shut down. The force parameter will cause the VM to shut down even if a backup
+	// is currently running.
+	Shutdown(force bool, retries ...RetryStrategy) error
+	// WaitForStatus will wait until the VM reaches the desired status. If the status is not reached within the
+	// specified amount of retries, an error will be returned. If the VM enters the desired state, an updated VM
+	// object will be returned.
+	WaitForStatus(status VMStatus, retries ...RetryStrategy) (VM, error)
 
 	// CreateNIC creates a network interface on the current VM. This involves an API call and may be slow.
 	CreateNIC(name string, vnicProfileID string, params OptionalNICParameters, retries ...RetryStrategy) (NIC, error)
@@ -347,6 +373,22 @@ type vm struct {
 	templateID string
 	status     VMStatus
 	cpu        VMCPU
+}
+
+func (v *vm) Start(retries ...RetryStrategy) error {
+	return v.client.StartVM(v.id, retries...)
+}
+
+func (v *vm) Stop(force bool, retries ...RetryStrategy) error {
+	return v.client.StopVM(v.id, force, retries...)
+}
+
+func (v *vm) Shutdown(force bool, retries ...RetryStrategy) error {
+	return v.client.ShutdownVM(v.id, force, retries...)
+}
+
+func (v *vm) WaitForStatus(status VMStatus, retries ...RetryStrategy) (VM, error) {
+	return v.client.WaitForVMStatus(v.id, status, retries...)
 }
 
 func (v *vm) CPU() VMCPU {

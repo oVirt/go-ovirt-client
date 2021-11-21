@@ -7,6 +7,30 @@ import (
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
+func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk ovirtclient.Disk) {
+	fh, stat := getTestImageFile(t)
+	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
+	// left open won't cause any problems.
+	defer func() { //nolint:gosec
+		_ = fh.Close()
+	}()
+
+	originalSize := disk.ProvisionedSize()
+	if originalSize < uint64(stat.Size()) {
+		var err error
+		disk, err = disk.Update(ovirtclient.UpdateDiskParams().MustWithProvisionedSize(uint64(stat.Size())))
+		if err != nil {
+			t.Fatalf("Failed to resize disk from %d to %d bytes. (%v)", originalSize, stat.Size(), err)
+		}
+	}
+
+	client := helper.GetClient()
+
+	if err := client.UploadToDisk(disk.ID(), uint64(stat.Size()), fh); err != nil {
+		t.Fatalf("Failed to upload disk image to disk %s. (%v)", disk.ID(), err)
+	}
+}
+
 func TestImageUploadDiskCreated(t *testing.T) {
 	fh, stat := getTestImageFile(t)
 	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
@@ -40,13 +64,6 @@ func TestImageUploadDiskCreated(t *testing.T) {
 }
 
 func TestImageUploadToExistingDisk(t *testing.T) {
-	fh, stat := getTestImageFile(t)
-	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
-	// left open won't cause any problems.
-	defer func() { //nolint:gosec
-		_ = fh.Close()
-	}()
-
 	helper := getHelper(t)
 	client := helper.GetClient()
 
@@ -55,7 +72,7 @@ func TestImageUploadToExistingDisk(t *testing.T) {
 	disk, err := client.CreateDisk(
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
-		uint64(stat.Size()),
+		uint64(512),
 		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 	)
 	if disk != nil {
@@ -67,11 +84,5 @@ func TestImageUploadToExistingDisk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := client.UploadToDisk(
-		disk.ID(),
-		uint64(stat.Size()),
-		fh,
-	); err != nil {
-		t.Fatal(fmt.Errorf("failed to upload image (%w)", err))
-	}
+	assertCanUploadDiskImage(t, helper, disk)
 }
