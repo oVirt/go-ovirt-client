@@ -159,7 +159,7 @@ func assertCanStartVM(t *testing.T, vm ovirtclient.VM) {
 
 func assertVMWillStart(t *testing.T, vm ovirtclient.VM) {
 	if _, err := vm.WaitForStatus(ovirtclient.VMStatusUp); err != nil {
-		t.Fatalf("Failed to wait for VM status to reach up. (%v)", err)
+		t.Fatalf("Failed to wait for VM status to reach \"up\". (%v)", err)
 	}
 }
 
@@ -171,6 +171,6 @@ func assertCanStopVM(t *testing.T, vm ovirtclient.VM) {
 
 func assertVMWillStop(t *testing.T, vm ovirtclient.VM) {
 	if _, err := vm.WaitForStatus(ovirtclient.VMStatusDown); err != nil {
-		t.Fatalf("Failed to wait for VM status to reach down. (%v)", err)
+		t.Fatalf("Failed to wait for VM status to reach \"down\". (%v)", err)
 	}
 }

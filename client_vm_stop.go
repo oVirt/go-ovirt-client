@@ -12,10 +12,7 @@ func (o *oVirtClient) StopVM(id string, force bool, retries ...RetryStrategy) (e
 		retries,
 		func() error {
 			_, err := o.conn.SystemService().VmsService().VmService(id).Stop().Force(force).Send()
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		})
 	return
 }
