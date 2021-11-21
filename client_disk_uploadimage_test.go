@@ -17,9 +17,9 @@ func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk 
 
 	originalSize := disk.ProvisionedSize()
 	if originalSize < uint64(stat.Size()) {
-		var err error
-		disk, err = disk.Update(ovirtclient.UpdateDiskParams().MustWithProvisionedSize(uint64(stat.Size())))
-		if err != nil {
+		if _, err := disk.Update(
+			ovirtclient.UpdateDiskParams().MustWithProvisionedSize(uint64(stat.Size())),
+		); err != nil {
 			t.Fatalf("Failed to resize disk from %d to %d bytes. (%v)", originalSize, stat.Size(), err)
 		}
 	}
