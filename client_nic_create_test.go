@@ -13,7 +13,8 @@ func TestVMNICCreation(t *testing.T) {
 	vm := assertCanCreateVM(
 		t,
 		helper,
-		ovirtclient.CreateVMParams().MustWithName(fmt.Sprintf("nic_test_%s", helper.GenerateRandomID(5))),
+		fmt.Sprintf("nic_test_%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
 	)
 	assertNICCount(t, vm, 0)
 	nic := assertCanCreateNIC(t, helper, vm, "test", ovirtclient.CreateNICParams())

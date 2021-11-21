@@ -15,6 +15,7 @@ type VMClient interface {
 	CreateVM(
 		clusterID string,
 		templateID string,
+		name string,
 		optional OptionalVMParameters,
 		retries ...RetryStrategy,
 	) (VM, error)
@@ -23,6 +24,19 @@ type VMClient interface {
 	// UpdateVM updates the virtual machine with the given parameters.
 	// Use UpdateVMParams to obtain a builder for the params.
 	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
+	// StartVM triggers a VM start. The actual VM startup will take time and should be waited for via the
+	// WaitForVMStatus call.
+	StartVM(id string, retries ...RetryStrategy) error
+	// StopVM triggers a VM power-off. The actual VM stop will take time and should be waited for via the
+	// WaitForVMStatus call. The force parameter will cause the shutdown to proceed even if a backup is currently
+	// running.
+	StopVM(id string, force bool, retries ...RetryStrategy) error
+	// ShutdownVM triggers a VM shutdown. The actual VM shutdown will take time and should be waited for via the
+	// WaitForVMStatus call. The force parameter will cause the shutdown to proceed even if a backup is currently
+	// running.
+	ShutdownVM(id string, force bool, retries ...RetryStrategy) error
+	// WaitForVMStatus waits for the VM to reach the desired status.
+	WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (VM, error)
 	// ListVMs returns a list of all virtual machines.
 	ListVMs(retries ...RetryStrategy) ([]VM, error)
 	// RemoveVM removes a virtual machine specified by id.
@@ -43,6 +57,22 @@ type VMData interface {
 	TemplateID() string
 	// Status returns the current status of the VM.
 	Status() VMStatus
+	// CPU returns the CPU structure of a VM.
+	CPU() VMCPU
+}
+
+// VMCPU is the CPU configuration of a VM.
+type VMCPU interface {
+	// Topo is the desired CPU topology for this VM.
+	Topo() VMCPUTopo
+}
+
+type vmCPU struct {
+	topo VMCPUTopo
+}
+
+func (v vmCPU) Topo() VMCPUTopo {
+	return v.topo
 }
 
 // VM is the implementation of the virtual machine in oVirt.
@@ -54,6 +84,19 @@ type VM interface {
 	Update(params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
 	// Remove removes the current VM. This involves an API call and may be slow.
 	Remove(retries ...RetryStrategy) error
+
+	// Start will cause a VM to start. The actual start process takes some time and should be checked via WaitForStatus.
+	Start(retries ...RetryStrategy) error
+	// Stop will cause the VM to power-off. The force parameter will cause the VM to stop even if a backup is currently
+	// running.
+	Stop(force bool, retries ...RetryStrategy) error
+	// Shutdown will cause the VM to shut down. The force parameter will cause the VM to shut down even if a backup
+	// is currently running.
+	Shutdown(force bool, retries ...RetryStrategy) error
+	// WaitForStatus will wait until the VM reaches the desired status. If the status is not reached within the
+	// specified amount of retries, an error will be returned. If the VM enters the desired state, an updated VM
+	// object will be returned.
+	WaitForStatus(status VMStatus, retries ...RetryStrategy) (VM, error)
 
 	// CreateNIC creates a network interface on the current VM. This involves an API call and may be slow.
 	CreateNIC(name string, vnicProfileID string, params OptionalNICParameters, retries ...RetryStrategy) (NIC, error)
@@ -83,10 +126,11 @@ type VM interface {
 // OptionalVMParameters are a list of parameters that can be, but must not necessarily be added on VM creation. This
 // interface is expected to be extended in the future.
 type OptionalVMParameters interface {
-	// Name returns the name for the new VM.
-	Name() string
 	// Comment returns the comment for the VM.
 	Comment() string
+
+	// CPU contains the CPU topology, if any.
+	CPU() VMCPUTopo
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -94,15 +138,21 @@ type OptionalVMParameters interface {
 type BuildableVMParameters interface {
 	OptionalVMParameters
 
-	// WithName adds a name to the VM.
-	WithName(name string) (BuildableVMParameters, error)
-	// MustWithName is identical to WithName, but panics instead of returning an error.
-	MustWithName(name string) BuildableVMParameters
-
 	// WithComment adds a common to the VM.
 	WithComment(comment string) (BuildableVMParameters, error)
 	// MustWithComment is identical to WithComment, but panics instead of returning an error.
 	MustWithComment(comment string) BuildableVMParameters
+
+	// WithCPU adds a VMCPUTopo to the VM.
+	WithCPU(cpu VMCPUTopo) (BuildableVMParameters, error)
+	// MustWithCPU adds a VMCPUTopo and panics if an error happens.
+	MustWithCPU(cpu VMCPUTopo) BuildableVMParameters
+	// WithCPUParameters is a simplified function that calls NewVMCPUTopo and adds the CPU topology to
+	// the VM.
+	WithCPUParameters(cores, threads, sockets uint) (BuildableVMParameters, error)
+	// MustWithCPUParameters is a simplified function that calls MustNewVMCPUTopo and adds the CPU topology to
+	// the VM.
+	MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters
 }
 
 // UpdateVMParameters returns a set of parameters to change on a VM.
@@ -111,6 +161,61 @@ type UpdateVMParameters interface {
 	Name() *string
 	// Comment returns the comment for the VM. Return nil if the name should not be changed.
 	Comment() *string
+}
+
+// VMCPUTopo contains the CPU topology information about a VM.
+type VMCPUTopo interface {
+	// Cores is the number of CPU cores.
+	Cores() uint
+	// Threads is the number of CPU threads in a core.
+	Threads() uint
+	// Sockets is the number of sockets.
+	Sockets() uint
+}
+
+// NewVMCPUTopo creates a new VMCPUTopo from the specified parameters.
+func NewVMCPUTopo(cores uint, threads uint, sockets uint) (VMCPUTopo, error) {
+	if cores == 0 {
+		return nil, newError(EBadArgument, "number of cores must be positive")
+	}
+	if threads == 0 {
+		return nil, newError(EBadArgument, "number of threads must be positive")
+	}
+	if sockets == 0 {
+		return nil, newError(EBadArgument, "number of sockets must be positive")
+	}
+	return &vmCPUTopo{
+		cores:   cores,
+		threads: threads,
+		sockets: sockets,
+	}, nil
+}
+
+// MustNewVMCPUTopo is equivalent to NewVMCPUTopo, but panics instead of returning an error.
+func MustNewVMCPUTopo(cores uint, threads uint, sockets uint) VMCPUTopo {
+	topo, err := NewVMCPUTopo(cores, threads, sockets)
+	if err != nil {
+		panic(err)
+	}
+	return topo
+}
+
+type vmCPUTopo struct {
+	cores   uint
+	threads uint
+	sockets uint
+}
+
+func (v *vmCPUTopo) Cores() uint {
+	return v.cores
+}
+
+func (v *vmCPUTopo) Threads() uint {
+	return v.threads
+}
+
+func (v *vmCPUTopo) Sockets() uint {
+	return v.sockets
 }
 
 // BuildableUpdateVMParameters is a buildable version of UpdateVMParameters.
@@ -189,6 +294,36 @@ type vmParams struct {
 
 	name    string
 	comment string
+	cpu     VMCPUTopo
+}
+
+func (v *vmParams) CPU() VMCPUTopo {
+	return v.cpu
+}
+
+func (v *vmParams) WithCPU(cpu VMCPUTopo) (BuildableVMParameters, error) {
+	v.cpu = cpu
+	return v, nil
+}
+
+func (v *vmParams) MustWithCPU(cpu VMCPUTopo) BuildableVMParameters {
+	builder, err := v.WithCPU(cpu)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) WithCPUParameters(cores, threads, sockets uint) (BuildableVMParameters, error) {
+	cpu, err := NewVMCPUTopo(cores, threads, sockets)
+	if err != nil {
+		return nil, err
+	}
+	return v.WithCPU(cpu)
+}
+
+func (v *vmParams) MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters {
+	return v.MustWithCPU(MustNewVMCPUTopo(cores, threads, sockets))
 }
 
 func (v *vmParams) MustWithName(name string) BuildableVMParameters {
@@ -237,6 +372,27 @@ type vm struct {
 	clusterID  string
 	templateID string
 	status     VMStatus
+	cpu        VMCPU
+}
+
+func (v *vm) Start(retries ...RetryStrategy) error {
+	return v.client.StartVM(v.id, retries...)
+}
+
+func (v *vm) Stop(force bool, retries ...RetryStrategy) error {
+	return v.client.StopVM(v.id, force, retries...)
+}
+
+func (v *vm) Shutdown(force bool, retries ...RetryStrategy) error {
+	return v.client.ShutdownVM(v.id, force, retries...)
+}
+
+func (v *vm) WaitForStatus(status VMStatus, retries ...RetryStrategy) (VM, error) {
+	return v.client.WaitForVMStatus(v.id, status, retries...)
+}
+
+func (v *vm) CPU() VMCPU {
+	return v.cpu
 }
 
 // withName returns a copy of the VM with the new name. It does not change the original copy to avoid
@@ -250,6 +406,7 @@ func (v *vm) withName(name string) *vm {
 		clusterID:  v.clusterID,
 		templateID: v.templateID,
 		status:     v.status,
+		cpu:        v.cpu,
 	}
 }
 
@@ -264,6 +421,7 @@ func (v *vm) withComment(comment string) *vm {
 		clusterID:  v.clusterID,
 		templateID: v.templateID,
 		status:     v.status,
+		cpu:        v.cpu,
 	}
 }
 
@@ -374,6 +532,10 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	if !ok {
 		return nil, newFieldNotFound("template in VM", "template ID")
 	}
+	cpu, err := convertSDKVMCPU(sdkObject)
+	if err != nil {
+		return nil, err
+	}
 
 	return &vm{
 		id:         id,
@@ -383,7 +545,39 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		client:     client,
 		templateID: templateID,
 		status:     VMStatus(status),
+		cpu:        cpu,
 	}, nil
+}
+
+func convertSDKVMCPU(sdkObject *ovirtsdk.Vm) (*vmCPU, error) {
+	sdkCPU, ok := sdkObject.Cpu()
+	if !ok {
+		return nil, newFieldNotFound("VM", "CPU")
+	}
+	cpuTopo, ok := sdkCPU.Topology()
+	if !ok {
+		return nil, newFieldNotFound("CPU in VM", "CPU topo")
+	}
+	cores, ok := cpuTopo.Cores()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "cores")
+	}
+	threads, ok := cpuTopo.Threads()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "threads")
+	}
+	sockets, ok := cpuTopo.Sockets()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "sockets")
+	}
+	cpu := &vmCPU{
+		topo: &vmCPUTopo{
+			uint(cores),
+			uint(threads),
+			uint(sockets),
+		},
+	}
+	return cpu, nil
 }
 
 // VMStatus represents the status of a VM.
