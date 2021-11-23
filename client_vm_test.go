@@ -105,6 +105,33 @@ func TestVMCreationWithCPU(t *testing.T) {
 	}
 }
 
+func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
+	helper := getHelper(t)
+	vm1 := assertCanCreateVM(
+		t,
+		helper,
+		"test",
+		ovirtclient.CreateVMParams().MustWithCPUParameters(2, 2, 2),
+	)
+	tpl := assertCanCreateTemplate(t, helper, vm1)
+	vm2 := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		"test2",
+		tpl.ID(),
+		ovirtclient.CreateVMParams().MustWithCPUParameters(3, 3, 3),
+	)
+	if vm2.CPU().Topo().Cores() != 3 {
+		t.Fatalf("Invalid number of cores: %d", vm2.CPU().Topo().Cores())
+	}
+	if vm2.CPU().Topo().Threads() != 3 {
+		t.Fatalf("Invalid number of cores: %d", vm2.CPU().Topo().Threads())
+	}
+	if vm2.CPU().Topo().Sockets() != 3 {
+		t.Fatalf("Invalid number of cores: %d", vm2.CPU().Topo().Sockets())
+	}
+}
+
 // TestVMStartStop creates a micro VM with a tiny operating system, starts it and then stops it. The OS doesn't support
 // ACPI, so shutdown cannot be tested.
 func TestVMStartStop(t *testing.T) {
