@@ -117,6 +117,54 @@ func TestTemplateDisk(t *testing.T) {
 	}
 }
 
+// TestTemplateDiskCopy Copying template disks between storageDomains.
+func TestTemplateDiskCopy(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	disk := assertCanCreateDisk(t, helper)
+	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
+	assertCanAttachDisk(t, vm, disk)
+	template := assertCanCreateTemplate(t, helper, vm)
+
+	tpl := assertCanGetTemplateOK(t, helper, template.ID())
+
+	diskAttachments := assertCanListTemplateDiskAttachments(t, tpl)
+	if len(diskAttachments) != 1 {
+		t.Fatalf(
+			"Incorrect number of disk attachments after using template (%d instead of %d).",
+			len(diskAttachments),
+			1,
+		)
+	}
+
+	templateDisk := assertCanGetDiskFromTemplateAttachment(t, helper, diskAttachments[0])
+	newDisk, err := helper.GetClient().CopyTemplateDiskToStorageDomain(templateDisk.ID(), helper.GetSecondaryStorageDomainID(t))
+	if err != nil {
+		t.Fatalf("Failed to copy template disk to StorageDomain %s.", helper.GetSecondaryStorageDomainID(t))
+	}
+
+	assertCanGetDiskFromStorageDomain(t, helper, helper.GetSecondaryStorageDomainID(t), newDisk)
+
+}
+
+func assertCanGetDiskFromStorageDomain(t *testing.T, helper ovirtclient.TestHelper, storageDomainID string, disk ovirtclient.Disk) ovirtclient.Disk {
+	newDisk, err := helper.GetClient().GetDiskFromStorageDomain(storageDomainID, disk.ID())
+
+	if err != nil {
+		t.Fatalf("failed to get Disk %s from storage domain %s", disk.ID(), storageDomainID)
+	}
+
+	for _, diskStorageDomain := range newDisk.StorageDomainIDs() {
+		if diskStorageDomain == storageDomainID {
+			return newDisk
+		}
+
+	}
+	t.Fatalf("failed to get Disk %s from storage domain %s", disk.ID(), storageDomainID)
+	return nil
+}
+
 func assertCanGetDiskFromAttachment(t *testing.T, diskAttachment ovirtclient.DiskAttachment) ovirtclient.Disk {
 	newDisk, err := diskAttachment.Disk()
 	if err != nil {
