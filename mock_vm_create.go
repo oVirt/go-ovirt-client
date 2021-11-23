@@ -14,7 +14,8 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 	if _, ok := m.clusters[clusterID]; !ok {
 		return nil, newError(ENotFound, "cluster with ID %s not found", clusterID)
 	}
-	if _, ok := m.templates[templateID]; !ok {
+	tpl, ok := m.templates[templateID]
+	if !ok {
 		return nil, newError(ENotFound, "template with ID %s not found", templateID)
 	}
 
@@ -25,8 +26,10 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 		return nil, newError(EBadArgument, "The name parameter is required for VM creation.")
 	}
 
-	var cpu VMCPU
-	if cpuParams := params.CPU(); cpuParams != nil {
+	var cpu *vmCPU
+	cpuParams := params.CPU()
+	switch {
+	case cpuParams != nil:
 		cpu = &vmCPU{
 			topo: &vmCPUTopo{
 				cores:   cpuParams.Cores(),
@@ -34,7 +37,9 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 				threads: cpuParams.Threads(),
 			},
 		}
-	} else {
+	case tpl.cpu != nil:
+		cpu = tpl.cpu.clone()
+	default:
 		cpu = &vmCPU{
 			topo: &vmCPUTopo{
 				cores:   1,

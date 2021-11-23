@@ -1,7 +1,7 @@
 package ovirtclient
 
 import (
-	ovirtsdk4 "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
 //go:generate go run scripts/rest.go -i "Template" -n "template" -T "TemplateID"
@@ -40,6 +40,8 @@ type TemplateData interface {
 	Description() string
 	// Status returns the status of the template.
 	Status() TemplateStatus
+	// CPU returns the CPU configuration of the template if any.
+	CPU() VMCPU
 
 	// IsBlank returns true, if the template either has the ID of all zeroes, or if the template has no settings, disks,
 	// or other settings. This function only checks the details supported by go-ovirt-client.
@@ -112,7 +114,7 @@ func TemplateCreateParams() BuildableTemplateCreateParameters {
 	return &templateCreateParameters{}
 }
 
-func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template, client Client) (Template, error) {
+func convertSDKTemplate(sdkTemplate *ovirtsdk.Template, client Client) (Template, error) {
 	id, ok := sdkTemplate.Id()
 	if !ok {
 		return nil, newError(EFieldMissing, "template does not contain ID")
@@ -129,13 +131,49 @@ func convertSDKTemplate(sdkTemplate *ovirtsdk4.Template, client Client) (Templat
 	if !ok {
 		return nil, newFieldNotFound("template", "status")
 	}
+	cpu, err := convertSDKTemplateCPU(sdkTemplate)
+	if err != nil {
+		return nil, err
+	}
 	return &template{
 		client:      client,
 		id:          TemplateID(id),
 		name:        name,
 		status:      TemplateStatus(status),
 		description: description,
+		cpu:         cpu,
 	}, nil
+}
+
+func convertSDKTemplateCPU(sdkObject *ovirtsdk.Template) (*vmCPU, error) {
+	sdkCPU, ok := sdkObject.Cpu()
+	if !ok {
+		return nil, newFieldNotFound("VM", "CPU")
+	}
+	cpuTopo, ok := sdkCPU.Topology()
+	if !ok {
+		return nil, newFieldNotFound("CPU in VM", "CPU topo")
+	}
+	cores, ok := cpuTopo.Cores()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "cores")
+	}
+	threads, ok := cpuTopo.Threads()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "threads")
+	}
+	sockets, ok := cpuTopo.Sockets()
+	if !ok {
+		return nil, newFieldNotFound("CPU topo in CPU in VM", "sockets")
+	}
+	cpu := &vmCPU{
+		topo: &vmCPUTopo{
+			uint(cores),
+			uint(threads),
+			uint(sockets),
+		},
+	}
+	return cpu, nil
 }
 
 type template struct {
@@ -144,6 +182,11 @@ type template struct {
 	name        string
 	description string
 	status      TemplateStatus
+	cpu         *vmCPU
+}
+
+func (t template) CPU() VMCPU {
+	return t.cpu
 }
 
 func (t template) Status() TemplateStatus {
@@ -159,7 +202,11 @@ func (t template) Remove(retries ...RetryStrategy) error {
 }
 
 func (t template) IsBlank() bool {
-	return t.id == blankTemplateID
+	if t.cpu.topo.sockets != 1 || t.cpu.topo.cores != 1 || t.cpu.topo.threads != 1 {
+		return false
+	}
+
+	return t.id == DefaultBlankTemplateID
 }
 
 func (t template) ID() TemplateID {

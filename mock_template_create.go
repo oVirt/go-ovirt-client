@@ -13,14 +13,15 @@ func (m *mockClient) CreateTemplate(
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	vm, ok := m.vms[vmID]
+	if !ok {
+		return nil, newError(ENotFound, "VM with ID %s not found", vmID)
+	}
+
 	if params == nil {
 		params = &templateCreateParameters{}
 	}
 
-	_, ok := m.vms[vmID]
-	if !ok {
-		return nil, newError(ENotFound, "VM with ID %s not found", vmID)
-	}
 	description := ""
 	if desc := params.Description(); desc != nil {
 		description = *desc
@@ -31,6 +32,7 @@ func (m *mockClient) CreateTemplate(
 		name:        name,
 		description: description,
 		status:      TemplateStatusLocked,
+		cpu:         vm.cpu.clone(),
 	}
 	m.templates[tpl.ID()] = tpl
 	go func() {

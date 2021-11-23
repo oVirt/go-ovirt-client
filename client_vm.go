@@ -70,11 +70,20 @@ type VMCPU interface {
 }
 
 type vmCPU struct {
-	topo VMCPUTopo
+	topo *vmCPUTopo
 }
 
 func (v vmCPU) Topo() VMCPUTopo {
 	return v.topo
+}
+
+func (v *vmCPU) clone() *vmCPU {
+	if v == nil {
+		return nil
+	}
+	return &vmCPU{
+		topo: v.topo.clone(),
+	}
 }
 
 // VM is the implementation of the virtual machine in oVirt.
@@ -320,6 +329,17 @@ func (v *vmCPUTopo) Sockets() uint {
 	return v.sockets
 }
 
+func (v *vmCPUTopo) clone() *vmCPUTopo {
+	if v == nil {
+		return nil
+	}
+	return &vmCPUTopo{
+		cores:   v.cores,
+		threads: v.threads,
+		sockets: v.sockets,
+	}
+}
+
 // BuildableUpdateVMParameters is a buildable version of UpdateVMParameters.
 type BuildableUpdateVMParameters interface {
 	UpdateVMParameters
@@ -474,7 +494,7 @@ type vm struct {
 	clusterID  string
 	templateID TemplateID
 	status     VMStatus
-	cpu        VMCPU
+	cpu        *vmCPU
 }
 
 func (v *vm) Start(retries ...RetryStrategy) error {

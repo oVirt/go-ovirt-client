@@ -126,10 +126,20 @@ func assertCanCreateVM(
 	name string,
 	params ovirtclient.OptionalVMParameters,
 ) ovirtclient.VM {
+	return assertCanCreateVMFromTemplate(t, helper, name, helper.GetBlankTemplateID(), params)
+}
+
+func assertCanCreateVMFromTemplate(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	name string,
+	templateID ovirtclient.TemplateID,
+	params ovirtclient.OptionalVMParameters,
+) ovirtclient.VM {
 	client := helper.GetClient()
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
-		helper.GetBlankTemplateID(),
+		templateID,
 		name,
 		params,
 	)
