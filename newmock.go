@@ -37,7 +37,7 @@ func NewMock() MockClient {
 		hosts: map[string]*host{
 			testHost.ID(): testHost,
 		},
-		templates: map[string]*template{
+		templates: map[TemplateID]*template{
 			blankTemplate.ID(): blankTemplate,
 		},
 		nics: map[string]*nic{},

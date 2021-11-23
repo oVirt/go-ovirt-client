@@ -21,7 +21,7 @@ type TestHelper interface {
 	GetClusterID() string
 
 	// GetBlankTemplateID returns the ID of the blank template that can be used for creating dummy VMs.
-	GetBlankTemplateID() string
+	GetBlankTemplateID() TemplateID
 
 	// GetStorageDomainID returns the ID of the storage domain to create the images on.
 	GetStorageDomainID() string
@@ -145,7 +145,7 @@ type TestHelperParameters interface {
 
 	// BlankTemplateID returns an ID to a template that is blank and can be used as a basis
 	// for testing. It may return an empty string if no template is provided.
-	BlankTemplateID() string
+	BlankTemplateID() TemplateID
 
 	// VNICProfileID returns an ID to a VNIC profile designated for testing. It may return
 	// an empty string, in which case an arbitrary VNIC profile is selected.
@@ -164,7 +164,7 @@ type BuildableTestHelperParameters interface {
 	// the primary storage domain ID.
 	WithSecondaryStorageDomainID(string) BuildableTestHelperParameters
 	// WithBlankTemplateID sets the blank template that can be used for testing.
-	WithBlankTemplateID(string) BuildableTestHelperParameters
+	WithBlankTemplateID(TemplateID) BuildableTestHelperParameters
 	// WithVNICProfileID sets the ID of the VNIC profile that can be used for testing.
 	WithVNICProfileID(string) BuildableTestHelperParameters
 }
@@ -173,7 +173,7 @@ type testHelperParameters struct {
 	clusterID                string
 	storageDomainID          string
 	secondaryStorageDomainID string
-	blankTemplateID          string
+	blankTemplateID          TemplateID
 	vnicProfileID            string
 }
 
@@ -190,7 +190,7 @@ func (t *testHelperParameters) StorageDomainID() string {
 	return t.storageDomainID
 }
 
-func (t *testHelperParameters) BlankTemplateID() string {
+func (t *testHelperParameters) BlankTemplateID() TemplateID {
 	return t.blankTemplateID
 }
 
@@ -208,7 +208,7 @@ func (t *testHelperParameters) WithStorageDomainID(s string) BuildableTestHelper
 	return t
 }
 
-func (t *testHelperParameters) WithBlankTemplateID(s string) BuildableTestHelperParameters {
+func (t *testHelperParameters) WithBlankTemplateID(s TemplateID) BuildableTestHelperParameters {
 	t.blankTemplateID = s
 	return t
 }
@@ -250,7 +250,7 @@ func setupVNICProfileID(vnicProfileID string, clusterID string, client Client) (
 	return "", fmt.Errorf("failed to find a valid VNIC profile ID for testing")
 }
 
-func setupBlankTemplateID(blankTemplateID string, client Client) (id string, err error) {
+func setupBlankTemplateID(blankTemplateID TemplateID, client Client) (id TemplateID, err error) {
 	if blankTemplateID == "" {
 		blankTemplateID, err = findBlankTemplateID(client)
 		if err != nil {
@@ -330,7 +330,7 @@ func createTestClient(
 	return client, err
 }
 
-func findBlankTemplateID(client Client) (string, error) {
+func findBlankTemplateID(client Client) (TemplateID, error) {
 	template, err := client.GetBlankTemplate()
 	if err != nil {
 		return "", fmt.Errorf("failed to find blank template for testing (%w)", err)
@@ -338,7 +338,7 @@ func findBlankTemplateID(client Client) (string, error) {
 	return template.ID(), nil
 }
 
-func verifyBlankTemplateID(client Client, templateID string) error {
+func verifyBlankTemplateID(client Client, templateID TemplateID) error {
 	_, err := client.GetTemplate(templateID)
 	return err
 }
@@ -402,7 +402,7 @@ type testHelper struct {
 	rand                     *rand.Rand
 	clusterID                string
 	storageDomainID          string
-	blankTemplateID          string
+	blankTemplateID          TemplateID
 	vnicProfileID            string
 	secondaryStorageDomainID string
 }
@@ -430,7 +430,7 @@ func (t *testHelper) GetClusterID() string {
 	return t.clusterID
 }
 
-func (t *testHelper) GetBlankTemplateID() string {
+func (t *testHelper) GetBlankTemplateID() TemplateID {
 	return t.blankTemplateID
 }
 
@@ -565,7 +565,7 @@ func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) 
 
 	params := TestHelperParams()
 	params.WithClusterID(os.Getenv("OVIRT_CLUSTER_ID"))
-	params.WithBlankTemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID"))
+	params.WithBlankTemplateID(TemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID")))
 	params.WithStorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID"))
 	params.WithSecondaryStorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID"))
 	params.WithVNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID"))

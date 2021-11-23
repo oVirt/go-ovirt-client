@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateVM(clusterID string, templateID string, name string, params OptionalVMParameters, _ ...RetryStrategy) (VM, error) {
+func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name string, params OptionalVMParameters, _ ...RetryStrategy) (VM, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

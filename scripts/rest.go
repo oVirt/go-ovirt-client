@@ -25,10 +25,12 @@ type restItem struct {
 	// an object. This is the case for VnicProfile vs. Profile, which refer to the same object. Defaults to the same as
 	// ID.
 	SecondaryID string
+	// IDType is the type of the ID field. Defaults to "string".
+	IDType string
 }
 
 func main() {
-	name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint := getParameters()
+	name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint, idType := getParameters()
 
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -56,6 +58,7 @@ func main() {
 		object,
 		id,
 		secondaryID,
+		idType,
 	}
 	if err := filepath.Walk(
 		tplDir, func(fn string, info os.FileInfo, _ error) error {
@@ -81,7 +84,7 @@ func main() {
 	}
 }
 
-func getParameters() (string, string, string, string, string, string, bool, bool) {
+func getParameters() (string, string, string, string, string, string, bool, bool, string) {
 	name := ""
 	id := ""
 	secondaryID := ""
@@ -91,7 +94,8 @@ func getParameters() (string, string, string, string, string, string, bool, bool
 	watch := false
 	nofmt := false
 	nolint := false
-	setupFlags(&name, &id, &secondaryID, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint)
+	idType := "string"
+	setupFlags(&name, &id, &secondaryID, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint, &idType)
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
@@ -109,7 +113,7 @@ func getParameters() (string, string, string, string, string, string, bool, bool
 	if os.Getenv("NOLINT") != "" {
 		nolint = true
 	}
-	return name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint
+	return name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint, idType
 }
 
 // setupFlags sets up the command line flags. This function is annotated with nolint:funlen since there is no reasonable
@@ -124,6 +128,7 @@ func setupFlags( // nolint:funlen
 	watch *bool,
 	nofmt *bool,
 	nolint *bool,
+	idType *string,
 ) {
 	flag.StringVar(
 		name,
@@ -166,6 +171,15 @@ func setupFlags( // nolint:funlen
 		fmt.Sprintf(
 			"Specify a target directory the generated files should be written into. Defaults to \"%s\"",
 			*targetDir,
+		),
+	)
+	flag.StringVar(
+		idType,
+		"T",
+		*idType,
+		fmt.Sprintf(
+			"Specify the type of the ID. Defaults to \"%s\"",
+			*idType,
 		),
 	)
 	flag.BoolVar(

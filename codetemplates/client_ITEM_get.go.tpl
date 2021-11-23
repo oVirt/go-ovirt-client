@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) Get{{ .Object }}(id string, retries ...RetryStrategy) (result {{ .Object }}, err error) {
+func (o *oVirtClient) Get{{ .Object }}(id {{ .IDType }}, retries ...RetryStrategy) (result {{ .Object }}, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts())
 	err = retry(
 		fmt.Sprintf("getting {{ .Name }} %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().{{ .ID }}sService().{{ .SecondaryID }}Service(id).Get().Send()
+			response, err := o.conn.SystemService().{{ .ID }}sService().{{ .SecondaryID }}Service({{ if eq .IDType "string" }}id{{ else }}string(id){{ end }}).Get().Send()
 			if err != nil {
 				return err
 			}

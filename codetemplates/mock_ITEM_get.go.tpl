@@ -2,7 +2,7 @@
 
 package ovirtclient
 
-func (m *mockClient) Get{{ .Object }}(id string, _ ...RetryStrategy) ({{ .Object }}, error) {
+func (m *mockClient) Get{{ .Object }}(id {{ .IDType }}, _ ...RetryStrategy) ({{ .Object }}, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.{{ .ID | toLower }}s[id]; ok {
