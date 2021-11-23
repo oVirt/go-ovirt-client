@@ -14,7 +14,7 @@ type VMClient interface {
 	// CreateVM creates a virtual machine.
 	CreateVM(
 		clusterID string,
-		templateID string,
+		templateID TemplateID,
 		name string,
 		optional OptionalVMParameters,
 		retries ...RetryStrategy,
@@ -56,7 +56,7 @@ type VMData interface {
 	// ClusterID returns the cluster this machine belongs to.
 	ClusterID() string
 	// TemplateID returns the ID of the base template for this machine.
-	TemplateID() string
+	TemplateID() TemplateID
 	// Status returns the current status of the VM.
 	Status() VMStatus
 	// CPU returns the CPU structure of a VM.
@@ -472,7 +472,7 @@ type vm struct {
 	name       string
 	comment    string
 	clusterID  string
-	templateID string
+	templateID TemplateID
 	status     VMStatus
 	cpu        VMCPU
 }
@@ -580,7 +580,7 @@ func (v *vm) ClusterID() string {
 	return v.clusterID
 }
 
-func (v *vm) TemplateID() string {
+func (v *vm) TemplateID() TemplateID {
 	return v.templateID
 }
 
@@ -645,7 +645,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		comment:    comment,
 		clusterID:  clusterID,
 		client:     client,
-		templateID: templateID,
+		templateID: TemplateID(templateID),
 		status:     VMStatus(status),
 		cpu:        cpu,
 	}, nil
