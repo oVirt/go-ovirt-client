@@ -11,7 +11,11 @@ func (m *mockClient) GetBlankTemplate(retries ...RetryStrategy) (result Template
 		}
 	}
 	for _, tpl := range templateList {
-		if tpl.IsBlank() {
+		blank, err := tpl.IsBlank(retries...)
+		if err != nil {
+			return nil, err
+		}
+		if blank {
 			return tpl, nil
 		}
 	}

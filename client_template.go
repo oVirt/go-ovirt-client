@@ -49,7 +49,7 @@ type TemplateData interface {
 
 	// IsBlank returns true, if the template either has the ID of all zeroes, or if the template has no settings, disks,
 	// or other settings. This function only checks the details supported by go-ovirt-client.
-	IsBlank() bool
+	IsBlank(...RetryStrategy) (bool, error)
 }
 
 // Template incorporates the TemplateData to provide access to data in a template, but also
@@ -211,12 +211,22 @@ func (t template) Remove(retries ...RetryStrategy) error {
 	return t.client.RemoveTemplate(t.id, retries...)
 }
 
-func (t template) IsBlank() bool {
+func (t template) IsBlank(retries ...RetryStrategy) (bool, error) {
 	if t.cpu.topo.sockets != 1 || t.cpu.topo.cores != 1 || t.cpu.topo.threads != 1 {
-		return false
+		return false, nil
 	}
 
-	return t.id == DefaultBlankTemplateID
+	attachments, err := t.client.ListTemplateDiskAttachments(t.id, retries...)
+	if err != nil {
+		return false, wrap(err, EUnidentified, "failed to list template disk attachments")
+	}
+
+	if len(attachments) != 0 {
+		return false, nil
+	}
+
+	// Assume it's a blank template. Further factors may be added later.
+	return true, nil
 }
 
 func (t template) ID() TemplateID {

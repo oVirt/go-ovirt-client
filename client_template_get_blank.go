@@ -11,7 +11,11 @@ func (o *oVirtClient) GetBlankTemplate(retries ...RetryStrategy) (result Templat
 		}
 	}
 	for _, tpl := range templateList {
-		if tpl.IsBlank() {
+		blank, err := tpl.IsBlank(retries...)
+		if err != nil {
+			return nil, err
+		}
+		if blank {
 			return tpl, nil
 		}
 	}
