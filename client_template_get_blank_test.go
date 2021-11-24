@@ -17,7 +17,11 @@ func TestTemplateBlank(t *testing.T) {
 		}
 		t.Fatalf("Failed to retrieve factory-default blank template. (%v)", err)
 	}
-	if tpl.IsBlank() != true {
+	blank, err := tpl.IsBlank()
+	if err != nil {
+		t.Fatalf("Failed to check if template is blank (%v).", err)
+	}
+	if blank != true {
 		t.Fatalf("Factory-default blank template is not considered a blank template.")
 	}
 }
