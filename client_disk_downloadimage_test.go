@@ -11,6 +11,7 @@ import (
 )
 
 func TestImageDownload(t *testing.T) {
+	t.Parallel()
 	testImageData := getTestImageData(t)
 	fh, stat := getTestImageFile(t)
 	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
@@ -31,11 +32,7 @@ func TestImageDownload(t *testing.T) {
 		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 		fh,
 	)
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to upload image (%w)", err))
-	}
-
-	defer func() {
+	t.Cleanup(func() {
 		disk := uploadResult.Disk()
 		if disk != nil {
 			diskID := uploadResult.Disk().ID()
@@ -43,7 +40,10 @@ func TestImageDownload(t *testing.T) {
 				t.Fatal(fmt.Errorf("failed to remove disk (%w)", err))
 			}
 		}
-	}()
+	})
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to upload image (%w)", err))
+	}
 
 	data := downloadImage(t, client, uploadResult)
 

@@ -8,6 +8,7 @@ import (
 )
 
 func TestVMListShouldNotFail(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
 
@@ -17,6 +18,7 @@ func TestVMListShouldNotFail(t *testing.T) {
 }
 
 func TestAfterVMCreationShouldBePresent(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
 
@@ -77,6 +79,7 @@ func TestVMCreationWithCPU(t *testing.T) {
 	}
 	for name, param := range params {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			vm := assertCanCreateVM(
 				t,
 				helper,
@@ -111,6 +114,7 @@ func TestVMCreationWithCPU(t *testing.T) {
 }
 
 func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	vm1 := assertCanCreateVM(
 		t,
@@ -140,6 +144,7 @@ func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
 // TestVMStartStop creates a micro VM with a tiny operating system, starts it and then stops it. The OS doesn't support
 // ACPI, so shutdown cannot be tested.
 func TestVMStartStop(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	vm := assertCanCreateVM(

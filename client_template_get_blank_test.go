@@ -7,6 +7,7 @@ import (
 )
 
 func TestTemplateBlank(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	tpl, err := helper.GetClient().GetTemplate(ovirtclient.DefaultBlankTemplateID)

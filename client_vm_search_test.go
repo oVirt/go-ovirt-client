@@ -7,6 +7,7 @@ import (
 )
 
 func TestVMSearch(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
 

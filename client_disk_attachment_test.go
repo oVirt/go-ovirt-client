@@ -9,6 +9,7 @@ import (
 )
 
 func TestDiskAttachmentCreation(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	vm := assertCanCreateVM(
@@ -26,6 +27,7 @@ func TestDiskAttachmentCreation(t *testing.T) {
 }
 
 func TestDiskAttachmentCannotBeAttachedToSecondVM(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	vm1 := assertCanCreateVM(
@@ -98,7 +100,7 @@ func assertCanAttachDisk(t *testing.T, vm ovirtclient.VM, disk ovirtclient.Disk)
 }
 
 func assertCannotAttachDisk(t *testing.T, vm ovirtclient.VM, disk ovirtclient.Disk, errorCode ovirtclient.ErrorCode) {
-	if _, err := vm.AttachDisk(disk.ID(), ovirtclient.DiskInterfaceVirtIO, nil); err != nil {
+	if _, err := vm.AttachDisk(disk.ID(), ovirtclient.DiskInterfaceVirtIO, nil, ovirtclient.MaxTries(5)); err != nil {
 		if errorCode == "" {
 			return
 		}

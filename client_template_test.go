@@ -8,6 +8,7 @@ import (
 )
 
 func TestTemplateCreation(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
@@ -19,6 +20,7 @@ func TestTemplateCreation(t *testing.T) {
 }
 
 func TestTemplateCPU(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	vm1 := assertCanCreateVM(
