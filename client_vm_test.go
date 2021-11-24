@@ -20,7 +20,12 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	vm := assertCanCreateVM(t, helper, "test", nil)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		nil,
+	)
 	fetchedVM, err := client.GetVM(vm.ID())
 	if err != nil {
 		t.Fatal(err)
@@ -105,12 +110,44 @@ func TestVMCreationWithCPU(t *testing.T) {
 	}
 }
 
+func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
+	helper := getHelper(t)
+	vm1 := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams().MustWithCPUParameters(2, 2, 2),
+	)
+	tpl := assertCanCreateTemplate(t, helper, vm1)
+	vm2 := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		"test2",
+		tpl.ID(),
+		ovirtclient.CreateVMParams().MustWithCPUParameters(3, 3, 3),
+	)
+	if vm2.CPU().Topo().Cores() != 3 {
+		t.Fatalf("Invalid number of cores: %d", vm2.CPU().Topo().Cores())
+	}
+	if vm2.CPU().Topo().Threads() != 3 {
+		t.Fatalf("Invalid number of cores: %d", vm2.CPU().Topo().Threads())
+	}
+	if vm2.CPU().Topo().Sockets() != 3 {
+		t.Fatalf("Invalid number of cores: %d", vm2.CPU().Topo().Sockets())
+	}
+}
+
 // TestVMStartStop creates a micro VM with a tiny operating system, starts it and then stops it. The OS doesn't support
 // ACPI, so shutdown cannot be tested.
 func TestVMStartStop(t *testing.T) {
 	helper := getHelper(t)
 
-	vm := assertCanCreateVM(t, helper, "test", nil)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		nil,
+	)
 	disk := assertCanCreateDisk(t, helper)
 	assertCanAttachDisk(t, vm, disk)
 	assertCanUploadDiskImage(t, helper, disk)
@@ -126,10 +163,20 @@ func assertCanCreateVM(
 	name string,
 	params ovirtclient.OptionalVMParameters,
 ) ovirtclient.VM {
+	return assertCanCreateVMFromTemplate(t, helper, name, helper.GetBlankTemplateID(), params)
+}
+
+func assertCanCreateVMFromTemplate(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	name string,
+	templateID ovirtclient.TemplateID,
+	params ovirtclient.OptionalVMParameters,
+) ovirtclient.VM {
 	client := helper.GetClient()
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
-		helper.GetBlankTemplateID(),
+		templateID,
 		name,
 		params,
 	)

@@ -17,7 +17,12 @@ func TestVMNICCreation(t *testing.T) {
 		ovirtclient.CreateVMParams(),
 	)
 	assertNICCount(t, vm, 0)
-	nic := assertCanCreateNIC(t, helper, vm, "test", ovirtclient.CreateNICParams())
+	nic := assertCanCreateNIC(
+		t,
+		helper,
+		vm,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateNICParams())
 	assertNICCount(t, vm, 1)
 	assertCanRemoveNIC(t, nic)
 	assertNICCount(t, vm, 0)

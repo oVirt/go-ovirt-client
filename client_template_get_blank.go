@@ -6,7 +6,7 @@ func (o *oVirtClient) GetBlankTemplate(retries ...RetryStrategy) (result Templat
 		return nil, err
 	}
 	for _, tpl := range templateList {
-		if tpl.ID() == blankTemplateID {
+		if tpl.ID() == DefaultBlankTemplateID {
 			return tpl, nil
 		}
 	}
@@ -16,5 +16,8 @@ func (o *oVirtClient) GetBlankTemplate(retries ...RetryStrategy) (result Templat
 		}
 	}
 
-	return nil, newError(ENotFound, "No blank template found.")
+	return nil, newError(
+		ENotFound,
+		"No blank template found. Please re-created the deleted default blank template.",
+	)
 }

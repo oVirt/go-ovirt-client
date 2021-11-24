@@ -6,7 +6,7 @@ func (m *mockClient) GetBlankTemplate(retries ...RetryStrategy) (result Template
 		return nil, err
 	}
 	for _, tpl := range templateList {
-		if tpl.ID() == blankTemplateID {
+		if tpl.ID() == DefaultBlankTemplateID {
 			return tpl, nil
 		}
 	}
