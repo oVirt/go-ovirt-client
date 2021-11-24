@@ -1,39 +1,74 @@
 package ovirtclient
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name string, params OptionalVMParameters, _ ...RetryStrategy) (VM, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *mockClient) CreateVM(
+	clusterID string,
+	templateID TemplateID,
+	name string,
+	params OptionalVMParameters,
+	retries ...RetryStrategy,
+) (result VM, err error) {
+	retries = defaultRetries(retries, defaultWriteTimeouts())
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
 		return nil, err
 	}
-	if _, ok := m.clusters[clusterID]; !ok {
-		return nil, newError(ENotFound, "cluster with ID %s not found", clusterID)
-	}
-	tpl, ok := m.templates[templateID]
-	if !ok {
-		return nil, newError(ENotFound, "template with ID %s not found", templateID)
-	}
-
 	if params == nil {
 		params = &vmParams{}
 	}
 	if name == "" {
 		return nil, newError(EBadArgument, "The name parameter is required for VM creation.")
 	}
+	err = retry(
+		fmt.Sprintf("creating VM %s", name),
+		m.logger,
+		retries,
+		func() error {
+			m.lock.Lock()
+			defer m.lock.Unlock()
+			if _, ok := m.clusters[clusterID]; !ok {
+				return newError(ENotFound, "cluster with ID %s not found", clusterID)
+			}
+			tpl, ok := m.templates[templateID]
+			if !ok {
+				return newError(ENotFound, "template with ID %s not found", templateID)
+			}
+			if tpl.status != TemplateStatusOK {
+				return newError(EConflict, "template in status \"%s\"", tpl.status)
+			}
 
-	for _, vm := range m.vms {
-		if vm.name == name {
-			return nil, newError(EConflict, "A VM with the name \"%s\" already exists.", name)
-		}
-	}
+			for _, vm := range m.vms {
+				if vm.name == name {
+					return newError(EConflict, "A VM with the name \"%s\" already exists.", name)
+				}
+			}
 
-	cpu := m.createVMCPU(params, tpl)
+			cpu := m.createVMCPU(params, tpl)
 
+			vm := m.createVM(name, params, clusterID, templateID, cpu)
+
+			m.attachVMDisksFromTemplate(tpl, vm)
+
+			result = vm
+			return nil
+		},
+	)
+
+	return result, err
+}
+
+func (m *mockClient) createVM(
+	name string,
+	params OptionalVMParameters,
+	clusterID string,
+	templateID TemplateID,
+	cpu *vmCPU,
+) *vm {
 	id := uuid.Must(uuid.NewUUID()).String()
 	vm := &vm{
 		client:     m,
@@ -46,8 +81,33 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 		cpu:        cpu,
 	}
 	m.vms[id] = vm
-	m.diskAttachmentsByVM[id] = map[string]*diskAttachment{}
-	return vm, nil
+	return vm
+}
+
+func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm) {
+	m.vmDiskAttachmentsByVM[vm.id] = make(
+		map[string]*diskAttachment,
+		len(m.templateDiskAttachmentsByTemplate[tpl.id]),
+	)
+	for _, attachment := range m.templateDiskAttachmentsByTemplate[tpl.id] {
+		disk := m.disks[attachment.diskID]
+		newDisk := disk.clone()
+		_ = newDisk.Lock()
+		newDisk.alias = fmt.Sprintf("disk-%s", generateRandomID(5, m.nonSecRand))
+		m.disks[newDisk.ID()] = newDisk
+
+		diskAttachment := &diskAttachment{
+			client:        m,
+			id:            m.GenerateUUID(),
+			vmid:          vm.id,
+			diskID:        newDisk.ID(),
+			diskInterface: attachment.diskInterface,
+			bootable:      attachment.bootable,
+			active:        attachment.active,
+		}
+		m.vmDiskAttachmentsByVM[vm.id][diskAttachment.id] = diskAttachment
+		m.vmDiskAttachmentsByDisk[disk.id] = diskAttachment
+	}
 }
 
 func (m *mockClient) createVMCPU(params OptionalVMParameters, tpl *template) *vmCPU {

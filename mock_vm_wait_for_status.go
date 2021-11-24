@@ -8,7 +8,7 @@ func (m *mockClient) WaitForVMStatus(id string, status VMStatus, retries ...Retr
 	retries = defaultRetries(retries, defaultLongTimeouts())
 	err = retry(
 		fmt.Sprintf("waiting for VM %s status %s", id, status),
-		nil,
+		m.logger,
 		retries,
 		func() error {
 			vm, err = m.GetVM(id, retries...)

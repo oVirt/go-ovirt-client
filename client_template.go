@@ -56,6 +56,8 @@ type Template interface {
 	// WaitForStatus waits for a template to enter a specific status. It returns the updated
 	// template as a result.
 	WaitForStatus(status TemplateStatus, retries ...RetryStrategy) (Template, error)
+	// ListDiskAttachments lists all disk attachments for the current template.
+	ListDiskAttachments(retries ...RetryStrategy) ([]TemplateDiskAttachment, error)
 	// Remove removes the specified template.
 	Remove(retries ...RetryStrategy) error
 }
@@ -183,6 +185,10 @@ type template struct {
 	description string
 	status      TemplateStatus
 	cpu         *vmCPU
+}
+
+func (t template) ListDiskAttachments(retries ...RetryStrategy) ([]TemplateDiskAttachment, error) {
+	return t.client.ListTemplateDiskAttachments(t.id, retries...)
 }
 
 func (t template) CPU() VMCPU {

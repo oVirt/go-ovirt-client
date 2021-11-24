@@ -71,7 +71,6 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 }
 
 func TestVMCreationWithCPU(t *testing.T) {
-	helper := getHelper(t)
 
 	params := map[string]ovirtclient.OptionalVMParameters{
 		"nocpu":   ovirtclient.CreateVMParams(),
@@ -80,6 +79,7 @@ func TestVMCreationWithCPU(t *testing.T) {
 	for name, param := range params {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+			helper := getHelper(t)
 			vm := assertCanCreateVM(
 				t,
 				helper,
@@ -178,6 +178,7 @@ func assertCanCreateVMFromTemplate(
 	templateID ovirtclient.TemplateID,
 	params ovirtclient.OptionalVMParameters,
 ) ovirtclient.VM {
+	t.Logf("Creating VM %s from template %s...", name, templateID)
 	client := helper.GetClient()
 	vm, err := client.CreateVM(
 		helper.GetClusterID(),
@@ -190,7 +191,8 @@ func assertCanCreateVMFromTemplate(
 	}
 	t.Cleanup(
 		func() {
-			if err := vm.Remove(); err != nil {
+			t.Logf("Cleaning up test VM %s...", vm.ID())
+			if err := vm.Remove(); err != nil && !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
 				t.Fatalf("Failed to remove test VM %s (%v)", vm.ID(), err)
 			}
 		},
@@ -203,6 +205,7 @@ func assertCanStartVM(t *testing.T, vm ovirtclient.VM) {
 		t.Fatalf("Failed to start VM (%v)", err)
 	}
 	t.Cleanup(func() {
+		t.Logf("Stopping test VM %s...", vm.ID())
 		if err := vm.Stop(true); err != nil {
 			t.Fatalf("Failed to stop VM %s after test (%v)", vm.ID(), err)
 		}

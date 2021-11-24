@@ -1,7 +1,9 @@
 package ovirtclient
 
 import (
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -9,6 +11,11 @@ import (
 // NewMock creates a new in-memory mock client. This client can be used as a testing facility for
 // higher level code.
 func NewMock() MockClient {
+	return NewMockWithLogger(&noopLogger{})
+}
+
+// NewMockWithLogger is identical to NewMock, but accepts a logger.
+func NewMockWithLogger(logger Logger) MockClient {
 	testCluster := generateTestCluster()
 	testHost := generateTestHost(testCluster)
 	testStorageDomain := generateTestStorageDomain()
@@ -32,6 +39,7 @@ func NewMock() MockClient {
 	}
 
 	client := getClient(
+		logger,
 		testStorageDomain,
 		secondaryStorageDomain,
 		testCluster,
@@ -55,6 +63,7 @@ func NewMock() MockClient {
 }
 
 func getClient(
+	logger Logger,
 	testStorageDomain *storageDomain,
 	secondaryStorageDomain *storageDomain,
 	testCluster *cluster,
@@ -65,9 +74,11 @@ func getClient(
 	testDatacenter *datacenterWithClusters,
 ) *mockClient {
 	client := &mockClient{
-		url:  "https://localhost/ovirt-engine/api",
-		lock: &sync.Mutex{},
-		vms:  map[string]*vm{},
+		logger:     logger,
+		url:        "https://localhost/ovirt-engine/api",
+		lock:       &sync.Mutex{},
+		vms:        map[string]*vm{},
+		nonSecRand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		storageDomains: map[string]*storageDomain{
 			testStorageDomain.ID():      testStorageDomain,
 			secondaryStorageDomain.ID(): secondaryStorageDomain,
@@ -92,8 +103,12 @@ func getClient(
 		dataCenters: map[string]*datacenterWithClusters{
 			testDatacenter.ID(): testDatacenter,
 		},
-		diskAttachmentsByVM:   map[string]map[string]*diskAttachment{},
-		diskAttachmentsByDisk: map[string]*diskAttachment{},
+		vmDiskAttachmentsByVM:   map[string]map[string]*diskAttachment{},
+		vmDiskAttachmentsByDisk: map[string]*diskAttachment{},
+		templateDiskAttachmentsByTemplate: map[TemplateID]map[string]*templateDiskAttachment{
+			blankTemplate.ID(): {},
+		},
+		templateDiskAttachmentsByDisk: map[string]*templateDiskAttachment{},
 	}
 	return client
 }

@@ -9,14 +9,25 @@ func (m *mockClient) RemoveDisk(diskID string, _ ...RetryStrategy) error {
 	}
 
 	// Check if disk is attached to a running VM
-	if diskAttachment, ok := m.diskAttachmentsByDisk[diskID]; ok {
+	if diskAttachment, ok := m.vmDiskAttachmentsByDisk[diskID]; ok {
 		vm := m.vms[diskAttachment.vmid]
 		if vm.status != VMStatusDown {
-			return newError(EConflict, "Disk %s is attached to VM %s", diskID, vm.id)
+			return newError(
+				EConflict,
+				"Disk %s is attached to VM %s, which is \"%s\" not \"%s\".",
+				diskID,
+				vm.id,
+				vm.status,
+				VMStatusDown,
+			)
 		}
 	}
+	// Check if disk is attached to a template.
+	if _, ok := m.templateDiskAttachmentsByDisk[diskID]; ok {
+		return newError(EUnidentified, "Cannot remove disk attached to a template. Please specify storage domain to remove from.")
+	}
 
-	delete(m.diskAttachmentsByDisk, diskID)
+	delete(m.vmDiskAttachmentsByDisk, diskID)
 	delete(m.disks, diskID)
 
 	return nil

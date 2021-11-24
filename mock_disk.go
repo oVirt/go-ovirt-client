@@ -2,6 +2,8 @@ package ovirtclient
 
 import (
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // diskWithData adds the ability to store the data directly in the disk for mocking purposes.
@@ -68,4 +70,23 @@ func (d *diskWithData) withProvisionedSize(ps uint64) (*diskWithData, error) {
 		d.lock,
 		d.data,
 	}, nil
+}
+
+// clone is an internal function that makes a copy of the disk object with a new UUID.
+func (d *diskWithData) clone() *diskWithData {
+	return &diskWithData{
+		disk{
+			d.client,
+			uuid.NewString(),
+			d.alias,
+			d.provisionedSize,
+			d.format,
+			d.storageDomainIDs,
+			d.status,
+			d.totalSize,
+			d.sparse,
+		},
+		&sync.Mutex{},
+		d.data,
+	}
 }

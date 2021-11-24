@@ -4,7 +4,7 @@ func (m *mockClient) ListDiskAttachments(vmID string, _ ...RetryStrategy) ([]Dis
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	diskAttachments, ok := m.diskAttachmentsByVM[vmID]
+	diskAttachments, ok := m.vmDiskAttachmentsByVM[vmID]
 	if !ok {
 		return nil, newError(ENotFound, "VM %s doesn't exist", vmID)
 	}

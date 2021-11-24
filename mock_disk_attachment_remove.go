@@ -4,7 +4,7 @@ func (m *mockClient) RemoveDiskAttachment(vmID string, diskAttachmentID string, 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	vm, ok := m.diskAttachmentsByVM[vmID]
+	vm, ok := m.vmDiskAttachmentsByVM[vmID]
 	if !ok {
 		return newError(ENotFound, "VM %s doesn't exist", vmID)
 	}
@@ -14,8 +14,8 @@ func (m *mockClient) RemoveDiskAttachment(vmID string, diskAttachmentID string, 
 		return newError(ENotFound, "Disk attachment %s not found on VM %s", diskAttachmentID, vmID)
 	}
 
-	delete(m.diskAttachmentsByDisk, diskAttachment.DiskID())
-	delete(m.diskAttachmentsByVM[vmID], diskAttachmentID)
+	delete(m.vmDiskAttachmentsByDisk, diskAttachment.DiskID())
+	delete(m.vmDiskAttachmentsByVM[vmID], diskAttachmentID)
 
 	return nil
 }

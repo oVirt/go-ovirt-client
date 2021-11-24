@@ -25,6 +25,7 @@ type Client interface {
 	StorageDomainClient
 	HostClient
 	TemplateClient
+	TemplateDiskClient
 	TestConnectionClient
 }
 

@@ -1,6 +1,7 @@
 package ovirtclient
 
 import (
+	"math/rand"
 	"sync"
 
 	"github.com/google/uuid"
@@ -16,20 +17,24 @@ type MockClient interface {
 }
 
 type mockClient struct {
-	url                   string
-	lock                  *sync.Mutex
-	vms                   map[string]*vm
-	storageDomains        map[string]*storageDomain
-	disks                 map[string]*diskWithData
-	clusters              map[string]*cluster
-	hosts                 map[string]*host
-	templates             map[TemplateID]*template
-	nics                  map[string]*nic
-	vnicProfiles          map[string]*vnicProfile
-	networks              map[string]*network
-	dataCenters           map[string]*datacenterWithClusters
-	diskAttachmentsByVM   map[string]map[string]*diskAttachment
-	diskAttachmentsByDisk map[string]*diskAttachment
+	logger                            Logger
+	url                               string
+	lock                              *sync.Mutex
+	nonSecRand                        *rand.Rand
+	vms                               map[string]*vm
+	storageDomains                    map[string]*storageDomain
+	disks                             map[string]*diskWithData
+	clusters                          map[string]*cluster
+	hosts                             map[string]*host
+	templates                         map[TemplateID]*template
+	nics                              map[string]*nic
+	vnicProfiles                      map[string]*vnicProfile
+	networks                          map[string]*network
+	dataCenters                       map[string]*datacenterWithClusters
+	vmDiskAttachmentsByVM             map[string]map[string]*diskAttachment
+	vmDiskAttachmentsByDisk           map[string]*diskAttachment
+	templateDiskAttachmentsByTemplate map[TemplateID]map[string]*templateDiskAttachment
+	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
 }
 
 func (m *mockClient) GetURL() string {
