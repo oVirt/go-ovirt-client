@@ -32,6 +32,7 @@ func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk 
 }
 
 func TestImageUploadDiskCreated(t *testing.T) {
+	t.Parallel()
 	fh, stat := getTestImageFile(t)
 	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
 	// left open won't cause any problems.
@@ -64,6 +65,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 }
 
 func TestImageUploadToExistingDisk(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
 

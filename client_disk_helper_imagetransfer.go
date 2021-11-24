@@ -578,8 +578,9 @@ func (i *imageTransferImpl) abortTransfer() {
 			)
 			errorHappened = true
 		}
-		if err := i.waitForDiskOk(); err != nil {
+		if err := i.waitForDiskOk(); err != nil && !HasErrorCode(err, ENotFound) {
 			// We can't really do anything as we are already in a failure state, log the error.
+			// The ENotFound is expected as the disk may be removed if a transfer is aborted.
 			i.logger.Warningf(
 				"failed to wait for disk %s to return to OK state after aborting transfer",
 				i.diskID,

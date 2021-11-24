@@ -12,6 +12,7 @@ import (
 )
 
 func TestCredentialChangeAfterSetup(t *testing.T) {
+	t.Parallel()
 	// Real CA is the CA we will use in the server
 	realCAPrivKey, realCACert, realCABytes, err := createCA()
 	if err != nil {

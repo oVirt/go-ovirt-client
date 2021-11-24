@@ -11,6 +11,7 @@ import (
 )
 
 func TestInvalidCredentials(t *testing.T) {
+	t.Parallel()
 	helper, err := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewTestLogger(t))
 	if err != nil {
 		t.Skipf("🚧 Skipping test: no live credentials provided.")
@@ -42,6 +43,7 @@ func TestInvalidCredentials(t *testing.T) {
 }
 
 func TestBadURL(t *testing.T) {
+	t.Parallel()
 	logger := ovirtclientlog.NewTestLogger(t)
 	_, err := ovirtclient.New(
 		"https://example.com",
@@ -66,6 +68,7 @@ func TestBadURL(t *testing.T) {
 }
 
 func TestBadTLS(t *testing.T) {
+	t.Parallel()
 	// False CA is the CA we will give to the client
 	_, _, falseCACertBytes, err := createCA()
 	if err != nil {

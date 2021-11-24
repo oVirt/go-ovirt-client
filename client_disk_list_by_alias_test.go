@@ -7,6 +7,7 @@ import (
 // TestSearchingForNonExistentDiskShouldNotResultInError tests that searching for a non-existent disk (0 results)
 // should not result in an error.
 func TestSearchingForNonExistentDiskShouldNotResultInError(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
 

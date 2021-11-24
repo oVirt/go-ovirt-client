@@ -8,6 +8,7 @@ import (
 )
 
 func TestVMNICUpdate(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 
 	vm := assertCanCreateVM(

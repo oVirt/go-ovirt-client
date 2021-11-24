@@ -44,6 +44,7 @@ func ExampleDiskClient_CreateDisk() {
 }
 
 func TestDiskCreationAndUpdate(t *testing.T) {
+	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
 
