@@ -32,6 +32,25 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 		}
 	}
 
+	cpu := m.createVMCPU(params, tpl)
+
+	id := uuid.Must(uuid.NewUUID()).String()
+	vm := &vm{
+		client:     m,
+		id:         id,
+		name:       name,
+		comment:    params.Comment(),
+		clusterID:  clusterID,
+		templateID: templateID,
+		status:     VMStatusDown,
+		cpu:        cpu,
+	}
+	m.vms[id] = vm
+	m.diskAttachmentsByVM[id] = map[string]*diskAttachment{}
+	return vm, nil
+}
+
+func (m *mockClient) createVMCPU(params OptionalVMParameters, tpl *template) *vmCPU {
 	var cpu *vmCPU
 	cpuParams := params.CPU()
 	switch {
@@ -54,19 +73,5 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 			},
 		}
 	}
-
-	id := uuid.Must(uuid.NewUUID()).String()
-	vm := &vm{
-		client:     m,
-		id:         id,
-		name:       name,
-		comment:    params.Comment(),
-		clusterID:  clusterID,
-		templateID: templateID,
-		status:     VMStatusDown,
-		cpu:        cpu,
-	}
-	m.vms[id] = vm
-	m.diskAttachmentsByVM[id] = map[string]*diskAttachment{}
-	return vm, nil
+	return cpu
 }
