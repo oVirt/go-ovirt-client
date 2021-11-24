@@ -26,6 +26,12 @@ func (m *mockClient) CreateVM(clusterID string, templateID TemplateID, name stri
 		return nil, newError(EBadArgument, "The name parameter is required for VM creation.")
 	}
 
+	for _, vm := range m.vms {
+		if vm.name == name {
+			return nil, newError(EConflict, "A VM with the name \"%s\" already exists.", name)
+		}
+	}
+
 	var cpu *vmCPU
 	cpuParams := params.CPU()
 	switch {

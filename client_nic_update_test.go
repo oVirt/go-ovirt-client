@@ -17,8 +17,14 @@ func TestVMNICUpdate(t *testing.T) {
 		ovirtclient.CreateVMParams(),
 	)
 	assertNICCount(t, vm, 0)
-	nic := assertCanCreateNIC(t, helper, vm, "test", ovirtclient.CreateNICParams())
-	nic = assertCanUpdateNICName(t, nic, "test1")
+	nic := assertCanCreateNIC(
+		t,
+		helper,
+		vm,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateNICParams(),
+	)
+	nic = assertCanUpdateNICName(t, nic, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)))
 	vnicProfile := assertCanCreateVNICProfile(t, helper)
 	nic = assertCanUpdateNICVNICProfile(t, nic, vnicProfile.ID())
 	// Go back to the original VNIC profile ID to make sure we don't block deleting the test VNIC profile.

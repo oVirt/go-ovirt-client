@@ -20,7 +20,12 @@ func TestAfterVMCreationShouldBePresent(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	vm := assertCanCreateVM(t, helper, "test", nil)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		nil,
+	)
 	fetchedVM, err := client.GetVM(vm.ID())
 	if err != nil {
 		t.Fatal(err)
@@ -110,7 +115,7 @@ func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
 	vm1 := assertCanCreateVM(
 		t,
 		helper,
-		"test",
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
 		ovirtclient.CreateVMParams().MustWithCPUParameters(2, 2, 2),
 	)
 	tpl := assertCanCreateTemplate(t, helper, vm1)
@@ -137,7 +142,12 @@ func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
 func TestVMStartStop(t *testing.T) {
 	helper := getHelper(t)
 
-	vm := assertCanCreateVM(t, helper, "test", nil)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		nil,
+	)
 	disk := assertCanCreateDisk(t, helper)
 	assertCanAttachDisk(t, vm, disk)
 	assertCanUploadDiskImage(t, helper, disk)

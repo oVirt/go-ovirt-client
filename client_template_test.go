@@ -1,6 +1,7 @@
 package ovirtclient_test
 
 import (
+	"fmt"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -9,7 +10,7 @@ import (
 func TestTemplateCreation(t *testing.T) {
 	helper := getHelper(t)
 
-	vm := assertCanCreateVM(t, helper, "test", nil)
+	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
 	template := assertCanCreateTemplate(t, helper, vm)
 	tpl := assertCanGetTemplate(t, helper, template.ID())
 	if tpl.ID() != template.ID() {
@@ -23,7 +24,7 @@ func TestTemplateCPU(t *testing.T) {
 	vm1 := assertCanCreateVM(
 		t,
 		helper,
-		"test",
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
 		ovirtclient.CreateVMParams().MustWithCPUParameters(1, 2, 1),
 	)
 	tpl := assertCanCreateTemplate(t, helper, vm1)
@@ -91,7 +92,11 @@ func assertCanGetTemplate(t *testing.T, helper ovirtclient.TestHelper, id ovirtc
 }
 
 func assertCanCreateTemplate(t *testing.T, helper ovirtclient.TestHelper, vm ovirtclient.VM) ovirtclient.Template {
-	template, err := helper.GetClient().CreateTemplate(vm.ID(), "test", nil)
+	template, err := helper.GetClient().CreateTemplate(
+		vm.ID(),
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		nil,
+	)
 	if err != nil {
 		t.Fatalf("Failed to create template from VM %s (%v)", vm.ID(), err)
 	}
