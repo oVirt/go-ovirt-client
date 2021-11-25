@@ -83,7 +83,7 @@ func TestVMCreationWithCPU(t *testing.T) {
 			vm := assertCanCreateVM(
 				t,
 				helper,
-				fmt.Sprintf("test-%s", name),
+				fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
 				param,
 			)
 
