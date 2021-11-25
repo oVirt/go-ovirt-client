@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	ovirtsdk4 "github.com/ovirt/go-ovirt"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
@@ -47,7 +46,7 @@ func TestCredentialChangeAfterSetup(t *testing.T) {
 		ovirtclient.TLS().CACertsFromMemory(realCABytes),
 		logger,
 		nil,
-		func(connection *ovirtsdk4.Connection) error {
+		func(connection ovirtclient.Client) error {
 			// Disable connection check on setup to simulate a credential shift after the connection
 			// has been established.
 			return nil
