@@ -10,6 +10,7 @@ import (
 
 // NewMock creates a new in-memory mock client. This client can be used as a testing facility for
 // higher level code.
+//goland:noinspection GoUnusedExportedFunction
 func NewMock() MockClient {
 	return NewMockWithLogger(&noopLogger{})
 }
@@ -105,7 +106,7 @@ func getClient(
 		},
 		vmDiskAttachmentsByVM:   map[string]map[string]*diskAttachment{},
 		vmDiskAttachmentsByDisk: map[string]*diskAttachment{},
-		templateDiskAttachmentsByTemplate: map[TemplateID]map[string]*templateDiskAttachment{
+		templateDiskAttachmentsByTemplate: map[TemplateID]map[TemplateDiskAttachmentID]*templateDiskAttachment{
 			blankTemplate.ID(): {},
 		},
 		templateDiskAttachmentsByDisk: map[string]*templateDiskAttachment{},

@@ -33,7 +33,7 @@ type mockClient struct {
 	dataCenters                       map[string]*datacenterWithClusters
 	vmDiskAttachmentsByVM             map[string]map[string]*diskAttachment
 	vmDiskAttachmentsByDisk           map[string]*diskAttachment
-	templateDiskAttachmentsByTemplate map[TemplateID]map[string]*templateDiskAttachment
+	templateDiskAttachmentsByTemplate map[TemplateID]map[TemplateDiskAttachmentID]*templateDiskAttachment
 	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
 }
 

@@ -13,7 +13,7 @@ type TemplateDiskClient interface {
 // TemplateDiskAttachmentData contains the methods to get the details of a disk attached to a template.
 type TemplateDiskAttachmentData interface {
 	// ID returns the identifier of the attachment.
-	ID() string
+	ID() TemplateDiskAttachmentID
 	// TemplateID returns the ID of the template the disk is attached to.
 	TemplateID() TemplateID
 	// DiskID returns the ID of the disk in this attachment.
@@ -37,10 +37,13 @@ type TemplateDiskAttachment interface {
 	Disk(retries ...RetryStrategy) (Disk, error)
 }
 
+// TemplateDiskAttachmentID is a typed string to ensure that these IDs are only used for template disk attachments.
+type TemplateDiskAttachmentID string
+
 type templateDiskAttachment struct {
 	client Client
 
-	id            string
+	id            TemplateDiskAttachmentID
 	templateID    TemplateID
 	diskID        string
 	diskInterface DiskInterface
@@ -48,7 +51,7 @@ type templateDiskAttachment struct {
 	active        bool
 }
 
-func (t templateDiskAttachment) ID() string {
+func (t templateDiskAttachment) ID() TemplateDiskAttachmentID {
 	return t.id
 }
 
@@ -114,7 +117,7 @@ func convertSDKTemplateDiskAttachment(attachment *ovirtsdk.DiskAttachment, o *oV
 	return &templateDiskAttachment{
 		o,
 
-		id,
+		TemplateDiskAttachmentID(id),
 		TemplateID(templateID),
 		diskID,
 		DiskInterface(diskInterface),
