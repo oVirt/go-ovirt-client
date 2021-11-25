@@ -142,11 +142,11 @@ func NewWithVerify(
 	}
 
 	client := &oVirtClient{
-		conn:       conn,
-		httpClient: httpClient,
-		logger:     logger,
-		url:        url,
-		nonSecRand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
+		conn:            conn,
+		httpClient:      httpClient,
+		logger:          logger,
+		url:             url,
+		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}
 
 	if verify != nil {

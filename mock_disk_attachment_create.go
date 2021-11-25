@@ -40,13 +40,13 @@ func (m *mockClient) CreateDiskAttachment(
 			attachment.active = *active
 		}
 	}
-	for _, diskAttachment := range m.diskAttachmentsByVM[vm.ID()] {
+	for _, diskAttachment := range m.vmDiskAttachmentsByVM[vm.ID()] {
 		if diskAttachment.DiskID() == diskID {
 			return nil, newError(EConflict, "disk %s is already attached to VM %s", diskID, vmID)
 		}
 	}
 
-	if diskAttachment, ok := m.diskAttachmentsByDisk[disk.ID()]; ok {
+	if diskAttachment, ok := m.vmDiskAttachmentsByDisk[disk.ID()]; ok {
 		return nil, newError(
 			EConflict,
 			"cannot attach disk %s to VM %s, already attached to VM %s",
@@ -56,8 +56,8 @@ func (m *mockClient) CreateDiskAttachment(
 		)
 	}
 
-	m.diskAttachmentsByDisk[disk.ID()] = attachment
-	m.diskAttachmentsByVM[vm.ID()][attachment.ID()] = attachment
+	m.vmDiskAttachmentsByDisk[disk.ID()] = attachment
+	m.vmDiskAttachmentsByVM[vm.ID()][attachment.ID()] = attachment
 
 	return attachment, nil
 }

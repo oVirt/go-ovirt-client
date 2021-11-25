@@ -7,18 +7,20 @@ import (
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
+// TestTemplateCreation is the simplest test for creating and using a template.
 func TestTemplateCreation(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
 
 	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
 	template := assertCanCreateTemplate(t, helper, vm)
-	tpl := assertCanGetTemplate(t, helper, template.ID())
+	tpl := assertCanGetTemplateOK(t, helper, template.ID())
 	if tpl.ID() != template.ID() {
 		t.Fatalf("IDs of the returned template don't match.")
 	}
 }
 
+// TestTemplateCPU tests if the CPU settings are properly replicated when creating or using a template.
 func TestTemplateCPU(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
@@ -81,11 +83,62 @@ func TestTemplateCPU(t *testing.T) {
 	}
 }
 
-func assertCanGetTemplate(t *testing.T, helper ovirtclient.TestHelper, id ovirtclient.TemplateID) ovirtclient.Template {
+func TestTemplateDisk(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	disk := assertCanCreateDisk(t, helper)
+	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
+	assertCanAttachDisk(t, vm, disk)
+	template := assertCanCreateTemplate(t, helper, vm)
+
+	vm2 := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), template.ID(),
+		nil,
+	)
+
+	diskAttachments := assertCanListDiskAttachments(t, vm2)
+	if len(diskAttachments) != 1 {
+		t.Fatalf(
+			"Incorrect number of disk attachments after using template (%d instead of %d).",
+			len(diskAttachments),
+			1,
+		)
+	}
+	newDisk := assertCanGetDiskFromAttachment(t, diskAttachments[0])
+	if newDisk.ProvisionedSize() != disk.ProvisionedSize() {
+		t.Fatalf(
+			"Incorrect disk size after template use (%d bytes instead of %d).",
+			newDisk.ProvisionedSize(),
+			disk.ProvisionedSize(),
+		)
+	}
+}
+
+func assertCanGetDiskFromAttachment(t *testing.T, diskAttachment ovirtclient.DiskAttachment) ovirtclient.Disk {
+	newDisk, err := diskAttachment.Disk()
+	if err != nil {
+		t.Fatalf("Failed to get disk %s.", diskAttachment.DiskID())
+	}
+	return newDisk
+}
+
+func assertCanListDiskAttachments(t *testing.T, vm ovirtclient.VM) []ovirtclient.DiskAttachment {
+	diskAttachments, err := vm.ListDiskAttachments()
+	if err != nil {
+		t.Fatalf("Failed to list disk attachments for VM %s. (%v)", vm.ID(), err)
+	}
+	return diskAttachments
+}
+
+func assertCanGetTemplateOK(t *testing.T, helper ovirtclient.TestHelper, id ovirtclient.TemplateID) ovirtclient.Template {
 	tpl, err := helper.GetClient().GetTemplate(id)
 	if err != nil {
 		t.Fatalf("Failed to get template %s. (%v)", id, err)
 	}
+	t.Logf("Waiting for template %s to become \"ok\"...", tpl.ID())
 	tpl, err = tpl.WaitForStatus(ovirtclient.TemplateStatusOK)
 	if err != nil {
 		t.Fatalf("Failed to wait for template %s to reach \"ok\" status. (%v)", tpl.ID(), err)
@@ -94,6 +147,7 @@ func assertCanGetTemplate(t *testing.T, helper ovirtclient.TestHelper, id ovirtc
 }
 
 func assertCanCreateTemplate(t *testing.T, helper ovirtclient.TestHelper, vm ovirtclient.VM) ovirtclient.Template {
+	t.Logf("Creating test template from VM %s...", vm.Name())
 	template, err := helper.GetClient().CreateTemplate(
 		vm.ID(),
 		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
@@ -103,6 +157,7 @@ func assertCanCreateTemplate(t *testing.T, helper ovirtclient.TestHelper, vm ovi
 		t.Fatalf("Failed to create template from VM %s (%v)", vm.ID(), err)
 	}
 	t.Cleanup(func() {
+		t.Logf("Cleaning up template %s...", template.ID())
 		if err := template.Remove(); err != nil && !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
 			t.Fatalf("Failed to clean up template %s after test. (%v)", template.ID(), err)
 		}

@@ -313,7 +313,7 @@ func createTestClient(
 	var client Client
 	var err error
 	if mock {
-		client = NewMock()
+		client = NewMockWithLogger(logger)
 	} else {
 		client, err = New(
 			url,

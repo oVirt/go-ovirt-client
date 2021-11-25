@@ -8,7 +8,7 @@ func (m *mockClient) RemoveTemplate(id TemplateID, retries ...RetryStrategy) (er
 	retries = defaultRetries(retries, defaultReadTimeouts())
 	err = retry(
 		fmt.Sprintf("removing template %s", id),
-		nil,
+		m.logger,
 		retries,
 		func() error {
 			m.lock.Lock()
@@ -29,8 +29,8 @@ func (m *mockClient) RemoveTemplate(id TemplateID, retries ...RetryStrategy) (er
 				}
 			}
 
-			if tpl.status != TemplateStatusOK {
-				return newError(EConflict, "Template %s is in status %s, not %s.", id, tpl.status, TemplateStatusOK)
+			if tpl.status == TemplateStatusLocked {
+				return newError(EConflict, "Template %s is in status %s.", id, tpl.status)
 			}
 
 			delete(m.templates, id)

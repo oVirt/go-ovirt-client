@@ -14,10 +14,10 @@ func (m *mockClient) RemoveVM(id string, _ ...RetryStrategy) error {
 		}
 	}
 
-	for _, diskAttachment := range m.diskAttachmentsByVM[id] {
-		delete(m.diskAttachmentsByDisk, diskAttachment.DiskID())
+	for _, diskAttachment := range m.vmDiskAttachmentsByVM[id] {
+		delete(m.vmDiskAttachmentsByDisk, diskAttachment.DiskID())
 	}
-	delete(m.diskAttachmentsByVM, id)
+	delete(m.vmDiskAttachmentsByVM, id)
 	delete(m.vms, id)
 
 	return nil
