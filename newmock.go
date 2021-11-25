@@ -106,7 +106,7 @@ func getClient(
 		},
 		vmDiskAttachmentsByVM:   map[string]map[string]*diskAttachment{},
 		vmDiskAttachmentsByDisk: map[string]*diskAttachment{},
-		templateDiskAttachmentsByTemplate: map[TemplateID]map[TemplateDiskAttachmentID]*templateDiskAttachment{
+		templateDiskAttachmentsByTemplate: map[TemplateID][]*templateDiskAttachment{
 			blankTemplate.ID(): {},
 		},
 		templateDiskAttachmentsByDisk: map[string]*templateDiskAttachment{},

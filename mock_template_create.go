@@ -43,7 +43,7 @@ func (m *mockClient) CreateTemplate(
 	}
 	m.templates[tpl.ID()] = tpl
 	m.templateDiskAttachmentsByTemplate[tpl.ID()] = make(
-		map[TemplateDiskAttachmentID]*templateDiskAttachment,
+		[]*templateDiskAttachment,
 		len(m.vmDiskAttachmentsByVM[vmID]),
 	)
 	m.attachTemplateDisks(vmID, tpl)
@@ -69,6 +69,7 @@ func (m *mockClient) handlePostTemplateCreation(tpl *template) {
 }
 
 func (m *mockClient) attachTemplateDisks(vmID string, tpl *template) {
+	i := 0
 	for _, attachment := range m.vmDiskAttachmentsByVM[vmID] {
 		disk := m.disks[attachment.diskID]
 		newDisk := disk.clone()
@@ -86,6 +87,7 @@ func (m *mockClient) attachTemplateDisks(vmID string, tpl *template) {
 			active:        attachment.active,
 		}
 		m.templateDiskAttachmentsByDisk[newDisk.id] = tplAttachment
-		m.templateDiskAttachmentsByTemplate[tpl.id][tplAttachment.id] = tplAttachment
+		m.templateDiskAttachmentsByTemplate[tpl.id][i] = tplAttachment
+		i++
 	}
 }
