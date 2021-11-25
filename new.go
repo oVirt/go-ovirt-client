@@ -146,7 +146,7 @@ func NewWithVerify(
 		httpClient: httpClient,
 		logger:     logger,
 		url:        url,
-		nonSecRand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
+		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}
 
 	if verify != nil {

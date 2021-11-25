@@ -73,7 +73,7 @@ func (m *mockClient) attachTemplateDisks(vmID string, tpl *template) {
 		disk := m.disks[attachment.diskID]
 		newDisk := disk.clone()
 		_ = newDisk.Lock()
-		newDisk.alias = fmt.Sprintf("disk-%s", generateRandomID(5, m.nonSecRand))
+		newDisk.alias = fmt.Sprintf("disk-%s", generateRandomID(5, m.nonSecureRandom))
 		m.disks[newDisk.ID()] = newDisk
 
 		tplAttachment := &templateDiskAttachment{

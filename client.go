@@ -43,11 +43,11 @@ type ClientWithLegacySupport interface {
 }
 
 type oVirtClient struct {
-	conn       *ovirtsdk4.Connection
-	httpClient http.Client
-	logger     Logger
-	url        string
-	nonSecRand *rand.Rand
+	conn            *ovirtsdk4.Connection
+	httpClient      http.Client
+	logger          Logger
+	url             string
+	nonSecureRandom *rand.Rand
 }
 
 func (o *oVirtClient) GetSDKClient() *ovirtsdk4.Connection {

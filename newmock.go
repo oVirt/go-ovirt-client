@@ -75,11 +75,11 @@ func getClient(
 	testDatacenter *datacenterWithClusters,
 ) *mockClient {
 	client := &mockClient{
-		logger:     logger,
-		url:        "https://localhost/ovirt-engine/api",
-		lock:       &sync.Mutex{},
-		vms:        map[string]*vm{},
-		nonSecRand: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
+		logger:          logger,
+		url:             "https://localhost/ovirt-engine/api",
+		lock:            &sync.Mutex{},
+		vms:             map[string]*vm{},
+		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		storageDomains: map[string]*storageDomain{
 			testStorageDomain.ID():      testStorageDomain,
 			secondaryStorageDomain.ID(): secondaryStorageDomain,

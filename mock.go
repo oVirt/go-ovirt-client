@@ -20,7 +20,7 @@ type mockClient struct {
 	logger                            Logger
 	url                               string
 	lock                              *sync.Mutex
-	nonSecRand                        *rand.Rand
+	nonSecureRandom                   *rand.Rand
 	vms                               map[string]*vm
 	storageDomains                    map[string]*storageDomain
 	disks                             map[string]*diskWithData

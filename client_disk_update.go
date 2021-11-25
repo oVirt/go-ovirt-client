@@ -31,7 +31,7 @@ func (o *oVirtClient) StartUpdateDisk(id string, params UpdateDiskParameters, re
 	if provisionedSize := params.ProvisionedSize(); provisionedSize != nil {
 		sdkDisk.ProvisionedSize(int64(*provisionedSize))
 	}
-	correlationID := fmt.Sprintf("disk_update_%s", generateRandomID(5, o.nonSecRand))
+	correlationID := fmt.Sprintf("disk_update_%s", generateRandomID(5, o.nonSecureRandom))
 
 	var disk Disk
 
