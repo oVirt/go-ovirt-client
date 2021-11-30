@@ -8,8 +8,8 @@ func (m *mockClient) CopyTemplateDiskToStorageDomain(
 	retries ...RetryStrategy) (result Disk, err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-
 	disk, ok := m.disks[diskID]
+
 	if !ok {
 		return nil, newError(ENotFound, "disk with ID %s not found", diskID)
 	}
@@ -17,18 +17,20 @@ func (m *mockClient) CopyTemplateDiskToStorageDomain(
 		return nil, err
 	}
 	update := &mockDiskCopy{
-		client: m,
-		disk:   disk,
-		done:   make(chan struct{}),
+		client:          m,
+		disk:            disk,
+		storageDomainID: storageDomainID,
+		done:            make(chan struct{}),
 	}
 	defer update.do()
 	return disk, nil
 }
 
 type mockDiskCopy struct {
-	client *mockClient
-	disk   *diskWithData
-	done   chan struct{}
+	client          *mockClient
+	disk            *diskWithData
+	storageDomainID string
+	done            chan struct{}
 }
 
 func (c *mockDiskCopy) Disk() Disk {
@@ -47,9 +49,7 @@ func (c *mockDiskCopy) Wait(_ ...RetryStrategy) (Disk, error) {
 func (c *mockDiskCopy) do() {
 	// Sleep to trigger potential race conditions / improper status handling.
 	time.Sleep(time.Second)
-
 	c.client.disks[c.disk.ID()] = c.disk
-	c.disk.Unlock()
-
+	c.client.disks[c.disk.ID()].storageDomainIDs = append(c.client.disks[c.disk.ID()].storageDomainIDs, c.storageDomainID)
 	close(c.done)
 }
