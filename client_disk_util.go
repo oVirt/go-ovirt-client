@@ -5,7 +5,7 @@ import "fmt"
 // WaitForDiskOK waits for a disk to be in the OK status, then additionally queries the job that was in progress with
 // the correlation ID. This is necessary because the disk returns OK status before the job has actually finished,
 // resulting in a "disk locked" error on subsequent operations. It uses checkDiskOk as an underlying function.
-func (o *oVirtClient) WaitForDiskOK(diskID string, correlationID string, retries []RetryStrategy) (err error) {
+func (o *oVirtClient) WaitForDiskOK(diskID string, retries ...RetryStrategy) (err error) {
 	err = retry(
 		fmt.Sprintf("waiting for disk %s to become OK", diskID),
 		o.logger,
@@ -16,9 +16,6 @@ func (o *oVirtClient) WaitForDiskOK(diskID string, correlationID string, retries
 		},
 	)
 	if err != nil {
-		return err
-	}
-	if err := o.waitForJobFinished(correlationID, retries); err != nil {
 		return err
 	}
 	return nil

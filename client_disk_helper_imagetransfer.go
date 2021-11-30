@@ -207,11 +207,14 @@ func (i *imageTransferImpl) finalize(err error) error {
 func (i *imageTransferImpl) waitForTransferOk() (err error) {
 	var disk Disk
 
-	err = i.cli.WaitForDiskOK(i.diskID, i.correlationID, i.retries)
-
-	if err != nil {
+	if err := i.cli.WaitForDiskOK(i.diskID, i.retries...); err != nil {
 		return err
 	}
+
+	if err := i.cli.waitForJobFinished(i.correlationID, i.retries); err != nil {
+		return err
+	}
+
 	i.updateDisk(disk)
 	return nil
 }
