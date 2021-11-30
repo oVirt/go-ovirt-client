@@ -323,18 +323,17 @@ func (d *storageDomainDiskWait) Disk() Disk {
 
 func (d *storageDomainDiskWait) Wait(retries ...RetryStrategy) (Disk, error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
-	if err := d.client.waitForJobFinished(d.correlationID, retries); err != nil {
-		return d.disk, err
-	}
 	d.lock.Lock()
 	diskID := d.disk.ID()
 	storageDomainID := d.storageDomain.ID()
 	d.lock.Unlock()
 
+	if err := d.client.WaitForDiskOk(diskID, d.correlationID, retries); err != nil {
+		return d.disk, err
+	}
+
 	disk, err := d.client.GetDiskFromStorageDomain(storageDomainID, diskID)
 
-	d.lock.Lock()
-	defer d.lock.Unlock()
 	if disk != nil {
 		d.disk = disk
 	}
