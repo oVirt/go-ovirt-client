@@ -250,8 +250,8 @@ type DiskClient interface {
 	ListDisksByAlias(alias string, retries ...RetryStrategy) ([]Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
 	RemoveDisk(diskID string, retries ...RetryStrategy) error
-	// WaitForDiskOk waits for a disk to be in OK status
-	WaitForDiskOk(diskID string, correlationID string, retries []RetryStrategy) error
+	// WaitForDiskOK waits for a disk to be in OK status
+	WaitForDiskOK(diskID string, correlationID string, retries ...RetryStrategy) error
 }
 
 // UpdateDiskParams creates a builder for the params for updating a disk.
