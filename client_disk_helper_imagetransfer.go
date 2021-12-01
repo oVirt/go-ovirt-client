@@ -205,9 +205,9 @@ func (i *imageTransferImpl) finalize(err error) error {
 //
 // This function also calls the updateDisk hook to update the disk on the calling side.
 func (i *imageTransferImpl) waitForTransferOk() (err error) {
-	var disk Disk
+	disk, err := i.cli.WaitForDiskOK(i.diskID, i.retries...)
 
-	if err := i.cli.WaitForDiskOK(i.diskID, i.retries...); err != nil {
+	if err != nil {
 		return err
 	}
 

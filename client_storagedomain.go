@@ -328,7 +328,7 @@ func (d *storageDomainDiskWait) Wait(retries ...RetryStrategy) (Disk, error) {
 	storageDomainID := d.storageDomain.ID()
 	d.lock.Unlock()
 
-	if err := d.client.WaitForDiskOK(diskID, retries...); err != nil {
+	if _, err := d.client.WaitForDiskOK(diskID, retries...); err != nil {
 		return nil, err
 	}
 
