@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"strings"
+	"sync"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
@@ -304,4 +305,41 @@ func (s storageDomain) Status() StorageDomainStatus {
 
 func (s storageDomain) ExternalStatus() StorageDomainExternalStatus {
 	return s.externalStatus
+}
+
+type storageDomainDiskWait struct {
+	client        *oVirtClient
+	disk          Disk
+	storageDomain StorageDomain
+	correlationID string
+	lock          *sync.Mutex
+}
+
+func (d *storageDomainDiskWait) Disk() Disk {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	return d.disk
+}
+
+func (d *storageDomainDiskWait) Wait(retries ...RetryStrategy) (Disk, error) {
+	retries = defaultRetries(retries, defaultWriteTimeouts())
+	d.lock.Lock()
+	diskID := d.disk.ID()
+	storageDomainID := d.storageDomain.ID()
+	d.lock.Unlock()
+
+	if _, err := d.client.WaitForDiskOK(diskID, retries...); err != nil {
+		return nil, err
+	}
+
+	if err := d.client.waitForJobFinished(d.correlationID, retries); err != nil {
+		return nil, err
+	}
+
+	disk, err := d.client.GetDiskFromStorageDomain(storageDomainID, diskID)
+
+	if disk != nil {
+		d.disk = disk
+	}
+	return disk, err
 }

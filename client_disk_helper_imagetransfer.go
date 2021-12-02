@@ -163,7 +163,7 @@ func (i *imageTransferImpl) checkStatusCode(statusCode int) error {
 // finalize the image transfer.
 func (i *imageTransferImpl) initialize() (transferURL string, err error) {
 	steps := []func() error{
-		i.waitForDiskOk,
+		i.waitForTransferOk,
 		i.createImageTransfer,
 		i.waitForImageTransferReady,
 		i.findTransferURL,
@@ -188,7 +188,7 @@ func (i *imageTransferImpl) finalize(err error) error {
 	steps := []func() error{
 		i.finalizeTransfer,
 		i.waitForTransferFinalize,
-		i.waitForDiskOk,
+		i.waitForTransferOk,
 	}
 	for _, step := range steps {
 		if err := step(); err != nil {
@@ -199,47 +199,24 @@ func (i *imageTransferImpl) finalize(err error) error {
 	return nil
 }
 
-// waitForDiskOk waits for a disk to be in the OK status, then additionally queries the job that was in progress with
+// waitForTransferOk waits for a disk to be in the OK status, then additionally queries the job that was in progress with
 // the correlation ID. This is necessary because the disk returns OK status before the job has actually finished,
 // resulting in a "disk locked" error on subsequent operations. It uses checkDiskOk as an underlying function.
 //
 // This function also calls the updateDisk hook to update the disk on the calling side.
-func (i *imageTransferImpl) waitForDiskOk() (err error) {
-	var disk Disk
-	err = retry(
-		fmt.Sprintf("waiting for disk %s to become OK", i.diskID),
-		i.logger,
-		i.retries,
-		func() error {
-			disk, err = i.checkDiskOk()
-			return err
-		},
-	)
+func (i *imageTransferImpl) waitForTransferOk() (err error) {
+	disk, err := i.cli.WaitForDiskOK(i.diskID, i.retries...)
+
 	if err != nil {
 		return err
 	}
+
 	if err := i.cli.waitForJobFinished(i.correlationID, i.retries); err != nil {
 		return err
 	}
+
 	i.updateDisk(disk)
 	return nil
-}
-
-// checkDiskOk fetches the disk for the transfer and checks if it is in the OK status. It returns an EPending error if
-// it is not.
-func (i *imageTransferImpl) checkDiskOk() (Disk, error) {
-	disk, err := i.cli.GetDisk(i.diskID)
-	if err != nil {
-		return nil, err
-	}
-	switch disk.Status() {
-	case DiskStatusOK:
-		return disk, nil
-	case DiskStatusLocked:
-		return nil, newError(EPending, "disk status is %s, not %s", disk.Status(), DiskStatusOK)
-	default:
-		return nil, newError(EUnexpectedDiskStatus, "disk status is %s, not %s", disk.Status(), DiskStatusOK)
-	}
 }
 
 // buildImageTransferRequest creates an SDK image transfer request and the associated service.
@@ -578,7 +555,7 @@ func (i *imageTransferImpl) abortTransfer() {
 			)
 			errorHappened = true
 		}
-		if err := i.waitForDiskOk(); err != nil && !HasErrorCode(err, ENotFound) {
+		if err := i.waitForTransferOk(); err != nil && !HasErrorCode(err, ENotFound) {
 			// We can't really do anything as we are already in a failure state, log the error.
 			// The ENotFound is expected as the disk may be removed if a transfer is aborted.
 			i.logger.Warningf(
