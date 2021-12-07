@@ -43,6 +43,8 @@ type VMClient interface {
 	SearchVMs(params VMSearchParameters, retries ...RetryStrategy) ([]VM, error)
 	// RemoveVM removes a virtual machine specified by id.
 	RemoveVM(id string, retries ...RetryStrategy) error
+	// AddTagToVM Add tag specified by id to a VM.
+	AddTagToVM(id string, tagID string, retries ...RetryStrategy) error
 }
 
 // VMData is the core of VM providing only data access functions.
@@ -61,6 +63,8 @@ type VMData interface {
 	Status() VMStatus
 	// CPU returns the CPU structure of a VM.
 	CPU() VMCPU
+	// TagIDS returns a list of tags for this VM.
+	TagIDs() []string
 }
 
 // VMCPU is the CPU configuration of a VM.
@@ -140,6 +144,8 @@ type VM interface {
 type VMSearchParameters interface {
 	// Name will match the name of the virtual machine exactly.
 	Name() *string
+	// Tag will match the tag of the virtual machine.
+	Tag() *string
 	// Statuses will return a list of acceptable statuses for this VM search.
 	Statuses() *VMStatusList
 	// NotStatuses will return a list of not acceptable statuses for this VM search.
@@ -152,6 +158,8 @@ type BuildableVMSearchParameters interface {
 
 	// WithName sets the name to search for.
 	WithName(name string) BuildableVMSearchParameters
+	// WithTag sets the tag to search for.
+	WithTag(name string) BuildableVMSearchParameters
 	// WithStatus adds a single status to the filter.
 	WithStatus(status VMStatus) BuildableVMSearchParameters
 	// WithNotStatus excludes a VM status from the search.
@@ -173,6 +181,7 @@ type vmSearchParams struct {
 	lock *sync.Mutex
 
 	name        *string
+	tag         *string
 	statuses    *VMStatusList
 	notStatuses *VMStatusList
 }
@@ -191,6 +200,12 @@ func (v *vmSearchParams) WithNotStatus(status VMStatus) BuildableVMSearchParamet
 	newNotStatuses := append(*v.notStatuses, status)
 	v.statuses = &newNotStatuses
 	return v
+}
+
+func (v *vmSearchParams) Tag() *string {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	return v.tag
 }
 
 func (v *vmSearchParams) Name() *string {
@@ -215,6 +230,13 @@ func (v *vmSearchParams) WithName(name string) BuildableVMSearchParameters {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 	v.name = &name
+	return v
+}
+
+func (v *vmSearchParams) WithTag(tag string) BuildableVMSearchParameters {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+	v.tag = &tag
 	return v
 }
 
@@ -495,6 +517,7 @@ type vm struct {
 	templateID TemplateID
 	status     VMStatus
 	cpu        *vmCPU
+	tagIDs     []string
 }
 
 func (v *vm) Start(retries ...RetryStrategy) error {
@@ -612,6 +635,22 @@ func (v *vm) Name() string {
 	return v.name
 }
 
+func (v *vm) TagIDs() []string {
+	return v.tagIDs
+}
+
+func (v *vm) Tags(retries ...RetryStrategy) ([]Tag, error) {
+	tags := make([]Tag, len(v.tagIDs))
+	for i, id := range v.tagIDs {
+		tag, err := v.client.GetTag(id, retries...)
+		if err != nil {
+			return nil, err
+		}
+		tags[i] = tag
+	}
+	return tags, nil
+}
+
 var vmNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_\-.]*$`)
 
 func validateVMName(name string) error {
@@ -659,6 +698,14 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		return nil, err
 	}
 
+	var tagIDs []string
+	if sdkTags, ok := sdkObject.Tags(); ok {
+		for _, tag := range sdkTags.Slice() {
+			tagID, _ := tag.Id()
+			tagIDs = append(tagIDs, tagID)
+		}
+	}
+
 	return &vm{
 		id:         id,
 		name:       name,
@@ -667,6 +714,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		client:     client,
 		templateID: TemplateID(templateID),
 		status:     VMStatus(status),
+		tagIDs:     tagIDs,
 		cpu:        cpu,
 	}, nil
 }

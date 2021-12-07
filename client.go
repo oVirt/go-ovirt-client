@@ -27,6 +27,7 @@ type Client interface {
 	TemplateClient
 	TemplateDiskClient
 	TestConnectionClient
+	TagClient
 }
 
 // ClientWithLegacySupport is an extension of Client that also offers the ability to retrieve the underlying
