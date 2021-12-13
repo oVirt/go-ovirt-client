@@ -24,6 +24,8 @@ type VMClient interface {
 	// UpdateVM updates the virtual machine with the given parameters.
 	// Use UpdateVMParams to obtain a builder for the params.
 	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
+	// SetVMOptimizePinningSettings sets the CPU settings to optimized.
+	AutoOptimizeVMCPUPinningSettings(id string, optimize bool, retries ...RetryStrategy) error
 	// StartVM triggers a VM start. The actual VM startup will take time and should be waited for via the
 	// WaitForVMStatus call.
 	StartVM(id string, retries ...RetryStrategy) error
