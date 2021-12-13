@@ -1,8 +1,9 @@
 package ovirtclient_test
 
 import (
-	ovirtclient "github.com/ovirt/go-ovirt-client"
 	"testing"
+
+	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
 func TestExtendDisk(t *testing.T) {
