@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -95,6 +96,11 @@ func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm) {
 		_ = newDisk.Lock()
 		newDisk.alias = fmt.Sprintf("disk-%s", generateRandomID(5, m.nonSecureRandom))
 		m.disks[newDisk.ID()] = newDisk
+
+		go func() {
+			time.Sleep(time.Second)
+			newDisk.Unlock()
+		}()
 
 		diskAttachment := &diskAttachment{
 			client:        m,

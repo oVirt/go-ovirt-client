@@ -191,12 +191,15 @@ func assertCanCreateVMFromTemplate(
 	}
 	t.Cleanup(
 		func() {
-			t.Logf("Cleaning up test VM %s...", vm.ID())
-			if err := vm.Remove(); err != nil && !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
-				t.Fatalf("Failed to remove test VM %s (%v)", vm.ID(), err)
+			if vm != nil {
+				t.Logf("Cleaning up test VM %s...", vm.ID())
+				if err := vm.Remove(); err != nil && !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
+					t.Fatalf("Failed to remove test VM %s (%v)", vm.ID(), err)
+				}
 			}
 		},
 	)
+	t.Logf("Created VM %s.", vm.ID())
 	return vm
 }
 
