@@ -136,6 +136,8 @@ type VM interface {
 		diskAttachmentID string,
 		retries ...RetryStrategy,
 	) error
+	// Tags list all tags for the current VM
+	Tags(retries ...RetryStrategy) ([]Tag, error)
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -649,6 +651,10 @@ func (v *vm) Tags(retries ...RetryStrategy) ([]Tag, error) {
 		tags[i] = tag
 	}
 	return tags, nil
+}
+
+func (v *vm) AddTagToVM(tagID string, retries ...RetryStrategy) error {
+	return v.client.AddTagToVM(v.id, tagID, retries...)
 }
 
 var vmNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_\-.]*$`)

@@ -1,5 +1,3 @@
-// Code generated automatically using go:generate. DO NOT EDIT.
-
 package ovirtclient
 
 import ovirtsdk "github.com/ovirt/go-ovirt"

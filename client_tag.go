@@ -8,7 +8,7 @@ import (
 
 // TagClient describes the functions related to oVirt tags.
 type TagClient interface {
-	// GetTag returns a single network based on its ID.
+	// GetTag returns a single tag based on its ID.
 	GetTag(id string, retries ...RetryStrategy) (Tag, error)
 	// ListTags returns all tags on the oVirt engine.
 	ListTags(retries ...RetryStrategy) ([]Tag, error)

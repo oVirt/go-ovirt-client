@@ -1,5 +1,3 @@
-// Code generated automatically using go:generate. DO NOT EDIT.
-
 package ovirtclient
 
 import (
@@ -13,7 +11,7 @@ func (o *oVirtClient) RemoveTag(tagID string, retries ...RetryStrategy) (err err
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().TagsService().TagService(string(tagID)).Remove().Send()
+			_, err := o.conn.SystemService().TagsService().TagService(tagID).Remove().Send()
 			return err
 		})
 	return
