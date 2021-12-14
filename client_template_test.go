@@ -145,7 +145,7 @@ func TestTemplateDiskCopy(t *testing.T) {
 
 	newDisk, err := helper.GetClient().CopyTemplateDiskToStorageDomain(templateDisk.ID(), secondarySD)
 	if err != nil {
-		t.Fatalf("Failed to copy template disk to StorageDomain %s.", secondarySD)
+		t.Fatalf("Failed to copy template disk to storage domain %s.", secondarySD)
 	}
 
 	assertCanGetDiskFromStorageDomain(t, helper, secondarySD, newDisk)
