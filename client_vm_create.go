@@ -45,6 +45,20 @@ func vmBuilderHugePages(params OptionalVMParameters, builder *ovirtsdk.VmBuilder
 	}
 }
 
+func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if init := params.Initialization(); init != nil {
+		initBuilder := ovirtsdk.NewInitializationBuilder()
+
+		if init.customScript != "" {
+			initBuilder.CustomScript(init.customScript)
+		}
+		if init.hostname != "" {
+			initBuilder.HostName(init.hostname)
+		}
+		builder.InitializationBuilder(initBuilder)
+	}
+}
+
 func (o *oVirtClient) CreateVM(
 	clusterID string,
 	templateID TemplateID,
@@ -109,6 +123,7 @@ func createSDKVM(
 		vmBuilderComment,
 		vmBuilderCPU,
 		vmBuilderHugePages,
+		vmBuilderInitialization,
 	}
 
 	for _, part := range parts {
