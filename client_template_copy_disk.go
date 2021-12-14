@@ -14,7 +14,7 @@ func (o *oVirtClient) CopyTemplateDiskToStorageDomain(
 	retries = defaultRetries(retries, defaultReadTimeouts())
 	progress, err := o.StartCopyTemplateDiskToStorageDomain(diskID, storageDomainID, retries...)
 	if err != nil {
-		return progress.Disk(), err
+		return nil, err
 	}
 
 	return progress.Wait()
@@ -32,7 +32,7 @@ func (o *oVirtClient) StartCopyTemplateDiskToStorageDomain(
 	disk, _ := o.GetDisk(diskID)
 
 	err := retry(
-		fmt.Sprintf("copying disk %s to storageDomain %s", diskID, storageDomainID),
+		fmt.Sprintf("copying disk %s to storage domain %s", diskID, storageDomainID),
 		o.logger,
 		retries,
 		func() error {
