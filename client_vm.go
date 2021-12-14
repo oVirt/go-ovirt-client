@@ -754,48 +754,110 @@ func validateVMName(name string) error {
 }
 
 func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
+	vmObject := &vm{
+		client: client,
+	}
+	vmConverters := []func(sdkObject *ovirtsdk.Vm, vm *vm) error{
+		vmIDConverter,
+		vmNameConverter,
+		vmCommentConverter,
+		vmClusterConverter,
+		vmStatusConverter,
+		vmTemplateConverter,
+		vmCPUConverter,
+		vmHugePagesConverter,
+		vmTagsConverter,
+	}
+	for _, converter := range vmConverters {
+		if err := converter(sdkObject, vmObject); err != nil {
+			return nil, err
+		}
+	}
+
+	return vmObject, nil
+}
+
+func vmIDConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	id, ok := sdkObject.Id()
 	if !ok {
-		return nil, newError(EFieldMissing, "id field missing from VM object")
+		return newError(EFieldMissing, "id field missing from VM object")
 	}
+	v.id = id
+	return nil
+}
+
+func vmNameConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	name, ok := sdkObject.Name()
 	if !ok {
-		return nil, newError(EFieldMissing, "name field missing from VM object")
+		return newError(EFieldMissing, "name field missing from VM object")
 	}
+	v.name = name
+	return nil
+}
+
+func vmCommentConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	comment, ok := sdkObject.Comment()
 	if !ok {
-		return nil, newError(EFieldMissing, "comment field missing from VM object")
+		return newError(EFieldMissing, "comment field missing from VM object")
 	}
+	v.comment = comment
+	return nil
+}
+
+func vmClusterConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	cluster, ok := sdkObject.Cluster()
 	if !ok {
-		return nil, newError(EFieldMissing, "cluster field missing from VM object")
-	}
-	status, ok := sdkObject.Status()
-	if !ok {
-		return nil, newFieldNotFound("vm", "status")
+		return newError(EFieldMissing, "cluster field missing from VM object")
 	}
 	clusterID, ok := cluster.Id()
 	if !ok {
-		return nil, newError(EFieldMissing, "ID field missing from cluster in VM object")
+		return newError(EFieldMissing, "ID field missing from cluster in VM object")
 	}
+	v.clusterID = clusterID
+	return nil
+}
+
+func vmStatusConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+	status, ok := sdkObject.Status()
+	if !ok {
+		return newFieldNotFound("vm", "status")
+	}
+	v.status = VMStatus(status)
+	return nil
+}
+
+func vmTemplateConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	template, ok := sdkObject.Template()
 	if !ok {
-		return nil, newFieldNotFound("VM", "template")
+		return newFieldNotFound("VM", "template")
 	}
 	templateID, ok := template.Id()
 	if !ok {
-		return nil, newFieldNotFound("template in VM", "template ID")
+		return newFieldNotFound("template in VM", "template ID")
 	}
+	v.templateID = TemplateID(templateID)
+	return nil
+}
+
+func vmCPUConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	cpu, err := convertSDKVMCPU(sdkObject)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	v.cpu = cpu
+	return nil
+}
 
+func vmHugePagesConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	hugePages, err := hugePagesFromSDKVM(sdkObject)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	v.hugePages = hugePages
+	return nil
+}
 
+func vmTagsConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	var tagIDs []string
 	if sdkTags, ok := sdkObject.Tags(); ok {
 		for _, tag := range sdkTags.Slice() {
@@ -803,19 +865,8 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 			tagIDs = append(tagIDs, tagID)
 		}
 	}
-
-	return &vm{
-		id:         id,
-		name:       name,
-		comment:    comment,
-		clusterID:  clusterID,
-		client:     client,
-		templateID: TemplateID(templateID),
-		status:     VMStatus(status),
-		tagIDs:     tagIDs,
-		cpu:        cpu,
-		hugePages:  hugePages,
-	}, nil
+	v.tagIDs = tagIDs
+	return nil
 }
 
 func convertSDKVMCPU(sdkObject *ovirtsdk.Vm) (*vmCPU, error) {
