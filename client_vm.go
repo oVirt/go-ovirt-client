@@ -1,7 +1,10 @@
 package ovirtclient
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 
 	ovirtsdk "github.com/ovirt/go-ovirt"
@@ -67,6 +70,8 @@ type VMData interface {
 	CPU() VMCPU
 	// TagIDS returns a list of tags for this VM.
 	TagIDs() []string
+	// HugePages returns the hugepage settings for the VM, if any.
+	HugePages() *VMHugePages
 }
 
 // VMCPU is the CPU configuration of a VM.
@@ -89,6 +94,51 @@ func (v *vmCPU) clone() *vmCPU {
 	}
 	return &vmCPU{
 		topo: v.topo.clone(),
+	}
+}
+
+// VMHugePages is the hugepages setting of the VM in bytes.
+type VMHugePages uint64
+
+// Validate returns an error if the VM hugepages doesn't have a valid value.
+func (h VMHugePages) Validate() error {
+	for _, hugePages := range VMHugePagesValues() {
+		if hugePages == h {
+			return nil
+		}
+	}
+	return newError(
+		EBadArgument,
+		"Invalid value for VM huge pages: %d must be one of: %s",
+		h,
+		strings.Join(VMHugePagesValues().Strings(), ", "),
+	)
+}
+
+const (
+	// VMHugePages2M represents the small value of supported huge pages setting which is 2048 Kib.
+	VMHugePages2M VMHugePages = 2048
+	// VMHugePages1G represents the large value of supported huge pages setting which is 1048576 Kib.
+	VMHugePages1G VMHugePages = 1048576
+)
+
+// VMHugePagesList is a list of VMHugePages.
+type VMHugePagesList []VMHugePages
+
+// Strings creates a string list of the values.
+func (l VMHugePagesList) Strings() []string {
+	result := make([]string, len(l))
+	for i, hugepage := range l {
+		result[i] = fmt.Sprint(hugepage)
+	}
+	return result
+}
+
+// VMHugePagesValues returns all possible VMHugepages values.
+func VMHugePagesValues() VMHugePagesList {
+	return []VMHugePages{
+		VMHugePages2M,
+		VMHugePages1G,
 	}
 }
 
@@ -268,6 +318,9 @@ type OptionalVMParameters interface {
 
 	// CPU contains the CPU topology, if any.
 	CPU() VMCPUTopo
+
+	// HugePages returns the optional value for the HugePages setting for VMs.
+	HugePages() *VMHugePages
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -290,6 +343,11 @@ type BuildableVMParameters interface {
 	// MustWithCPUParameters is a simplified function that calls MustNewVMCPUTopo and adds the CPU topology to
 	// the VM.
 	MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters
+
+	// WithHugePages sets the HugePages setting for the VM.
+	WithHugePages(hugePages VMHugePages) (BuildableVMParameters, error)
+	// MustWithHugePages is identical to WithHugePages, but panics instead of returning an error.
+	MustWithHugePages(hugePages VMHugePages) BuildableVMParameters
 }
 
 // UpdateVMParameters returns a set of parameters to change on a VM.
@@ -443,6 +501,28 @@ type vmParams struct {
 	name    string
 	comment string
 	cpu     VMCPUTopo
+
+	hugePages *VMHugePages
+}
+
+func (v *vmParams) HugePages() *VMHugePages {
+	return v.hugePages
+}
+
+func (v *vmParams) WithHugePages(hugePages VMHugePages) (BuildableVMParameters, error) {
+	if err := hugePages.Validate(); err != nil {
+		return v, err
+	}
+	v.hugePages = &hugePages
+	return v, nil
+}
+
+func (v *vmParams) MustWithHugePages(hugePages VMHugePages) BuildableVMParameters {
+	builder, err := v.WithHugePages(hugePages)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (v *vmParams) CPU() VMCPUTopo {
@@ -522,6 +602,11 @@ type vm struct {
 	status     VMStatus
 	cpu        *vmCPU
 	tagIDs     []string
+	hugePages  *VMHugePages
+}
+
+func (v *vm) HugePages() *VMHugePages {
+	return v.hugePages
 }
 
 func (v *vm) Start(retries ...RetryStrategy) error {
@@ -706,6 +791,11 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		return nil, err
 	}
 
+	hugePages, err := hugePagesFromSDKVM(sdkObject)
+	if err != nil {
+		return nil, err
+	}
+
 	var tagIDs []string
 	if sdkTags, ok := sdkObject.Tags(); ok {
 		for _, tag := range sdkTags.Slice() {
@@ -724,6 +814,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		status:     VMStatus(status),
 		tagIDs:     tagIDs,
 		cpu:        cpu,
+		hugePages:  hugePages,
 	}, nil
 }
 
@@ -872,4 +963,31 @@ func (l VMStatusList) Strings() []string {
 		result[i] = string(status)
 	}
 	return result
+}
+
+func hugePagesFromSDKVM(vm *ovirtsdk.Vm) (*VMHugePages, error) {
+	var hugePagesText string
+	customProperties, ok := vm.CustomProperties()
+	if !ok {
+		return nil, nil
+	}
+	for _, c := range customProperties.Slice() {
+		customPropertyName, ok := c.Name()
+		if !ok {
+			return nil, nil
+		}
+		if customPropertyName == "hugepages" {
+			hugePagesText, ok = c.Value()
+			if !ok {
+				return nil, nil
+			}
+			break
+		}
+	}
+	hugepagesUint, err := strconv.ParseUint(hugePagesText, 10, 64)
+	if err != nil {
+		return nil, wrap(err, EBug, "Failed to parse 'hugepages' custom property into a number: %s", hugePagesText)
+	}
+	hugepages := VMHugePages(hugepagesUint)
+	return &hugepages, nil
 }

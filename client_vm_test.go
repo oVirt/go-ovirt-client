@@ -162,6 +162,25 @@ func TestVMStartStop(t *testing.T) {
 	assertVMWillStop(t, vm)
 }
 
+func TestVMHugePages(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams().MustWithHugePages(ovirtclient.VMHugePages2M),
+	)
+	if hugePages := vm.HugePages(); hugePages == nil || *hugePages != ovirtclient.VMHugePages2M {
+		if hugePages == nil {
+			t.Fatalf("Hugepages not set on VM")
+		} else {
+			t.Fatalf("Incorrect value for Hugepages: %d", hugePages)
+		}
+	}
+}
+
 func assertCanCreateVM(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
