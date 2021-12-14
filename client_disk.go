@@ -525,6 +525,9 @@ type Disk interface {
 
 	// StorageDomains will fetch and return the storage domains associated with this disk.
 	StorageDomains(retries ...RetryStrategy) ([]StorageDomain, error)
+
+	// WaitForOK waits for the disk status to return to OK.
+	WaitForOK(retries ...RetryStrategy) (Disk, error)
 }
 
 // DiskStatus shows the status of a disk. Certain operations lock a disk, which is important because the disk can then
@@ -700,6 +703,10 @@ type disk struct {
 	status           DiskStatus
 	totalSize        uint64
 	sparse           bool
+}
+
+func (d *disk) WaitForOK(retries ...RetryStrategy) (Disk, error) {
+	return d.client.WaitForDiskOK(d.id, retries...)
 }
 
 func (d *disk) StorageDomainIDs() []string {
