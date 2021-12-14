@@ -8,6 +8,11 @@ import (
 func (o *oVirtClient) vmSearchCriteria(params VMSearchParameters) (string, error) {
 	var criteria []string
 	var err error
+
+	if criteria, err = o.vmTagCriteria(params, criteria); err != nil {
+		return "", err
+	}
+
 	if criteria, err = o.vmNameCriteria(params, criteria); err != nil {
 		return "", err
 	}
@@ -61,6 +66,17 @@ func (o *oVirtClient) vmNameCriteria(params VMSearchParameters, criteria []strin
 			return nil, newError(EBadArgument, "invalid name search string: %s", *name)
 		}
 		criteria = append(criteria, fmt.Sprintf("name = %s", quotedName))
+	}
+	return criteria, nil
+}
+
+func (o *oVirtClient) vmTagCriteria(params VMSearchParameters, criteria []string) ([]string, error) {
+	if tag := params.Tag(); tag != nil {
+		quotedTag, err := quoteSearchString(*tag)
+		if err != nil {
+			return nil, newError(EBadArgument, "invalid tag search string: %s", *tag)
+		}
+		criteria = append(criteria, fmt.Sprintf("tag = %s", quotedTag))
 	}
 	return criteria, nil
 }

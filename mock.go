@@ -35,6 +35,7 @@ type mockClient struct {
 	vmDiskAttachmentsByDisk           map[string]*diskAttachment
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment
 	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
+	tags                              map[string]*tag
 }
 
 func (m *mockClient) GetURL() string {
