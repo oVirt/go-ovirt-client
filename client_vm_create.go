@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"fmt"
+	"strconv"
 
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
@@ -24,6 +25,23 @@ func vmBuilderCPU(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 					Threads(int64(cpu.Threads())).
 					Sockets(int64(cpu.Sockets())),
 			))
+	}
+}
+
+func vmBuilderHugePages(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	var customProperties []*ovirtsdk.CustomProperty
+	if hugePages := params.HugePages(); hugePages != nil {
+		customProp, err := ovirtsdk.NewCustomPropertyBuilder().
+			Name("hugepages").
+			Value(strconv.FormatUint(uint64(*hugePages), 10)).
+			Build()
+		if err != nil {
+			panic(newError(EBug, "Failed to build 'hugepages' custom property from value %d", hugePages))
+		}
+		customProperties = append(customProperties, customProp)
+	}
+	if len(customProperties) > 0 {
+		builder.CustomPropertiesOfAny(customProperties...)
 	}
 }
 
@@ -90,6 +108,7 @@ func createSDKVM(
 	parts := []vmBuilderComponent{
 		vmBuilderComment,
 		vmBuilderCPU,
+		vmBuilderHugePages,
 	}
 
 	for _, part := range parts {
