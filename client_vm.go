@@ -73,7 +73,7 @@ type VMData interface {
 	// HugePages returns the hugepage settings for the VM, if any.
 	HugePages() *VMHugePages
 	// Initialization returns the virtual machine’s initialization configuration.
-	Initialization() *initialization
+	Initialization() Initialization
 }
 
 // VMCPU is the CPU configuration of a VM.
@@ -144,6 +144,14 @@ func VMHugePagesValues() VMHugePagesList {
 	}
 }
 
+// Initialization is the CPU configuration of a VM.
+type Initialization interface {
+	CustomScript() string
+	HostName() string
+	WithCustomScript(customScript string) Initialization
+	WithHostname(hostname string) Initialization
+}
+
 // initialization defines to the virtual machine’s initialization configuration.
 // customScript - Cloud-init script which will be executed on Virtual Machine when deployed.
 // hostname - Hostname to be set to Virtual Machine when deployed.
@@ -152,8 +160,11 @@ type initialization struct {
 	hostname     string
 }
 
-func newInitialization() *initialization {
-	return &initialization{}
+func NewInitialization(customScript, hostname string) Initialization {
+	return &initialization{
+		customScript: customScript,
+		hostname:     hostname,
+	}
 }
 
 func (i *initialization) CustomScript() string {
@@ -164,32 +175,32 @@ func (i *initialization) HostName() string {
 	return i.hostname
 }
 
-func (i *initialization) WithCustomScript(customScript string) *initialization {
+func (i *initialization) WithCustomScript(customScript string) Initialization {
 	i.customScript = customScript
 	return i
 }
 
-func (i *initialization) WithHostname(hostname string) *initialization {
+func (i *initialization) WithHostname(hostname string) Initialization {
 	i.hostname = hostname
 	return i
 }
 
 func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
-	initialization, ok := sdkObject.Initialization()
+	initializationSDK, ok := sdkObject.Initialization()
 	if !ok {
 		return nil, newFieldNotFound("VM", "initialization")
 	}
 
-	init := newInitialization()
-	customScript, ok := initialization.CustomScript()
+	init := initialization{}
+	customScript, ok := initializationSDK.CustomScript()
 	if ok {
 		init.WithCustomScript(customScript)
 	}
-	hostname, ok := initialization.HostName()
+	hostname, ok := initializationSDK.HostName()
 	if ok {
 		init.WithHostname(hostname)
 	}
-	return init, nil
+	return &init, nil
 }
 
 // VM is the implementation of the virtual machine in oVirt.
@@ -373,7 +384,7 @@ type OptionalVMParameters interface {
 	HugePages() *VMHugePages
 
 	// Initialization defines the virtual machine’s initialization configuration.
-	Initialization() *initialization
+	Initialization() Initialization
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -403,9 +414,9 @@ type BuildableVMParameters interface {
 	MustWithHugePages(hugePages VMHugePages) BuildableVMParameters
 
 	// WithInitialization sets the virtual machine’s initialization configuration.
-	WithInitialization(initialization initialization) (BuildableVMParameters, error)
+	WithInitialization(initialization Initialization) (BuildableVMParameters, error)
 	// MustWithInitialization is identical to WithInitialization, but panics instead of returning an error.
-	MustWithInitialization(initialization initialization) BuildableVMParameters
+	MustWithInitialization(initialization Initialization) BuildableVMParameters
 	// MustWithInitializationParameters is a simplified function that calls MustNewInitialization and adds customScript
 	MustWithInitializationParameters(customScript, hostname string) BuildableVMParameters
 }
@@ -564,7 +575,7 @@ type vmParams struct {
 
 	hugePages *VMHugePages
 
-	initialization *initialization
+	initialization Initialization
 }
 
 func (v *vmParams) HugePages() *VMHugePages {
@@ -587,16 +598,16 @@ func (v *vmParams) MustWithHugePages(hugePages VMHugePages) BuildableVMParameter
 	return builder
 }
 
-func (v *vmParams) Initialization() *initialization {
+func (v *vmParams) Initialization() Initialization {
 	return v.initialization
 }
 
-func (v *vmParams) WithInitialization(initialization initialization) (BuildableVMParameters, error) {
-	v.initialization = &initialization
+func (v *vmParams) WithInitialization(initialization Initialization) (BuildableVMParameters, error) {
+	v.initialization = initialization
 	return v, nil
 }
 
-func (v *vmParams) MustWithInitialization(initialization initialization) BuildableVMParameters {
+func (v *vmParams) MustWithInitialization(initialization Initialization) BuildableVMParameters {
 	builder, err := v.WithInitialization(initialization)
 	if err != nil {
 		panic(err)
@@ -605,9 +616,7 @@ func (v *vmParams) MustWithInitialization(initialization initialization) Buildab
 }
 
 func (v *vmParams) MustWithInitializationParameters(customScript, hostname string) BuildableVMParameters {
-	init := initialization{}
-	init.WithHostname(hostname)
-	init.WithCustomScript(customScript)
+	init := NewInitialization(customScript, hostname)
 	return v.MustWithInitialization(init)
 }
 
@@ -689,7 +698,7 @@ type vm struct {
 	cpu            *vmCPU
 	tagIDs         []string
 	hugePages      *VMHugePages
-	initialization *initialization
+	initialization Initialization
 }
 
 func (v *vm) HugePages() *VMHugePages {
@@ -716,7 +725,7 @@ func (v *vm) CPU() VMCPU {
 	return v.cpu
 }
 
-func (v *vm) Initialization() *initialization {
+func (v *vm) Initialization() Initialization {
 	return v.initialization
 }
 
