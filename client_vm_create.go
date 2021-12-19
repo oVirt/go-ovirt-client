@@ -49,11 +49,11 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 	if init := params.Initialization(); init != nil {
 		initBuilder := ovirtsdk.NewInitializationBuilder()
 
-		if init.customScript != "" {
-			initBuilder.CustomScript(init.customScript)
+		if init.CustomScript() != "" {
+			initBuilder.CustomScript(init.CustomScript())
 		}
-		if init.hostname != "" {
-			initBuilder.HostName(init.hostname)
+		if init.HostName() != "" {
+			initBuilder.HostName(init.HostName())
 		}
 		builder.InitializationBuilder(initBuilder)
 	}

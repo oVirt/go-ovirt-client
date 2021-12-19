@@ -144,12 +144,17 @@ func VMHugePagesValues() VMHugePagesList {
 	}
 }
 
-// Initialization is the CPU configuration of a VM.
+// Initialization defines to the virtual machine’s initialization configuration.
 type Initialization interface {
 	CustomScript() string
 	HostName() string
-	WithCustomScript(customScript string) Initialization
-	WithHostname(hostname string) Initialization
+}
+
+// BuildableInitialization is a buildable version of Initialization.
+type BuildableInitialization interface {
+	Initialization
+	WithCustomScript(customScript string) BuildableInitialization
+	WithHostname(hostname string) BuildableInitialization
 }
 
 // initialization defines to the virtual machine’s initialization configuration.
@@ -160,6 +165,7 @@ type initialization struct {
 	hostname     string
 }
 
+// NewInitialization creates a new Initialization from the specified parameters.
 func NewInitialization(customScript, hostname string) Initialization {
 	return &initialization{
 		customScript: customScript,
@@ -175,12 +181,12 @@ func (i *initialization) HostName() string {
 	return i.hostname
 }
 
-func (i *initialization) WithCustomScript(customScript string) Initialization {
+func (i *initialization) WithCustomScript(customScript string) BuildableInitialization {
 	i.customScript = customScript
 	return i
 }
 
-func (i *initialization) WithHostname(hostname string) Initialization {
+func (i *initialization) WithHostname(hostname string) BuildableInitialization {
 	i.hostname = hostname
 	return i
 }
@@ -194,11 +200,11 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 	init := initialization{}
 	customScript, ok := initializationSDK.CustomScript()
 	if ok {
-		init.WithCustomScript(customScript)
+		init.customScript = customScript
 	}
 	hostname, ok := initializationSDK.HostName()
 	if ok {
-		init.WithHostname(hostname)
+		init.hostname = hostname
 	}
 	return &init, nil
 }
