@@ -16,9 +16,6 @@ func (o *oVirtClient) CreateNIC(
 	if err := validateNICCreationParameters(vmid, name); err != nil {
 		return nil, err
 	}
-	if err = checkNICExist(o, vmid, name); err != nil {
-		return nil, err
-	}
 
 	retries = defaultRetries(retries, defaultReadTimeouts())
 	err = retry(
@@ -56,23 +53,6 @@ func (o *oVirtClient) CreateNIC(
 		},
 	)
 	return result, err
-}
-
-func checkNICExist(o *oVirtClient, vmid string, name string) error {
-	nicResponse, err := o.conn.SystemService().VmsService().VmService(vmid).NicsService().List().Send()
-	if err != nil {
-		return err
-	}
-	nics, ok := nicResponse.Nics()
-	if ok {
-		for _, n := range nics.Slice() {
-			nicName, found := n.Name()
-			if found && nicName == name {
-				return fmt.Errorf("NIC name %s is already in use", name)
-			}
-		}
-	}
-	return nil
 }
 
 func validateNICCreationParameters(vmid string, name string) error {

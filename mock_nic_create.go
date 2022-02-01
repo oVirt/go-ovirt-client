@@ -20,6 +20,11 @@ func (m *mockClient) CreateNIC(
 	if _, ok := m.vms[vmid]; !ok {
 		return nil, newError(ENotFound, "VM with ID %s not found for NIC creation", vmid)
 	}
+	for _, n := range m.nics {
+		if n.name == name {
+			return nil, newError(ENotFound, "NIC with name %s is already in use", name)
+		}
+	}
 
 	id := uuid.Must(uuid.NewUUID()).String()
 

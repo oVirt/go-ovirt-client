@@ -48,15 +48,13 @@ func TestDuplicateVMNICCreation(t *testing.T) {
 		nicName,
 		ovirtclient.CreateNICParams())
 	assertNICCount(t, vm, 1)
-	err, _ := vm.CreateNIC(
+	assertCannotCreateNIC(
+		t,
+		helper,
+		vm,
 		nicName,
-		helper.GetVNICProfileID(),
 		ovirtclient.CreateNICParams())
-	if err != nil {
-		t.Fatalf("create 2 NICs with same name %s", nicName)
-	}
 	assertNICCount(t, vm, 1)
 	assertCanRemoveNIC(t, nic1)
 	assertNICCount(t, vm, 0)
 }
-
