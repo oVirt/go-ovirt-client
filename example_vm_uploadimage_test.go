@@ -18,8 +18,7 @@ func ExampleDiskClient_uploadImage() {
 	if err != nil {
 		panic(fmt.Errorf("failed to open image file (%w)", err))
 	}
-	// Skip gosec linting because we are throwing a panic anyway.
-	defer func() { //nolint:gosec
+	defer func() {
 		if err = fh.Close(); err != nil {
 			panic(err)
 		}
@@ -58,8 +57,7 @@ func ExampleDiskClient_uploadImageWithCancel() {
 	if err != nil {
 		panic(fmt.Errorf("failed to open image file (%w)", err))
 	}
-	// Skip gosec linting because we are throwing a panic anyway.
-	defer func() { //nolint:gosec
+	defer func() {
 		if err = fh.Close(); err != nil {
 			panic(err)
 		}

@@ -209,9 +209,7 @@ func handleTemplateFile(templateFileName string, id string, targetDir string, re
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", templateFileName, err)
 	}
-	// We are skipping gosec linting for G307/CWE-703 because this code is only used for
-	// generating code and the process will terminate in short order anyway.
-	defer func() { //nolint:gosec
+	defer func() {
 		_ = fh.Close()
 	}()
 	data, err := ioutil.ReadAll(fh)
@@ -265,13 +263,11 @@ func renderTemplate(tplText string, file string, restItem restItem) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse list template (%w)", err)
 	}
-	fh, err := os.Create(file)
+	fh, err := os.Create(file) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", file, err)
 	}
-	// We are skipping gosec linting for G307/CWE-703 because this code is only used for
-	// generating code and the process will terminate in short order anyway.
-	defer func() { //nolint:gosec
+	defer func() {
 		if err := fh.Close(); err != nil {
 			panic(fmt.Errorf("failed to close %s (%w)", file, err))
 		}
