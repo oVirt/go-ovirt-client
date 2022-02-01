@@ -9,9 +9,7 @@ import (
 
 func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk ovirtclient.Disk) {
 	fh, stat := getTestImageFile(t)
-	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
-	// left open won't cause any problems.
-	defer func() { //nolint:gosec
+	defer func() {
 		_ = fh.Close()
 	}()
 
@@ -34,9 +32,7 @@ func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk 
 func TestImageUploadDiskCreated(t *testing.T) {
 	t.Parallel()
 	fh, stat := getTestImageFile(t)
-	// We are ignoring G307/CWE-703 here because it's a short-lived test function and a file
-	// left open won't cause any problems.
-	defer func() { //nolint:gosec
+	defer func() {
 		_ = fh.Close()
 	}()
 
