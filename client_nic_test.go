@@ -34,6 +34,19 @@ func assertCanCreateNIC(
 	return nic
 }
 
+func assertCannotCreateNIC(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	vm ovirtclient.VM,
+	name string,
+	params ovirtclient.BuildableNICParameters,
+) {
+	nic, _ := vm.CreateNIC(name, helper.GetVNICProfileID(), params)
+	if nic != nil {
+		t.Fatalf("create 2 NICs with same name %s", name)
+	}
+}
+
 func assertCanRemoveNIC(t *testing.T, nic ovirtclient.NIC) {
 	if err := nic.Remove(); err != nil {
 		t.Fatalf("failed to remove NIC %s (%v)", nic.ID(), err)
