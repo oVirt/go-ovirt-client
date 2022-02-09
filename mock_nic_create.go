@@ -21,8 +21,8 @@ func (m *mockClient) CreateNIC(
 		return nil, newError(ENotFound, "VM with ID %s not found for NIC creation", vmid)
 	}
 	for _, n := range m.nics {
-		if n.name == name && n.vnicProfileID == vnicProfileID {
-			return nil, newError(ENotFound, "NIC with same name %s and same network is already in use", name)
+		if n.name == name {
+			return nil, newError(ENotFound, "NIC with same name %s is already in use", name)
 		}
 	}
 

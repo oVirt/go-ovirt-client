@@ -55,3 +55,18 @@ func assertCanCreateVNICProfile(t *testing.T, helper ovirtclient.TestHelper) ovi
 		})
 	return newVNICProfile
 }
+
+func assertCanFindDiffVNICProfile(helper ovirtclient.TestHelper, vnicProfileID string) (string, error) {
+	client := helper.GetClient()
+	vnicProfiles, err := client.ListVNICProfiles()
+	if err != nil {
+		return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
+	}
+	for _, vnicProfile := range vnicProfiles {
+		vnicID := vnicProfile.ID()
+		if vnicProfile.ID() != vnicProfileID {
+			return vnicID, nil
+		}
+	}
+	return vnicProfileID, fmt.Errorf("failed to find different VNIC profile ID for testing, use the exiting one")
+}
