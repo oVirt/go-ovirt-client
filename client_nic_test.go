@@ -41,22 +41,23 @@ func assertCannotCreateNICWithSameName(
 	name string,
 	params ovirtclient.BuildableNICParameters,
 ) {
-	nic, _ := vm.CreateNIC(name, helper.GetVNICProfileID(), params)
-	if nic != nil {
+
+	_, err := vm.CreateNIC(name, helper.GetVNICProfileID(), params)
+	if err == nil {
 		t.Fatalf("create 2 NICs with same name %s", name)
 	}
 }
 
-func assertCannotCreateNICWithSameNameDiffNetwork(
+func assertCannotCreateNICWithVNICProfile(
 	t *testing.T,
 	vm ovirtclient.VM,
 	name string,
 	diffVNICProfile string,
 	params ovirtclient.BuildableNICParameters,
 ) {
-	nic, _ := vm.CreateNIC(name, diffVNICProfile, params)
-	if nic != nil {
-		t.Fatalf("create 2 NICs with same name %s", name)
+	_, err := vm.CreateNIC(name, diffVNICProfile, params)
+	if err == nil {
+		t.Fatalf("create 2 NICs with same name %s and different VNICProfile (%v)", name, err)
 	}
 }
 

@@ -68,5 +68,5 @@ func assertCanFindDiffVNICProfile(helper ovirtclient.TestHelper, vnicProfileID s
 			return vnicID, nil
 		}
 	}
-	return vnicProfileID, fmt.Errorf("failed to find different VNIC profile ID for testing, use the exiting one")
+	return "", fmt.Errorf("failed to find different VNIC profile ID for testing, use the exiting one")
 }
