@@ -7,6 +7,8 @@ import (
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
+const nicName = "test_duplicate_name"
+
 func TestVMNICCreation(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
@@ -32,7 +34,6 @@ func TestVMNICCreation(t *testing.T) {
 func TestDuplicateVMNICCreationWithSameName(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
-	nicName := "test_duplicate_name"
 
 	vm := assertCanCreateVM(
 		t,
@@ -59,10 +60,9 @@ func TestDuplicateVMNICCreationWithSameName(t *testing.T) {
 	assertNICCount(t, vm, 0)
 }
 
-func TestDuplicateVMNICCreationWithSameNameAndDiffVNICProfile(t *testing.T) {
+func TestDuplicateVMNICCreationWithSameNameDiffVNICProfileDiffNetwork(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
-	nicName := "test_duplicate_name"
 
 	vm := assertCanCreateVM(
 		t,
@@ -78,8 +78,8 @@ func TestDuplicateVMNICCreationWithSameNameAndDiffVNICProfile(t *testing.T) {
 		nicName,
 		ovirtclient.CreateNICParams())
 	assertNICCount(t, vm, 1)
-	DiffVNICProfile, _ := assertCanFindDiffVNICProfile(helper, helper.GetVNICProfileID())
-	if DiffVNICProfile == "" {
+	DiffVNICProfileDiffNetwork, _ := assertCanFindDiffVNICProfileDiffNetwork(helper, helper.GetVNICProfileID())
+	if DiffVNICProfileDiffNetwork == "" {
 		assertCannotCreateNICWithSameName(
 			t,
 			helper,
@@ -91,7 +91,46 @@ func TestDuplicateVMNICCreationWithSameNameAndDiffVNICProfile(t *testing.T) {
 			t,
 			vm,
 			nicName,
-			DiffVNICProfile,
+			DiffVNICProfileDiffNetwork,
+			ovirtclient.CreateNICParams())
+	}
+	assertNICCount(t, vm, 1)
+	assertCanRemoveNIC(t, nic1)
+	assertNICCount(t, vm, 0)
+}
+
+func TestDuplicateVMNICCreationWithSameNameDiffVNICProfileSameNetwork(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("nic_test_%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
+	)
+	assertNICCount(t, vm, 0)
+	nic1 := assertCanCreateNIC(
+		t,
+		helper,
+		vm,
+		nicName,
+		ovirtclient.CreateNICParams())
+	assertNICCount(t, vm, 1)
+	DiffVNICProfileSameNetwork, _ := assertCanFindDiffVNICProfileSameNetwork(helper, helper.GetVNICProfileID())
+	if DiffVNICProfileSameNetwork == "" {
+		assertCannotCreateNICWithSameName(
+			t,
+			helper,
+			vm,
+			nicName,
+			ovirtclient.CreateNICParams())
+	} else {
+		assertCannotCreateNICWithVNICProfile(
+			t,
+			vm,
+			nicName,
+			DiffVNICProfileSameNetwork,
 			ovirtclient.CreateNICParams())
 	}
 	assertNICCount(t, vm, 1)
