@@ -117,22 +117,13 @@ func TestDuplicateVMNICCreationWithSameNameDiffVNICProfileSameNetwork(t *testing
 		nicName,
 		ovirtclient.CreateNICParams())
 	assertNICCount(t, vm, 1)
-	DiffVNICProfileSameNetwork, _ := assertCanFindDiffVNICProfileSameNetwork(helper, helper.GetVNICProfileID())
-	if DiffVNICProfileSameNetwork == "" {
-		assertCannotCreateNICWithSameName(
-			t,
-			helper,
-			vm,
-			nicName,
-			ovirtclient.CreateNICParams())
-	} else {
-		assertCannotCreateNICWithVNICProfile(
-			t,
-			vm,
-			nicName,
-			DiffVNICProfileSameNetwork,
-			ovirtclient.CreateNICParams())
-	}
+	DiffVNICProfileSameNetwork, _ := assertCanFindDiffVNICProfileSameNetwork(t, helper, helper.GetVNICProfileID())
+	assertCannotCreateNICWithVNICProfile(
+		t,
+		vm,
+		nicName,
+		DiffVNICProfileSameNetwork,
+		ovirtclient.CreateNICParams())
 	assertNICCount(t, vm, 1)
 	assertCanRemoveNIC(t, nic1)
 	assertNICCount(t, vm, 0)
