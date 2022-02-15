@@ -15,13 +15,7 @@ import (
 // VMClient includes the methods required to deal with virtual machines.
 type VMClient interface {
 	// CreateVM creates a virtual machine.
-	CreateVM(
-		clusterID string,
-		templateID TemplateID,
-		name string,
-		optional OptionalVMParameters,
-		retries ...RetryStrategy,
-	) (VM, error)
+	CreateVM(clusterID ClusterID, templateID TemplateID, name string, optional OptionalVMParameters, retries ...RetryStrategy) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
 	GetVM(id string, retries ...RetryStrategy) (VM, error)
 	// UpdateVM updates the virtual machine with the given parameters.
@@ -61,7 +55,7 @@ type VMData interface {
 	// Comment is the comment added to the VM.
 	Comment() string
 	// ClusterID returns the cluster this machine belongs to.
-	ClusterID() string
+	ClusterID() ClusterID
 	// TemplateID returns the ID of the base template for this machine.
 	TemplateID() TemplateID
 	// Status returns the current status of the VM.
@@ -701,7 +695,7 @@ type vm struct {
 	id             string
 	name           string
 	comment        string
-	clusterID      string
+	clusterID      ClusterID
 	templateID     TemplateID
 	status         VMStatus
 	cpu            *vmCPU
@@ -817,7 +811,7 @@ func (v *vm) Comment() string {
 	return v.comment
 }
 
-func (v *vm) ClusterID() string {
+func (v *vm) ClusterID() ClusterID {
 	return v.clusterID
 }
 
@@ -923,7 +917,7 @@ func vmClusterConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	if !ok {
 		return newError(EFieldMissing, "ID field missing from cluster in VM object")
 	}
-	v.clusterID = clusterID
+	v.clusterID = ClusterID(clusterID)
 	return nil
 }
 

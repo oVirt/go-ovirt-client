@@ -86,7 +86,7 @@ func getClient(
 			secondaryStorageDomain.ID(): secondaryStorageDomain,
 		},
 		disks: map[string]*diskWithData{},
-		clusters: map[string]*cluster{
+		clusters: map[ClusterID]*cluster{
 			testCluster.ID(): testCluster,
 		},
 		hosts: map[string]*host{
@@ -137,7 +137,7 @@ func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
 			id:   uuid.NewString(),
 			name: "test",
 		},
-		clusters: []string{
+		clusters: []ClusterID{
 			testCluster.ID(),
 		},
 	}
@@ -155,7 +155,7 @@ func generateTestStorageDomain() *storageDomain {
 
 func generateTestCluster() *cluster {
 	return &cluster{
-		id:   uuid.NewString(),
+		id:   ClusterID(uuid.NewString()),
 		name: "Test cluster",
 	}
 }

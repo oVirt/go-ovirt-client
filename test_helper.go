@@ -18,7 +18,7 @@ type TestHelper interface {
 	GetClient() Client
 
 	// GetClusterID returns the ID for the cluster.
-	GetClusterID() string
+	GetClusterID() ClusterID
 
 	// GetBlankTemplateID returns the ID of the blank template that can be used for creating dummy VMs.
 	GetBlankTemplateID() TemplateID
@@ -136,7 +136,7 @@ func TestHelperParams() BuildableTestHelperParameters {
 type TestHelperParameters interface {
 	// ClusterID returns the cluster ID used for testing. It can return an empty string if no
 	// test cluster is designated, in which case a cluster is selected.
-	ClusterID() string
+	ClusterID() ClusterID
 
 	// StorageDomainID returns the storage domain ID usable for testing. It can return an empty
 	// string if no test storage domain is designated for testing, in which case a working
@@ -157,7 +157,7 @@ type BuildableTestHelperParameters interface {
 	TestHelperParameters
 
 	// WithClusterID sets the cluster ID usable for testing.
-	WithClusterID(string) BuildableTestHelperParameters
+	WithClusterID(ClusterID) BuildableTestHelperParameters
 	// WithStorageDomainID sets the storage domain that can be used for testing.
 	WithStorageDomainID(string) BuildableTestHelperParameters
 	// WithSecondaryStorageDomainID sets the storage domain that can be used for testing, which is not identical to
@@ -170,7 +170,7 @@ type BuildableTestHelperParameters interface {
 }
 
 type testHelperParameters struct {
-	clusterID                string
+	clusterID                ClusterID
 	storageDomainID          string
 	secondaryStorageDomainID string
 	blankTemplateID          TemplateID
@@ -182,7 +182,7 @@ func (t *testHelperParameters) WithSecondaryStorageDomainID(s string) BuildableT
 	return t
 }
 
-func (t *testHelperParameters) ClusterID() string {
+func (t *testHelperParameters) ClusterID() ClusterID {
 	return t.clusterID
 }
 
@@ -198,7 +198,7 @@ func (t *testHelperParameters) VNICProfileID() string {
 	return t.vnicProfileID
 }
 
-func (t *testHelperParameters) WithClusterID(s string) BuildableTestHelperParameters {
+func (t *testHelperParameters) WithClusterID(s ClusterID) BuildableTestHelperParameters {
 	t.clusterID = s
 	return t
 }
@@ -218,7 +218,7 @@ func (t *testHelperParameters) WithVNICProfileID(s string) BuildableTestHelperPa
 	return t
 }
 
-func setupVNICProfileID(vnicProfileID string, clusterID string, client Client) (string, error) {
+func setupVNICProfileID(vnicProfileID string, clusterID ClusterID, client Client) (string, error) {
 	if vnicProfileID != "" {
 		_, err := client.GetVNICProfile(vnicProfileID)
 		if err != nil {
@@ -290,7 +290,7 @@ func setupSecondaryStorageDomainID(
 	return storageDomainID, nil
 }
 
-func setupTestClusterID(clusterID string, client Client) (id string, err error) {
+func setupTestClusterID(clusterID ClusterID, client Client) (id ClusterID, err error) {
 	if clusterID == "" {
 		clusterID, err = findTestClusterID(client)
 		if err != nil {
@@ -299,7 +299,7 @@ func setupTestClusterID(clusterID string, client Client) (id string, err error) 
 	} else if err := verifyTestClusterID(client, clusterID); err != nil {
 		return "", fmt.Errorf("failed to verify cluster ID %s (%w)", clusterID, err)
 	}
-	return clusterID, nil
+	return ClusterID(clusterID), nil
 }
 
 func createTestClient(
@@ -343,7 +343,7 @@ func verifyBlankTemplateID(client Client, templateID TemplateID) error {
 	return err
 }
 
-func findTestClusterID(client Client) (string, error) {
+func findTestClusterID(client Client) (ClusterID, error) {
 	clusters, err := client.ListClusters()
 	if err != nil {
 		return "", err
@@ -362,7 +362,7 @@ func findTestClusterID(client Client) (string, error) {
 	return "", fmt.Errorf("failed to find cluster suitable for testing")
 }
 
-func verifyTestClusterID(client Client, clusterID string) error {
+func verifyTestClusterID(client Client, clusterID ClusterID) error {
 	_, err := client.GetCluster(clusterID)
 	return err
 }
@@ -400,7 +400,7 @@ type testHelper struct {
 	client                   Client
 	tls                      TLSProvider
 	rand                     *rand.Rand
-	clusterID                string
+	clusterID                ClusterID
 	storageDomainID          string
 	blankTemplateID          TemplateID
 	vnicProfileID            string
@@ -426,7 +426,7 @@ func (t *testHelper) GetClient() Client {
 	return t.client
 }
 
-func (t *testHelper) GetClusterID() string {
+func (t *testHelper) GetClusterID() ClusterID {
 	return t.clusterID
 }
 
@@ -564,7 +564,7 @@ func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) 
 	password := os.Getenv("OVIRT_PASSWORD")
 
 	params := TestHelperParams()
-	params.WithClusterID(os.Getenv("OVIRT_CLUSTER_ID"))
+	params.WithClusterID(ClusterID(os.Getenv("OVIRT_CLUSTER_ID")))
 	params.WithBlankTemplateID(TemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID")))
 	params.WithStorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID"))
 	params.WithSecondaryStorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID"))

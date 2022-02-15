@@ -17,7 +17,7 @@ type HostData interface {
 	// ID returns the identifier of the host in question.
 	ID() string
 	// ClusterID returns the ID of the cluster this host belongs to.
-	ClusterID() string
+	ClusterID() ClusterID
 	// Status returns the status of this host.
 	Status() HostStatus
 }
@@ -131,7 +131,7 @@ func convertSDKHost(sdkHost *ovirtsdk4.Host, client Client) (Host, error) {
 		client:    client,
 		id:        id,
 		status:    HostStatus(status),
-		clusterID: clusterID,
+		clusterID: ClusterID(clusterID),
 	}, nil
 }
 
@@ -139,7 +139,7 @@ type host struct {
 	client Client
 
 	id        string
-	clusterID string
+	clusterID ClusterID
 	status    HostStatus
 }
 
@@ -147,7 +147,7 @@ func (h host) ID() string {
 	return h.id
 }
 
-func (h host) ClusterID() string {
+func (h host) ClusterID() ClusterID {
 	return h.clusterID
 }
 
