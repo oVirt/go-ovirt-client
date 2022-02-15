@@ -68,6 +68,8 @@ type VMData interface {
 	HugePages() *VMHugePages
 	// Initialization returns the virtual machine’s initialization configuration.
 	Initialization() Initialization
+	// HostID returns the ID of the host if available.
+	HostID() *string
 }
 
 // VMCPU is the CPU configuration of a VM.
@@ -254,6 +256,9 @@ type VM interface {
 	) error
 	// Tags list all tags for the current VM
 	Tags(retries ...RetryStrategy) ([]Tag, error)
+
+	// GetHost retrieves the host object for the current VM. If the VM is not running, nil will be returned.
+	GetHost(retries ...RetryStrategy) (Host, error)
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -702,6 +707,19 @@ type vm struct {
 	tagIDs         []string
 	hugePages      *VMHugePages
 	initialization Initialization
+	hostID         *string
+}
+
+func (v *vm) HostID() *string {
+	return v.hostID
+}
+
+func (v *vm) GetHost(retries ...RetryStrategy) (Host, error) {
+	hostID := v.hostID
+	if hostID == nil {
+		return nil, nil
+	}
+	return v.client.GetHost(*hostID, retries...)
 }
 
 func (v *vm) HugePages() *VMHugePages {
@@ -871,6 +889,8 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmHugePagesConverter,
 		vmTagsConverter,
 		vmInitializationConverter,
+		vmPlacementPolicyConverter,
+		vmHostConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -879,6 +899,23 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmHostConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+	if host, ok := sdkObject.Host(); ok {
+		if hostID, ok := host.Id(); ok && hostID != "" {
+			v.hostID = &hostID
+		}
+	}
+	return nil
+}
+
+func vmPlacementPolicyConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+
+	if vmPlacementPolicy, ok := sdkObject.PlacementPolicy(); ok {
+		vmPlacementPolicy.Affinity()
+	}
+	return nil
 }
 
 func vmIDConverter(sdkObject *ovirtsdk.Vm, v *vm) error {

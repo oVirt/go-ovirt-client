@@ -299,7 +299,7 @@ func setupTestClusterID(clusterID ClusterID, client Client) (id ClusterID, err e
 	} else if err := verifyTestClusterID(client, clusterID); err != nil {
 		return "", fmt.Errorf("failed to verify cluster ID %s (%w)", clusterID, err)
 	}
-	return ClusterID(clusterID), nil
+	return clusterID, nil
 }
 
 func createTestClient(

@@ -14,6 +14,7 @@ type Client interface {
 	// GetURL returns the oVirt engine base URL.
 	GetURL() string
 
+	AffinityGroupClient
 	DiskClient
 	DiskAttachmentClient
 	VMClient

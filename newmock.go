@@ -111,6 +111,9 @@ func getClient(
 			blankTemplate.ID(): {},
 		},
 		templateDiskAttachmentsByDisk: map[string]*templateDiskAttachment{},
+		affinityGroups: map[ClusterID]map[AffinityGroupID]*affinityGroup{
+			testCluster.ID(): {},
+		},
 	}
 	return client
 }
