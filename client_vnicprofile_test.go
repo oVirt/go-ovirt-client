@@ -55,38 +55,3 @@ func assertCanCreateVNICProfile(t *testing.T, helper ovirtclient.TestHelper) ovi
 		})
 	return newVNICProfile
 }
-
-func assertCanFindDiffVNICProfileDiffNetwork(helper ovirtclient.TestHelper, vnicProfileID string) (string, error) {
-	client := helper.GetClient()
-	existVNICProfile, err := client.GetVNICProfile(vnicProfileID)
-	if err != nil {
-		return "", fmt.Errorf("failed to verify VNIC profile ID %s", vnicProfileID)
-	}
-	networkID := existVNICProfile.NetworkID()
-	vnicProfiles, err := client.ListVNICProfiles()
-	if err != nil {
-		return "", fmt.Errorf("failed to list VNIC profiles (%w)", err)
-	}
-	for _, vnicProfile := range vnicProfiles {
-		vnicID := vnicProfile.ID()
-		if vnicID != vnicProfileID && vnicProfile.NetworkID() != networkID {
-			return vnicID, nil
-		}
-	}
-	return "", fmt.Errorf(
-		"failed to find different VNIC profile ID and Different Network for testing, use the exiting one")
-}
-
-func assertCanFindDiffVNICProfileSameNetwork(t *testing.T, helper ovirtclient.TestHelper, vnicProfileID string) (string, error) {
-	client := helper.GetClient()
-	newVNICProfile := assertCanCreateVNICProfile(t, helper)
-	existVNICProfile, err := client.GetVNICProfile(vnicProfileID)
-	if err != nil {
-		return "", fmt.Errorf("failed to verify VNIC profile ID %s", vnicProfileID)
-	}
-	if newVNICProfile.NetworkID() == existVNICProfile.NetworkID() {
-		return newVNICProfile.ID(), nil
-	}
-	return "", fmt.Errorf(
-		"failed to find different VNIC profile ID and same Network for testing, use the exiting one")
-}
