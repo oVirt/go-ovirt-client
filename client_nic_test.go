@@ -1,6 +1,7 @@
 package ovirtclient_test
 
 import (
+	"errors"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -53,12 +54,22 @@ func assertCannotCreateNICWithVNICProfile(
 	vm ovirtclient.VM,
 	name string,
 	diffVNICProfile string,
-	params ovirtclient.BuildableNICParameters,
-) {
-	_, err := vm.CreateNIC(name, diffVNICProfile, params)
-	if err == nil {
-		t.Fatalf("create 2 NICs with same name %s and different VNICProfile (%v)", name, err)
+	errorCode ovirtclient.ErrorCode) {
+	_, err := vm.CreateNIC(name, diffVNICProfile, ovirtclient.CreateNICParams())
+	if err != nil {
+		if errorCode == "" {
+			return
+		}
+		var e ovirtclient.EngineError
+		if !errors.As(err, &e) {
+			t.Fatalf("Failed to convert returned error to EngineError (%v)", err)
+		}
+		if !e.HasCode(errorCode) {
+			t.Fatalf("Unexpected error code: %s, instead of: %s", e.Code(), errorCode)
+		}
+		return
 	}
+	t.Fatalf("Unexectedly create 2 NICs with same name %s and different VNICProfile %s", name, diffVNICProfile)
 }
 
 func assertCanRemoveNIC(t *testing.T, nic ovirtclient.NIC) {

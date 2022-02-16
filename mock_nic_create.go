@@ -22,10 +22,9 @@ func (m *mockClient) CreateNIC(
 	}
 	for _, n := range m.nics {
 		if n.name == name && m.vnicProfiles[n.vnicProfileID].networkID == m.vnicProfiles[vnicProfileID].networkID {
-			return nil, newError(ENotFound, "NIC with same name %s is already in use", name)
+			return nil, newError(ETimeout, "NIC with same name %s is already in use", name)
 		}
 	}
-
 	id := uuid.Must(uuid.NewUUID()).String()
 
 	nic := &nic{

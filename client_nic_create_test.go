@@ -84,6 +84,6 @@ func TestDuplicateVMNICCreationWithSameNameDiffVNICProfileSameNetwork(t *testing
 		vm,
 		nickName,
 		diffVNICProfileSameNetwork.ID(),
-		ovirtclient.CreateNICParams())
+		ovirtclient.ETimeout)
 	assertNICCount(t, vm, 1)
 }
