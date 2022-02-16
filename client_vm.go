@@ -191,10 +191,13 @@ func (i *initialization) WithHostname(hostname string) BuildableInitialization {
 	return i
 }
 
-func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
+// convertSDKInitialization converts the initialization of a VM. We keep the error return in case we need it later
+// as errors may happen as we extend this function and we don't want to touch other functions.
+func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) { //nolint:unparam
 	initializationSDK, ok := sdkObject.Initialization()
 	if !ok {
-		return nil, newFieldNotFound("VM", "initialization")
+		// This happens for some, but not all API calls if the initialization is not set.
+		return &initialization{}, nil
 	}
 
 	init := initialization{}

@@ -217,6 +217,21 @@ func assertCanCreateVM(
 	return assertCanCreateVMFromTemplate(t, helper, name, helper.GetBlankTemplateID(), params)
 }
 
+func TestVMWithoutInitialization(t *testing.T) {
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test_%s", helper.GenerateRandomID(5)), nil)
+
+	vm, err := helper.GetClient().GetVM(vm.ID())
+	if err != nil {
+		t.Fatalf("Failed to re-fetch VM after creation (%v)", err)
+	}
+
+	if vm.Initialization() == nil {
+		t.Fatalf("Initialization is nil on VM without initialization.")
+	}
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,

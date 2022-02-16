@@ -71,6 +71,10 @@ func (m *mockClient) createVM(
 	cpu *vmCPU,
 ) *vm {
 	id := uuid.Must(uuid.NewUUID()).String()
+	init := params.Initialization()
+	if init == nil {
+		init = &initialization{}
+	}
 	vm := &vm{
 		client:         m,
 		id:             id,
@@ -81,7 +85,7 @@ func (m *mockClient) createVM(
 		status:         VMStatusDown,
 		cpu:            cpu,
 		hugePages:      params.HugePages(),
-		initialization: params.Initialization(),
+		initialization: init,
 	}
 	m.vms[id] = vm
 	return vm
