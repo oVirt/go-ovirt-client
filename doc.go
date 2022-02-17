@@ -57,11 +57,6 @@ ovirtclient.NewTestHelperFromEnv() function:
 
     helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
 
-you can also do it more simple and define the test helper with getHelper(t) function:
-this function is shell above the ovirtclient.NewTestHelperFromEnv() function:
-
-	helper := getHelper(t)
-
 This function will inspect environment variables to determine if a connection to a live oVirt engine can be
 established. The following environment variables are supported:
 
@@ -105,8 +100,6 @@ Storage domain to use for testing. Will be automatically chosen if not provided.
 
 VNIC profile to use for testing. Will be automatically chosen if not provided.
 
-if you want to connect to a live oVirt engine you need to define those environment variables in configuration,
-and if you want to run with mock client you just need to define MOCK=true variable in configuration.
 You can also create the test helper manually:
 
     import (

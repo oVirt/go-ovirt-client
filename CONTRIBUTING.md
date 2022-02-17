@@ -71,6 +71,15 @@ OVIRT_SYSTEM=1
 ## Disable certificate verification:
 # OVIRT_INSECURE=1
 
+if you want to connect to a live oVirt engine you need to define those environment variables in configuration,
+and if you want to run with mock client you just need to define MOCK=true variable in configuration.
+
+you can define the test helper with getHelper(t) function:
+this function is shell above the ovirtclient.NewTestHelperFromEnv() function:
+
+	helper := getHelper(t)
+
+
 # Run the tests
 go test -v ./...
 ```
