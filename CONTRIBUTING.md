@@ -75,6 +75,18 @@ OVIRT_SYSTEM=1
 go test -v ./...
 ```
 
+If you want to connect to a live oVirt engine you need to define these environment variables.
+If the variables are not defined, the test will run against the internal mock backend.
+To get a PR merged please run your tests against both the mock and the live backend.
+
+In the test code you can then obtain the test helper using the `getHelper(t)` function:
+
+```
+helper := getHelper(t)
+```
+
+The client is then available using the `helper.GetClient()` function.
+
 ## Submitting a PR
 
 Once you are ready, please submit a pull request on GitHub. The pull request template will ask 3 questions, please answer them so we can merge your PR quickly:
