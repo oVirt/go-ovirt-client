@@ -82,7 +82,7 @@ To get a PR merged please run your tests against both the mock and the live back
 In the test code you can then obtain the test helper using the `getHelper(t)` function:
 
 ```
-    helper := getHelper(t)
+helper := getHelper(t)
 ```
 
 The client is then available using the `helper.GetClient()` function.
