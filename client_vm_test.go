@@ -16,7 +16,33 @@ func TestVMListShouldNotFail(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestGetVMByName(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	client := helper.GetClient()
+	vmName := fmt.Sprintf("test-%s", helper.GenerateRandomID(5))
 
+	assertCanCreateVM(
+		t,
+		helper,
+		vmName,
+		nil,
+	)
+
+	fetchedVM, err := client.GetVMByName(vmName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fetchedVM == nil {
+		t.Fatal("returned VM is nil")
+	}
+
+	t.Logf("fetched VM Name %s mismatches original created VM Name %s", fetchedVM.Name(), vmName)
+	if fetchedVM.Name() != vmName {
+		t.Fatalf("fetched VM Name %s mismatches original created VM Name %s", fetchedVM.Name(), vmName)
+	}
+
+}
 func TestAfterVMCreationShouldBePresent(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
