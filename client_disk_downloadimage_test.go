@@ -2,9 +2,10 @@ package ovirtclient_test
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -13,10 +14,7 @@ import (
 func TestImageDownload(t *testing.T) {
 	t.Parallel()
 	testImageData := getTestImageData(t)
-	fh, stat := getTestImageFile(t)
-	defer func() {
-		_ = fh.Close()
-	}()
+	fh, size := getTestImageFile()
 
 	helper := getHelper(t)
 	client := helper.GetClient()
@@ -26,7 +24,7 @@ func TestImageDownload(t *testing.T) {
 	uploadResult, err := client.UploadToNewDisk(
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
-		uint64(stat.Size()),
+		size,
 		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 		fh,
 	)
@@ -52,18 +50,21 @@ func TestImageDownload(t *testing.T) {
 	}
 }
 
+//go:embed testimage/image
+var testImage []byte
+
 const testImageFile = "./testimage/image"
 
-func getTestImageFile(t *testing.T) (*os.File, os.FileInfo) {
-	fh, err := os.Open(testImageFile)
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to open test image file %s (%w)", testImageFile, err))
-	}
-	stat, err := fh.Stat()
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to stat test image file %s (%w)", testImageFile, err))
-	}
-	return fh, stat
+func getTestImageFile() (io.ReadSeekCloser, uint64) {
+	return &nopReadCloser{bytes.NewReader(testImage)}, uint64(len(testImage))
+}
+
+type nopReadCloser struct {
+	io.ReadSeeker
+}
+
+func (n nopReadCloser) Close() error {
+	return nil
 }
 
 func getTestImageData(t *testing.T) []byte {

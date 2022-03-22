@@ -20,7 +20,7 @@ func (o *oVirtClient) UploadImage(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	o.logger.Debugf("Using UploadImage is deprecated. Please use UploadToNewDisk instead.")
@@ -39,7 +39,7 @@ func (o *oVirtClient) UploadToNewDisk(
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	retries = defaultRetries(retries, defaultLongTimeouts())
@@ -60,7 +60,7 @@ func (o *oVirtClient) StartImageUpload(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	o.logger.Debugf("Using StartImageUpload is deprecated. Please use StartUploadToNewDisk instead.")
@@ -77,7 +77,7 @@ func (o *oVirtClient) StartImageUpload(
 func (o *oVirtClient) UploadToDisk(
 	diskID string,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) error {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
@@ -92,7 +92,7 @@ func (o *oVirtClient) UploadToDisk(
 func (o *oVirtClient) StartUploadToDisk(
 	diskID string,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
@@ -143,7 +143,7 @@ type uploadToDiskProgress struct {
 	cancel           func()
 	disk             Disk
 	correlationID    string
-	reader           readSeekCloser
+	reader           io.ReadSeekCloser
 	retries          []RetryStrategy
 	transferredBytes uint64
 	totalBytes       uint64
@@ -298,7 +298,7 @@ func (o *oVirtClient) StartUploadToNewDisk(
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	retries = defaultRetries(retries, defaultLongTimeouts())

@@ -8,33 +8,27 @@ import (
 )
 
 func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk ovirtclient.Disk) {
-	fh, stat := getTestImageFile(t)
-	defer func() {
-		_ = fh.Close()
-	}()
+	fh, size := getTestImageFile()
 
 	originalSize := disk.ProvisionedSize()
-	if originalSize < uint64(stat.Size()) {
+	if originalSize < size {
 		if _, err := disk.Update(
-			ovirtclient.UpdateDiskParams().MustWithProvisionedSize(uint64(stat.Size())),
+			ovirtclient.UpdateDiskParams().MustWithProvisionedSize(size),
 		); err != nil {
-			t.Fatalf("Failed to resize disk from %d to %d bytes. (%v)", originalSize, stat.Size(), err)
+			t.Fatalf("Failed to resize disk from %d to %d bytes. (%v)", originalSize, size, err)
 		}
 	}
 
 	client := helper.GetClient()
 
-	if err := client.UploadToDisk(disk.ID(), uint64(stat.Size()), fh); err != nil {
+	if err := client.UploadToDisk(disk.ID(), size, fh); err != nil {
 		t.Fatalf("Failed to upload disk image to disk %s. (%v)", disk.ID(), err)
 	}
 }
 
 func TestImageUploadDiskCreated(t *testing.T) {
 	t.Parallel()
-	fh, stat := getTestImageFile(t)
-	defer func() {
-		_ = fh.Close()
-	}()
+	fh, size := getTestImageFile()
 
 	helper := getHelper(t)
 	client := helper.GetClient()
@@ -44,7 +38,7 @@ func TestImageUploadDiskCreated(t *testing.T) {
 	uploadResult, err := client.UploadToNewDisk(
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
-		uint64(stat.Size()),
+		size,
 		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 		fh,
 	)
