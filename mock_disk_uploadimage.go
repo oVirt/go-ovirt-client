@@ -11,7 +11,7 @@ func (m *mockClient) StartImageUpload(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	return m.StartUploadToNewDisk(
@@ -29,7 +29,7 @@ func (m *mockClient) UploadImage(
 	storageDomainID string,
 	sparse bool,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	return m.UploadToNewDisk(
@@ -45,7 +45,7 @@ func (m *mockClient) UploadImage(
 func (m *mockClient) StartUploadToDisk(
 	diskID string,
 	size uint64,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	disk, err := m.getDisk(diskID, retries...)
@@ -97,7 +97,7 @@ func (m *mockClient) StartUploadToDisk(
 	return progress, nil
 }
 
-func (m *mockClient) UploadToDisk(diskID string, size uint64, reader readSeekCloser, retries ...RetryStrategy) error {
+func (m *mockClient) UploadToDisk(diskID string, size uint64, reader io.ReadSeekCloser, retries ...RetryStrategy) error {
 	progress, err := m.StartUploadToDisk(diskID, size, reader, retries...)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (m *mockClient) StartUploadToNewDisk(
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	_ ...RetryStrategy,
 ) (UploadImageProgress, error) {
 	m.lock.Lock()
@@ -167,7 +167,7 @@ func (m *mockClient) UploadToNewDisk(
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
-	reader readSeekCloser,
+	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
 	progress, err := m.StartUploadToNewDisk(storageDomainID, format, size, params, reader, retries...)
@@ -185,7 +185,7 @@ type mockImageUploadProgress struct {
 	err           error
 	disk          *diskWithData
 	client        *mockClient
-	reader        readSeekCloser
+	reader        io.ReadSeekCloser
 	size          uint64
 	uploadedBytes uint64
 	done          chan struct{}

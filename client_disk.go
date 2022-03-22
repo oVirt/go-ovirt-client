@@ -44,7 +44,7 @@ type DiskClient interface {
 		storageDomainID string,
 		sparse bool,
 		size uint64,
-		reader readSeekCloser,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
@@ -79,7 +79,7 @@ type DiskClient interface {
 		format ImageFormat,
 		size uint64,
 		params CreateDiskOptionalParameters,
-		reader readSeekCloser,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
@@ -92,7 +92,7 @@ type DiskClient interface {
 		storageDomainID string,
 		sparse bool,
 		size uint64,
-		reader readSeekCloser,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageResult, error)
 
@@ -103,7 +103,7 @@ type DiskClient interface {
 		format ImageFormat,
 		size uint64,
 		params CreateDiskOptionalParameters,
-		reader readSeekCloser,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageResult, error)
 
@@ -130,7 +130,7 @@ type DiskClient interface {
 	StartUploadToDisk(
 		diskID string,
 		size uint64,
-		reader readSeekCloser,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) (UploadImageProgress, error)
 
@@ -147,7 +147,7 @@ type DiskClient interface {
 	UploadToDisk(
 		diskID string,
 		size uint64,
-		reader readSeekCloser,
+		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
 	) error
 

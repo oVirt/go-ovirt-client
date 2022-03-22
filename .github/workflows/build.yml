@@ -22,7 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16
       - name: Set up gotestfmt
         uses: haveyoudebuggedit/gotestfmt-action@v2
       - uses: actions/cache@v2
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16
       - uses: actions/cache@v2
         with:
           path: |
@@ -62,3 +62,44 @@ jobs:
           restore-keys: go-generate-
       - name: Run go generate
         run: ./.github/scripts/gogenerate.sh
+  rpm:
+    # The RPM step builds an RPM to test with the oVirt System Test. This can be invoked by typing /ost in the comment.
+    name: Build RPM
+    needs:
+      - generate
+      - test
+      - golangci-lint
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/centos/centos:stream8
+    steps:
+      - name: prepare env
+        run: |
+          yum install -y git createrepo_c rpm-build golang make
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name : Compile go-ovirt-client tests and Build go-ovirt-client-tests RPM
+        run: |
+          SUFFIX=.$(date -u +%Y%m%d%H%M%S).git$(git rev-parse --short HEAD)
+
+          mkdir -p go-ovirt-client-tests-bin
+          go test -v -c -o go-ovirt-client-tests-bin/go-ovirt-client-tests-exe
+
+          mkdir -p BUILDROOT SOURCES
+          cp go-ovirt-client-tests-bin/go-ovirt-client-tests-exe SOURCES/
+          tar cvzf go-ovirt-client-tests.tar.gz go-ovirt-client-tests-bin/
+          cp go-ovirt-client-tests.tar.gz SOURCES
+          rpmbuild -D "_topdir $(pwd)" -D "release_suffix ${SUFFIX}" -bb go-ovirt-client-tests.spec
+      - name: Collect artifacts
+        run: |
+          mkdir -p exported-artifacts
+          find . -iname \*rpm -exec mv "{}" exported-artifacts/ \;
+          ls -l exported-artifacts
+      - name: Upload artifacts
+        uses: ovirt/upload-rpms-action@main
+        with:
+          directory: exported-artifacts
