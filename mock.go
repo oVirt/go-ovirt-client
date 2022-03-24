@@ -24,7 +24,7 @@ type mockClient struct {
 	vms                               map[string]*vm
 	storageDomains                    map[string]*storageDomain
 	disks                             map[string]*diskWithData
-	clusters                          map[string]*cluster
+	clusters                          map[ClusterID]*cluster
 	hosts                             map[string]*host
 	templates                         map[TemplateID]*template
 	nics                              map[string]*nic
@@ -36,6 +36,7 @@ type mockClient struct {
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment
 	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
 	tags                              map[string]*tag
+	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
 }
 
 func (m *mockClient) GetURL() string {

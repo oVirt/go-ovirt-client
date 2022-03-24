@@ -7,13 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateVM(
-	clusterID string,
-	templateID TemplateID,
-	name string,
-	params OptionalVMParameters,
-	retries ...RetryStrategy,
-) (result VM, err error) {
+func (m *mockClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
@@ -66,7 +60,7 @@ func (m *mockClient) CreateVM(
 func (m *mockClient) createVM(
 	name string,
 	params OptionalVMParameters,
-	clusterID string,
+	clusterID ClusterID,
 	templateID TemplateID,
 	cpu *vmCPU,
 ) *vm {

@@ -15,13 +15,7 @@ import (
 // VMClient includes the methods required to deal with virtual machines.
 type VMClient interface {
 	// CreateVM creates a virtual machine.
-	CreateVM(
-		clusterID string,
-		templateID TemplateID,
-		name string,
-		optional OptionalVMParameters,
-		retries ...RetryStrategy,
-	) (VM, error)
+	CreateVM(clusterID ClusterID, templateID TemplateID, name string, optional OptionalVMParameters, retries ...RetryStrategy) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
 	GetVM(id string, retries ...RetryStrategy) (VM, error)
 	// UpdateVM updates the virtual machine with the given parameters.
@@ -61,7 +55,7 @@ type VMData interface {
 	// Comment is the comment added to the VM.
 	Comment() string
 	// ClusterID returns the cluster this machine belongs to.
-	ClusterID() string
+	ClusterID() ClusterID
 	// TemplateID returns the ID of the base template for this machine.
 	TemplateID() TemplateID
 	// Status returns the current status of the VM.
@@ -74,6 +68,8 @@ type VMData interface {
 	HugePages() *VMHugePages
 	// Initialization returns the virtual machine’s initialization configuration.
 	Initialization() Initialization
+	// HostID returns the ID of the host if available.
+	HostID() *string
 }
 
 // VMCPU is the CPU configuration of a VM.
@@ -260,6 +256,9 @@ type VM interface {
 	) error
 	// Tags list all tags for the current VM
 	Tags(retries ...RetryStrategy) ([]Tag, error)
+
+	// GetHost retrieves the host object for the current VM. If the VM is not running, nil will be returned.
+	GetHost(retries ...RetryStrategy) (Host, error)
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -701,13 +700,26 @@ type vm struct {
 	id             string
 	name           string
 	comment        string
-	clusterID      string
+	clusterID      ClusterID
 	templateID     TemplateID
 	status         VMStatus
 	cpu            *vmCPU
 	tagIDs         []string
 	hugePages      *VMHugePages
 	initialization Initialization
+	hostID         *string
+}
+
+func (v *vm) HostID() *string {
+	return v.hostID
+}
+
+func (v *vm) GetHost(retries ...RetryStrategy) (Host, error) {
+	hostID := v.hostID
+	if hostID == nil {
+		return nil, nil
+	}
+	return v.client.GetHost(*hostID, retries...)
 }
 
 func (v *vm) HugePages() *VMHugePages {
@@ -817,7 +829,7 @@ func (v *vm) Comment() string {
 	return v.comment
 }
 
-func (v *vm) ClusterID() string {
+func (v *vm) ClusterID() ClusterID {
 	return v.clusterID
 }
 
@@ -877,6 +889,8 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmHugePagesConverter,
 		vmTagsConverter,
 		vmInitializationConverter,
+		vmPlacementPolicyConverter,
+		vmHostConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -885,6 +899,23 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmHostConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+	if host, ok := sdkObject.Host(); ok {
+		if hostID, ok := host.Id(); ok && hostID != "" {
+			v.hostID = &hostID
+		}
+	}
+	return nil
+}
+
+func vmPlacementPolicyConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+
+	if vmPlacementPolicy, ok := sdkObject.PlacementPolicy(); ok {
+		vmPlacementPolicy.Affinity()
+	}
+	return nil
 }
 
 func vmIDConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
@@ -923,7 +954,7 @@ func vmClusterConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	if !ok {
 		return newError(EFieldMissing, "ID field missing from cluster in VM object")
 	}
-	v.clusterID = clusterID
+	v.clusterID = ClusterID(clusterID)
 	return nil
 }
 
