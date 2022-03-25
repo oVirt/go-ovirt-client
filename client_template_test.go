@@ -152,6 +152,24 @@ func TestTemplateDiskCopy(t *testing.T) {
 
 }
 
+func TestGetTemplateByName(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
+	template := assertCanCreateTemplate(t, helper, vm)
+
+	tpl, err := helper.GetClient().GetTemplateByName(template.Name())
+	if err != nil {
+		t.Fatalf("Failed to get template by name %s. (%v)", template.Name(), err)
+	}
+
+	if tpl.Name() != template.Name() {
+		t.Fatalf("fetched Template Name %s mismatches original created Template Name %s", tpl.Name(), template.Name())
+	}
+
+}
+
 func assertCanGetDiskFromStorageDomain(t *testing.T, helper ovirtclient.TestHelper, storageDomainID string, disk ovirtclient.Disk) ovirtclient.Disk {
 	newDisk, err := helper.GetClient().GetDiskFromStorageDomain(storageDomainID, disk.ID())
 
