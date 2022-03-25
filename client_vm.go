@@ -18,6 +18,8 @@ type VMClient interface {
 	CreateVM(clusterID ClusterID, templateID TemplateID, name string, optional OptionalVMParameters, retries ...RetryStrategy) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
 	GetVM(id string, retries ...RetryStrategy) (VM, error)
+	// GetVMByName returns a single virtual machine based on a Name.
+	GetVMByName(name string, retries ...RetryStrategy) (VM, error)
 	// UpdateVM updates the virtual machine with the given parameters.
 	// Use UpdateVMParams to obtain a builder for the params.
 	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
