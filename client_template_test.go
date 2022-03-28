@@ -234,3 +234,17 @@ func assertCanCreateTemplate(t *testing.T, helper ovirtclient.TestHelper, vm ovi
 	})
 	return template
 }
+
+func assertCanRemoveTemplate(t *testing.T, helper ovirtclient.TestHelper, templateID ovirtclient.TemplateID) {
+	t.Logf("Removing template %s...", templateID)
+	if err := helper.GetClient().RemoveTemplate(templateID); err != nil {
+		t.Fatalf("Failed to remove template %s (%v)", templateID, err)
+	}
+}
+
+func assertCannotRemoveTemplate(t *testing.T, helper ovirtclient.TestHelper, templateID ovirtclient.TemplateID) {
+	t.Logf("Removing template %s...", templateID)
+	if err := helper.GetClient().RemoveTemplate(templateID); err == nil {
+		t.Fatalf("Successfully removed template %s despite assumption.", templateID)
+	}
+}

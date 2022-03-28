@@ -81,7 +81,11 @@ func (o *oVirtClient) CreateVM(clusterID ClusterID, templateID TemplateID, name 
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VmsService().Add().Vm(vm).Send()
+			vmCreateRequest := o.conn.SystemService().VmsService().Add().Vm(vm)
+			if clone := params.Clone(); clone != nil {
+				vmCreateRequest.Clone(*clone)
+			}
+			response, err := vmCreateRequest.Send()
 			if err != nil {
 				return err
 			}
