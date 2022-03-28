@@ -23,7 +23,7 @@ type VMClient interface {
 	// UpdateVM updates the virtual machine with the given parameters.
 	// Use UpdateVMParams to obtain a builder for the params.
 	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
-	// SetVMOptimizePinningSettings sets the CPU settings to optimized.
+	// AutoOptimizeVMCPUPinningSettings sets the CPU settings to optimized.
 	AutoOptimizeVMCPUPinningSettings(id string, optimize bool, retries ...RetryStrategy) error
 	// StartVM triggers a VM start. The actual VM startup will take time and should be waited for via the
 	// WaitForVMStatus call.
@@ -64,7 +64,7 @@ type VMData interface {
 	Status() VMStatus
 	// CPU returns the CPU structure of a VM.
 	CPU() VMCPU
-	// TagIDS returns a list of tags for this VM.
+	// TagIDs returns a list of tags for this VM.
 	TagIDs() []string
 	// HugePages returns the hugepage settings for the VM, if any.
 	HugePages() *VMHugePages

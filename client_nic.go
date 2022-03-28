@@ -66,7 +66,7 @@ type BuildableUpdateNICParameters interface {
 
 	// WithVNICProfileID sets the VNIC profile ID of a NIC for the UpdateNIC method.
 	WithVNICProfileID(id string) (BuildableUpdateNICParameters, error)
-	// MustWithVNICPRofileID is identical to WithVNICProfileID, but panics instead of returning an error.
+	// MustWithVNICProfileID is identical to WithVNICProfileID, but panics instead of returning an error.
 	MustWithVNICProfileID(id string) BuildableUpdateNICParameters
 }
 
