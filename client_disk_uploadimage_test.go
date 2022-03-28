@@ -64,7 +64,7 @@ func TestImageUploadToExistingDisk(t *testing.T) {
 	disk, err := client.CreateDisk(
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
-		uint64(512),
+		uint64(1048576),
 		ovirtclient.CreateDiskParams().MustWithSparse(true).MustWithAlias(imageName),
 	)
 	if disk != nil {

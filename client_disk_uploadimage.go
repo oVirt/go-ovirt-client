@@ -108,13 +108,13 @@ func (o *oVirtClient) StartUploadToDisk(
 	}
 
 	// TBD: Should we automatically increase the size of the disk here?
-	if size > disk.TotalSize() {
+	if size > disk.ProvisionedSize() {
 		return nil, newError(
 			EBadArgument,
 			"the specified size (%d bytes) is larger than the target disk %s (%d bytes)",
 			size,
 			diskID,
-			disk.TotalSize(),
+			disk.ProvisionedSize(),
 		)
 	}
 	ctx, cancel := context.WithCancel(context.Background())

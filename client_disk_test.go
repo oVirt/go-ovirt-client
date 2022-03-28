@@ -22,8 +22,8 @@ func ExampleDiskClient_CreateDisk() {
 	storageDomainID := helper.GetStorageDomainID()
 	// Let's create a raw disk.
 	imageFormat := ovirtclient.ImageFormatRaw
-	// 512 bytes are enough.
-	diskSize := 512
+	// 512 bytes are enough, 1M is the minimum disk size for oVirt.
+	diskSize := 1048576
 
 	// Create the disk and wait for it to become available. Use StartCreateDisk to skip the wait.
 	disk, err := client.CreateDisk(
@@ -53,7 +53,7 @@ func TestDiskCreationAndUpdate(t *testing.T) {
 	disk, err := client.CreateDisk(
 		helper.GetStorageDomainID(),
 		ovirtclient.ImageFormatRaw,
-		512,
+		1048576,
 		ovirtclient.CreateDiskParams().MustWithAlias(diskName),
 	)
 	if err != nil {

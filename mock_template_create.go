@@ -72,7 +72,7 @@ func (m *mockClient) attachTemplateDisks(vmID string, tpl *template) {
 	i := 0
 	for _, attachment := range m.vmDiskAttachmentsByVM[vmID] {
 		disk := m.disks[attachment.diskID]
-		newDisk := disk.clone()
+		newDisk := disk.clone(nil)
 		_ = newDisk.Lock()
 		newDisk.alias = fmt.Sprintf("disk-%s", generateRandomID(5, m.nonSecureRandom))
 		m.disks[newDisk.ID()] = newDisk

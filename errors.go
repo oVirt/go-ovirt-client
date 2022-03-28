@@ -81,6 +81,8 @@ const EConflict ErrorCode = "conflict"
 // CanAutoRetry returns false if the given error code is permanent and an automatic retry should not be attempted.
 func (e ErrorCode) CanAutoRetry() bool {
 	switch e {
+	case EBadArgument:
+		return false
 	case EAccessDenied:
 		return false
 	case ENotAnOVirtEngine:
@@ -119,6 +121,8 @@ func (e ErrorCode) CanAutoRetry() bool {
 type EngineError interface {
 	error
 
+	// Message returns the error message without the error code.
+	Message() string
 	// String returns the string representation for this error.
 	String() string
 	// HasCode returns true if the current error, or any preceding error has the specified error code.
@@ -160,6 +164,10 @@ func (e *engineError) HasCode(code ErrorCode) bool {
 	return false
 }
 
+func (e *engineError) Message() string {
+	return e.message
+}
+
 func (e *engineError) String() string {
 	return fmt.Sprintf("%s: %s", e.code, e.message)
 }
@@ -197,6 +205,7 @@ func newError(code ErrorCode, format string, args ...interface{}) EngineError {
 func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineError {
 	// gocritic will complain on the following line due to appendAssign, but that's legit here.
 	realArgs := append(args, err) // nolint:gocritic
+	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "%v"), realArgs...)
 	if code == EUnidentified {
 		var realErr EngineError
 		if errors.As(err, &realErr) {
@@ -204,9 +213,9 @@ func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineE
 		} else if e := realIdentify(err); e != nil {
 			err = e
 			code = e.Code()
+			realMessage = e.Message()
 		}
 	}
-	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "%v"), realArgs...)
 	return &engineError{
 		message: realMessage,
 		code:    code,
@@ -234,6 +243,8 @@ func realIdentify(err error) EngineError {
 		return wrap(err, EDiskLocked, "the disk is locked")
 	case strings.Contains(err.Error(), "Related operation is currently in progress."):
 		return wrap(err, ERelatedOperationInProgress, "a related operation is in progress")
+	case strings.Contains(err.Error(), "Disk configuration") && strings.Contains(err.Error(), " is incompatible with the storage domain type."):
+		return wrap(err, EBadArgument, "disk configuration is incompatible with the storage domain type")
 	case strings.Contains(err.Error(), "409 Conflict"):
 		return wrap(err, EConflict, "conflicting operations")
 	case errors.As(err, &authErr):
