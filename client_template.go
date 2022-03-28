@@ -15,6 +15,8 @@ type TemplateClient interface {
 	)
 	// ListTemplates returns all templates stored in the oVirt engine.
 	ListTemplates(retries ...RetryStrategy) ([]Template, error)
+	// GetTemplateByName returns a template by its Name.
+	GetTemplateByName(templateName string, retries ...RetryStrategy) (Template, error)
 	// GetTemplate returns a template by its ID.
 	GetTemplate(id TemplateID, retries ...RetryStrategy) (Template, error)
 	// GetBlankTemplate finds a blank template in the oVirt engine and returns it. If no blank template is present,

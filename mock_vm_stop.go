@@ -17,7 +17,11 @@ func (m *mockClient) StopVM(id string, force bool, _ ...RetryStrategy) error {
 				time.Sleep(2 * time.Second)
 				m.lock.Lock()
 				defer m.lock.Unlock()
+				if item.status != VMStatusPoweringDown {
+					return
+				}
 				item.status = VMStatusDown
+				item.hostID = nil
 			}()
 		}
 		return nil

@@ -14,6 +14,7 @@ type Client interface {
 	// GetURL returns the oVirt engine base URL.
 	GetURL() string
 
+	AffinityGroupClient
 	DiskClient
 	DiskAttachmentClient
 	VMClient
@@ -28,6 +29,7 @@ type Client interface {
 	TemplateDiskClient
 	TestConnectionClient
 	TagClient
+	FeatureClient
 }
 
 // ClientWithLegacySupport is an extension of Client that also offers the ability to retrieve the underlying

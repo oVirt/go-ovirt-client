@@ -32,7 +32,7 @@ type Datacenter interface {
 	// Clusters lists the clusters for this datacenter. This is a network call and may be slow.
 	Clusters(retries ...RetryStrategy) ([]Cluster, error)
 	// HasCluster returns true if the cluster is in the datacenter. This is a network call and may be slow.
-	HasCluster(clusterID string, retries ...RetryStrategy) (bool, error)
+	HasCluster(clusterID ClusterID, retries ...RetryStrategy) (bool, error)
 }
 
 func convertSDKDatacenter(sdkObject *ovirtsdk4.DataCenter, client *oVirtClient) (Datacenter, error) {
@@ -63,7 +63,7 @@ func (d datacenter) Clusters(retries ...RetryStrategy) ([]Cluster, error) {
 	return d.client.ListDatacenterClusters(d.id, retries...)
 }
 
-func (d datacenter) HasCluster(clusterID string, retries ...RetryStrategy) (bool, error) {
+func (d datacenter) HasCluster(clusterID ClusterID, retries ...RetryStrategy) (bool, error) {
 	clusters, err := d.client.ListDatacenterClusters(d.id, retries...)
 	if err != nil {
 		return false, err

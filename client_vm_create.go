@@ -59,13 +59,7 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 	}
 }
 
-func (o *oVirtClient) CreateVM(
-	clusterID string,
-	templateID TemplateID,
-	name string,
-	params OptionalVMParameters,
-	retries ...RetryStrategy,
-) (result VM, err error) {
+func (o *oVirtClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
@@ -110,13 +104,13 @@ func (o *oVirtClient) CreateVM(
 }
 
 func createSDKVM(
-	clusterID string,
+	clusterID ClusterID,
 	templateID TemplateID,
 	name string,
 	params OptionalVMParameters,
 ) (*ovirtsdk.Vm, error) {
 	builder := ovirtsdk.NewVmBuilder()
-	builder.Cluster(ovirtsdk.NewClusterBuilder().Id(clusterID).MustBuild())
+	builder.Cluster(ovirtsdk.NewClusterBuilder().Id(string(clusterID)).MustBuild())
 	builder.Template(ovirtsdk.NewTemplateBuilder().Id(string(templateID)).MustBuild())
 	builder.Name(name)
 	parts := []vmBuilderComponent{
@@ -137,7 +131,7 @@ func createSDKVM(
 	return vm, nil
 }
 
-func validateVMCreationParameters(clusterID string, templateID TemplateID, name string, _ OptionalVMParameters) error {
+func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, name string, _ OptionalVMParameters) error {
 	if name == "" {
 		return newError(EBadArgument, "name cannot be empty for VM creation")
 	}

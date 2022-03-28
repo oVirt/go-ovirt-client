@@ -16,7 +16,33 @@ func TestVMListShouldNotFail(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestGetVMByName(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	client := helper.GetClient()
+	vmName := fmt.Sprintf("test-%s", helper.GenerateRandomID(5))
 
+	assertCanCreateVM(
+		t,
+		helper,
+		vmName,
+		nil,
+	)
+
+	fetchedVM, err := client.GetVMByName(vmName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fetchedVM == nil {
+		t.Fatal("returned VM is nil")
+	}
+
+	t.Logf("fetched VM Name %s mismatches original created VM Name %s", fetchedVM.Name(), vmName)
+	if fetchedVM.Name() != vmName {
+		t.Fatalf("fetched VM Name %s mismatches original created VM Name %s", fetchedVM.Name(), vmName)
+	}
+
+}
 func TestAfterVMCreationShouldBePresent(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
@@ -269,17 +295,25 @@ func assertCanStartVM(t *testing.T, vm ovirtclient.VM) {
 		t.Fatalf("Failed to start VM (%v)", err)
 	}
 	t.Cleanup(func() {
+		if vm.Status() == ovirtclient.VMStatusDown {
+			return
+		}
 		t.Logf("Stopping test VM %s...", vm.ID())
 		if err := vm.Stop(true); err != nil {
 			t.Fatalf("Failed to stop VM %s after test (%v)", vm.ID(), err)
 		}
+		if _, err := vm.WaitForStatus(ovirtclient.VMStatusDown); err != nil {
+			t.Fatalf("Failed to wait for VM %s to stop (%v)", vm.ID(), err)
+		}
 	})
 }
 
-func assertVMWillStart(t *testing.T, vm ovirtclient.VM) {
-	if _, err := vm.WaitForStatus(ovirtclient.VMStatusUp); err != nil {
+func assertVMWillStart(t *testing.T, vm ovirtclient.VM) ovirtclient.VM {
+	vm, err := vm.WaitForStatus(ovirtclient.VMStatusUp)
+	if err != nil {
 		t.Fatalf("Failed to wait for VM status to reach \"up\". (%v)", err)
 	}
+	return vm
 }
 
 func assertCanStopVM(t *testing.T, vm ovirtclient.VM) {
@@ -292,4 +326,17 @@ func assertVMWillStop(t *testing.T, vm ovirtclient.VM) {
 	if _, err := vm.WaitForStatus(ovirtclient.VMStatusDown); err != nil {
 		t.Fatalf("Failed to wait for VM status to reach \"down\". (%v)", err)
 	}
+}
+
+func assertCanCreateBootableVM(t *testing.T, helper ovirtclient.TestHelper) ovirtclient.VM {
+	vm1 := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateRandomID(5),
+		nil,
+	)
+	disk1 := assertCanCreateDisk(t, helper)
+	assertCanUploadDiskImage(t, helper, disk1)
+	assertCanAttachDisk(t, vm1, disk1)
+	return vm1
 }
