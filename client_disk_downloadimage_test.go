@@ -13,7 +13,7 @@ import (
 
 func TestImageDownload(t *testing.T) {
 	t.Parallel()
-	testImageData := getTestImageData(t)
+	testImageData := getTestImageData()
 	fh, size := getTestImageFile()
 
 	helper := getHelper(t)
@@ -53,8 +53,6 @@ func TestImageDownload(t *testing.T) {
 //go:embed testimage/image
 var testImage []byte
 
-const testImageFile = "./testimage/image"
-
 func getTestImageFile() (io.ReadSeekCloser, uint64) {
 	return &nopReadCloser{bytes.NewReader(testImage)}, uint64(len(testImage))
 }
@@ -67,12 +65,8 @@ func (n nopReadCloser) Close() error {
 	return nil
 }
 
-func getTestImageData(t *testing.T) []byte {
-	testImageData, err := ioutil.ReadFile(testImageFile)
-	if err != nil {
-		t.Fatal(fmt.Errorf("failed to read test image file %s (%w)", testImageFile, err))
-	}
-	return testImageData
+func getTestImageData() []byte {
+	return testImage
 }
 
 func downloadImage(
