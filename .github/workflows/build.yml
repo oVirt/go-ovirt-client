@@ -103,3 +103,11 @@ jobs:
         uses: ovirt/upload-rpms-action@main
         with:
           directory: exported-artifacts
+      - name: "Send comment to PR"
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          echo 'Your build is now ready for live testing. A maintainer now needs to issue the `/ost` command in order to proceed with testing.' >/tmp/comment
+          gh pr comment ${{needs.build.outputs.PR_ID}} -F /tmp/comment
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
