@@ -49,6 +49,10 @@ func (m *mockClient) CreateVM(clusterID ClusterID, templateID TemplateID, name s
 
 			m.attachVMDisksFromTemplate(tpl, vm)
 
+			if clone := params.Clone(); clone != nil && *clone {
+				vm.templateID = "00000000-0000-0000-0000-000000000000"
+			}
+
 			result = vm
 			return nil
 		},

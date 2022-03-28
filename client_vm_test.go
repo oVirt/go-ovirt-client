@@ -234,6 +234,78 @@ func TestVMHugePages(t *testing.T) {
 	}
 }
 
+func TestCanRemoveTemplateIfVMIsCloned(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	templateVM := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		nil,
+	)
+	template := assertCanCreateTemplate(t, helper, templateVM)
+	vm := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		template.ID(),
+		ovirtclient.CreateVMParams().MustWithClone(true),
+	)
+	if vm.TemplateID() != "00000000-0000-0000-0000-000000000000" {
+		t.Fatalf("Template ID is not set correctly on cloned VM (%s vs %s)", vm.TemplateID(), template.ID())
+	}
+	assertCanRemoveTemplate(t, helper, template.ID())
+}
+
+func TestCannotRemoveTemplateIfVMIsNotCloned(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	templateVM := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		nil,
+	)
+	template := assertCanCreateTemplate(t, helper, templateVM)
+	vm := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		template.ID(),
+		ovirtclient.CreateVMParams().MustWithClone(false),
+	)
+	if vm.TemplateID() != template.ID() {
+		t.Fatalf("Template ID is not set correctly on non-cloned VM (%s vs %s)", vm.TemplateID(), template.ID())
+	}
+	assertCannotRemoveTemplate(t, helper, template.ID())
+}
+
+func TestCannotRemoveTemplateIfVMCloneIsNotSet(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	templateVM := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		nil,
+	)
+	template := assertCanCreateTemplate(t, helper, templateVM)
+	vm := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		template.ID(),
+		nil,
+	)
+	if vm.TemplateID() != template.ID() {
+		t.Fatalf("Template ID is not set correctly on VM if cloning is not specified (%s vs %s)", vm.TemplateID(), template.ID())
+	}
+	assertCannotRemoveTemplate(t, helper, template.ID())
+}
+
 func assertCanCreateVM(
 	t *testing.T,
 	helper ovirtclient.TestHelper,

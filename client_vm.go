@@ -395,6 +395,10 @@ type OptionalVMParameters interface {
 
 	// Initialization defines the virtual machine’s initialization configuration.
 	Initialization() Initialization
+
+	// Clone should return true if the VM should be cloned from the template instead of linking it. This means that the
+	// template can be removed while the VM still exists.
+	Clone() *bool
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -429,6 +433,12 @@ type BuildableVMParameters interface {
 	MustWithInitialization(initialization Initialization) BuildableVMParameters
 	// MustWithInitializationParameters is a simplified function that calls MustNewInitialization and adds customScript
 	MustWithInitializationParameters(customScript, hostname string) BuildableVMParameters
+
+	// WithClone sets the clone flag. If the clone flag is true the VM is cloned from the template instead of linking to
+	// it. This means the template can be deleted while the VM still exists.
+	WithClone(clone bool) (BuildableVMParameters, error)
+	// MustWithClone is identical to WithClone, but panics instead of returning an error.
+	MustWithClone(clone bool) BuildableVMParameters
 }
 
 // UpdateVMParameters returns a set of parameters to change on a VM.
@@ -586,6 +596,25 @@ type vmParams struct {
 	hugePages *VMHugePages
 
 	initialization Initialization
+
+	clone *bool
+}
+
+func (v *vmParams) Clone() *bool {
+	return v.clone
+}
+
+func (v *vmParams) WithClone(clone bool) (BuildableVMParameters, error) {
+	v.clone = &clone
+	return v, nil
+}
+
+func (v *vmParams) MustWithClone(clone bool) BuildableVMParameters {
+	builder, err := v.WithClone(clone)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (v *vmParams) HugePages() *VMHugePages {
