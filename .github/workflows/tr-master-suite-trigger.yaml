@@ -1,4 +1,4 @@
-name: OST tr-suite-master trigger
+name: Trigger OST run
 
 on:
   issue_comment:
@@ -6,6 +6,7 @@ on:
 
 jobs:
   trigger-ost:
+    name: Trigger OST
     uses: oVirt/ovirt-system-tests/.github/workflows/ost.yaml@master
     with:
       comment: " tr-suite-master rhel8"
