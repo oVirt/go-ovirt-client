@@ -73,7 +73,10 @@ func (d *diskWithData) withProvisionedSize(ps uint64) (*diskWithData, error) {
 }
 
 // clone is an internal function that makes a copy of the disk object with a new UUID.
-func (d *diskWithData) clone() *diskWithData {
+func (d *diskWithData) clone(sparse *bool) *diskWithData {
+	if sparse == nil {
+		sparse = &d.sparse
+	}
 	return &diskWithData{
 		disk{
 			d.client,
@@ -84,7 +87,7 @@ func (d *diskWithData) clone() *diskWithData {
 			d.storageDomainIDs,
 			d.status,
 			d.totalSize,
-			d.sparse,
+			*sparse,
 		},
 		&sync.Mutex{},
 		d.data,

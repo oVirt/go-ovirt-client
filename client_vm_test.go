@@ -366,6 +366,79 @@ func TestVMWithoutInitialization(t *testing.T) {
 	}
 }
 
+func TestVMCreationWithSparseDisks(t *testing.T) {
+	helper := getHelper(t)
+	disk := assertCanCreateDiskWithParameters(
+		t,
+		helper,
+		ovirtclient.ImageFormatRaw,
+		ovirtclient.
+			CreateDiskParams().
+			MustWithSparse(false),
+	)
+	assertCanUploadDiskImage(t, helper, disk)
+	startVM := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		nil,
+	)
+	assertCanAttachDisk(t, startVM, disk)
+
+	checkVMDiskSparseness(
+		t,
+		startVM,
+		false,
+		"Start VM disk is sparse despite being created non-sparse.",
+	)
+
+	tpl := assertCanCreateTemplate(t, helper, startVM)
+	diskAttachments, err := tpl.ListDiskAttachments()
+	if err != nil {
+		t.Fatalf("Failed to list disk attachments for template %s (%v).", tpl.ID(), err)
+	}
+	templateDisk := diskAttachments[0]
+	var diskList = []ovirtclient.OptionalVMDiskParameters{
+		// We must create a sparse / cow config here, otherwise the disk creation can horribly fail on NFS SDs and lock
+		// up the disk.
+		ovirtclient.
+			MustNewBuildableVMDiskParameters(templateDisk.DiskID()).
+			MustWithSparse(true),
+	}
+	vm := assertCanCreateVMFromTemplate(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		tpl.ID(),
+		ovirtclient.CreateVMParams().MustWithDisks(diskList).MustWithClone(true),
+	)
+
+	checkVMDiskSparseness(
+		t,
+		vm,
+		true,
+		"VM from template disk is non-sparse despite being created with a sparse override.",
+	)
+}
+
+func checkVMDiskSparseness(t *testing.T, checkVM ovirtclient.VM, sparse bool, message string) {
+	t.Helper()
+	diskAttachments, err := checkVM.ListDiskAttachments()
+	if err != nil {
+		t.Fatalf("Failed to list disk attachments for VM %s (%v).", checkVM.ID(), err)
+	}
+	if len(diskAttachments) != 1 {
+		t.Fatalf("Incorrect number of disk attachments on VM %s (%d).", checkVM.ID(), len(diskAttachments))
+	}
+	d, err := diskAttachments[0].Disk()
+	if err != nil {
+		t.Fatalf("Failed to fetch disk for VM %s (%v).", checkVM.ID(), err)
+	}
+	if d.Sparse() != sparse {
+		t.Fatalf(message)
+	}
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,

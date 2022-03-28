@@ -66,7 +66,7 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 }
 
 func (o *oVirtClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts())
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
 		return nil, err
@@ -135,6 +135,28 @@ func createSDKVM(
 		part(params, builder)
 	}
 
+	if params != nil {
+		var diskAttachments []*ovirtsdk.DiskAttachment
+		for i, d := range params.Disks() {
+			diskAttachment := ovirtsdk.NewDiskAttachmentBuilder()
+			diskBuilder := ovirtsdk.NewDiskBuilder()
+			diskBuilder.Id(d.DiskID())
+			if sparse := d.Sparse(); sparse != nil {
+				diskBuilder.Sparse(*sparse)
+			}
+			if format := d.Format(); format != nil {
+				diskBuilder.Format(ovirtsdk.DiskFormat(*format))
+			}
+			diskAttachment.DiskBuilder(diskBuilder)
+			sdkDisk, err := diskAttachment.Build()
+			if err != nil {
+				return nil, wrap(err, EBadArgument, "Failed to convert disk %d.", i)
+			}
+			diskAttachments = append(diskAttachments, sdkDisk)
+		}
+		builder.DiskAttachmentsOfAny(diskAttachments...)
+	}
+
 	vm, err := builder.Build()
 	if err != nil {
 		return nil, wrap(err, EBug, "failed to build VM")
@@ -142,7 +164,7 @@ func createSDKVM(
 	return vm, nil
 }
 
-func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, name string, _ OptionalVMParameters) error {
+func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters) error {
 	if name == "" {
 		return newError(EBadArgument, "name cannot be empty for VM creation")
 	}
@@ -152,5 +174,23 @@ func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, na
 	if templateID == "" {
 		return newError(EBadArgument, "template ID cannot be empty for VM creation")
 	}
+	if params == nil {
+		return nil
+	}
+
+	disks := params.Disks()
+	diskIDs := map[string]int{}
+	for i, d := range disks {
+		if previousID, ok := diskIDs[d.DiskID()]; ok {
+			return newError(
+				EBadArgument,
+				"Disk %s appears twice, in position %d and %d.",
+				d.DiskID(),
+				previousID,
+				i,
+			)
+		}
+	}
+
 	return nil
 }
