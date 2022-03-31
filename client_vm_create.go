@@ -45,6 +45,13 @@ func vmBuilderHugePages(params OptionalVMParameters, builder *ovirtsdk.VmBuilder
 	}
 }
 
+func vmBuilderMemory(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	//panic(newError(EBug, "Failed to build 'hugepages' custom property from value %d", params.Memory()))
+	if memory := params.Memory(); memory > 0 {
+		builder.Memory(memory)
+	}
+}
+
 func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if init := params.Initialization(); init != nil {
 		initBuilder := ovirtsdk.NewInitializationBuilder()
@@ -122,6 +129,7 @@ func createSDKVM(
 		vmBuilderCPU,
 		vmBuilderHugePages,
 		vmBuilderInitialization,
+		vmBuilderMemory,
 	}
 
 	for _, part := range parts {

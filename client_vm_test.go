@@ -139,6 +139,30 @@ func TestVMCreationWithCPU(t *testing.T) {
 	}
 }
 
+func TestVMCreationWithMemory(t *testing.T) {
+
+	params := map[string]ovirtclient.OptionalVMParameters{
+		"withmemory": ovirtclient.CreateVMParams().MustWithMemory(1048576),
+	}
+	for name, param := range params {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			helper := getHelper(t)
+			vm := assertCanCreateVM(
+				t,
+				helper,
+				fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+				param,
+			)
+
+			memory := vm.Memory()
+			if memory != 1048576 {
+				t.Fatalf("Creating a VM with Memory settings did not return a VM with expected Memory.")
+			}
+		})
+	}
+}
+
 func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
