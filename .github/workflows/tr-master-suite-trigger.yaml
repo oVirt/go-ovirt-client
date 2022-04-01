@@ -9,4 +9,4 @@ jobs:
     name: Trigger OST
     uses: oVirt/ovirt-system-tests/.github/workflows/ost.yaml@master
     with:
-      comment: " tr-suite-master rhel8"
+      comment: " tr-suite-master"
