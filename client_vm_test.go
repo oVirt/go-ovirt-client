@@ -139,6 +139,42 @@ func TestVMCreationWithCPU(t *testing.T) {
 	}
 }
 
+func TestVMCreationWithMemory(t *testing.T) {
+	t.Parallel()
+	testMemory := int64(1048576)
+	helper := getHelper(t)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams().MustWithMemory(testMemory),
+	)
+
+	memory := vm.Memory()
+	if memory != testMemory {
+		t.Fatalf("Creating a VM with Memory settings did not return a VM with expected Memory , %d , %d.", memory, testMemory)
+	}
+
+}
+
+func TestVMCreationWithDefaultMemory(t *testing.T) {
+	t.Parallel()
+	defaultMemory := int64(1073741824)
+	helper := getHelper(t)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
+	)
+
+	memory := vm.Memory()
+	if memory != defaultMemory {
+		t.Fatalf("Creating a VM with a Default Memory settings did not return a VM with expected Memory , %d , %d.", memory, defaultMemory)
+	}
+
+}
+
 func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
