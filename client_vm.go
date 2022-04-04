@@ -64,6 +64,8 @@ type VMData interface {
 	Status() VMStatus
 	// CPU returns the CPU structure of a VM.
 	CPU() VMCPU
+	// Memory return the Memory of a VM in Bytes.
+	Memory() int64
 	// TagIDs returns a list of tags for this VM.
 	TagIDs() []string
 	// HugePages returns the hugepage settings for the VM, if any.
@@ -399,6 +401,9 @@ type OptionalVMParameters interface {
 	// Clone should return true if the VM should be cloned from the template instead of linking it. This means that the
 	// template can be removed while the VM still exists.
 	Clone() *bool
+
+	// Memory returns the VM memory in Bytes.
+	Memory() *int64
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -426,7 +431,10 @@ type BuildableVMParameters interface {
 	WithHugePages(hugePages VMHugePages) (BuildableVMParameters, error)
 	// MustWithHugePages is identical to WithHugePages, but panics instead of returning an error.
 	MustWithHugePages(hugePages VMHugePages) BuildableVMParameters
-
+	// WithMemory sets the Memory setting for the VM.
+	WithMemory(memory int64) (BuildableVMParameters, error)
+	// MustWithMemory is identical to WithMemory, but panics instead of returning an error.
+	MustWithMemory(memory int64) BuildableVMParameters
 	// WithInitialization sets the virtual machine’s initialization configuration.
 	WithInitialization(initialization Initialization) (BuildableVMParameters, error)
 	// MustWithInitialization is identical to WithInitialization, but panics instead of returning an error.
@@ -596,6 +604,7 @@ type vmParams struct {
 	hugePages *VMHugePages
 
 	initialization Initialization
+	memory         *int64
 
 	clone *bool
 }
@@ -631,6 +640,23 @@ func (v *vmParams) WithHugePages(hugePages VMHugePages) (BuildableVMParameters, 
 
 func (v *vmParams) MustWithHugePages(hugePages VMHugePages) BuildableVMParameters {
 	builder, err := v.WithHugePages(hugePages)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) Memory() *int64 {
+	return v.memory
+}
+
+func (v *vmParams) WithMemory(memory int64) (BuildableVMParameters, error) {
+	v.memory = &memory
+	return v, nil
+}
+
+func (v *vmParams) MustWithMemory(memory int64) BuildableVMParameters {
+	builder, err := v.WithMemory(memory)
 	if err != nil {
 		panic(err)
 	}
@@ -735,6 +761,7 @@ type vm struct {
 	templateID     TemplateID
 	status         VMStatus
 	cpu            *vmCPU
+	memory         int64
 	tagIDs         []string
 	hugePages      *VMHugePages
 	initialization Initialization
@@ -775,6 +802,10 @@ func (v *vm) WaitForStatus(status VMStatus, retries ...RetryStrategy) (VM, error
 
 func (v *vm) CPU() VMCPU {
 	return v.cpu
+}
+
+func (v *vm) Memory() int64 {
+	return v.memory
 }
 
 func (v *vm) Initialization() Initialization {
@@ -922,6 +953,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmInitializationConverter,
 		vmPlacementPolicyConverter,
 		vmHostConverter,
+		vmMemoryConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -1026,6 +1058,15 @@ func vmHugePagesConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 		return err
 	}
 	v.hugePages = hugePages
+	return nil
+}
+
+func vmMemoryConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+	memory, ok := sdkObject.Memory()
+	if !ok {
+		return newFieldNotFound("vm", "memory")
+	}
+	v.memory = memory
 	return nil
 }
 
