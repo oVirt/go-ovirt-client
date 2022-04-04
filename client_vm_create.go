@@ -46,9 +46,8 @@ func vmBuilderHugePages(params OptionalVMParameters, builder *ovirtsdk.VmBuilder
 }
 
 func vmBuilderMemory(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
-	//panic(newError(EBug, "Failed to build 'hugepages' custom property from value %d", params.Memory()))
-	if memory := params.Memory(); memory > 0 {
-		builder.Memory(memory)
+	if memory := params.Memory(); memory != nil {
+		builder.Memory(*memory)
 	}
 }
 
