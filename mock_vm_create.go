@@ -73,6 +73,11 @@ func (m *mockClient) createVM(
 	if init == nil {
 		init = &initialization{}
 	}
+	memory := int64(1073741824)
+	if params.Memory() != nil {
+		memory = *params.Memory()
+	}
+
 	vm := &vm{
 		client:         m,
 		id:             id,
@@ -83,7 +88,7 @@ func (m *mockClient) createVM(
 		status:         VMStatusDown,
 		cpu:            cpu,
 		hugePages:      params.HugePages(),
-		memory:         params.Memory(),
+		memory:         memory,
 		initialization: init,
 	}
 	m.vms[id] = vm
