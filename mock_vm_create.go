@@ -83,6 +83,7 @@ func (m *mockClient) createVM(
 		status:         VMStatusDown,
 		cpu:            cpu,
 		hugePages:      params.HugePages(),
+		memory:         params.Memory(),
 		initialization: init,
 	}
 	m.vms[id] = vm
