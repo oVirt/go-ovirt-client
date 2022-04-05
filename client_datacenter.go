@@ -4,7 +4,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "DataCenter" -n "datacenter" -o "Datacenter"
+//go:generate go run scripts/rest/rest.go -i "DataCenter" -n "datacenter" -o "Datacenter"
 
 // DatacenterClient contains the functions related to handling datacenter objects in oVirt. Datacenters bind together
 // resources of an environment (clusters, storage domains).

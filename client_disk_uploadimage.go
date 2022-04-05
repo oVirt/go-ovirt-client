@@ -80,7 +80,7 @@ func (o *oVirtClient) UploadToDisk(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) error {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts())
 	progress, err := o.StartUploadToDisk(diskID, size, reader, retries...)
 	if err != nil {
 		return err
@@ -102,17 +102,16 @@ func (o *oVirtClient) StartUploadToDisk(
 		return nil, err
 	}
 
-	format, err := extractQCOWParameters(size, reader)
+	format, qcowSize, err := extractQCOWParameters(size, reader)
 	if err != nil {
 		return nil, err
 	}
 
-	// TBD: Should we automatically increase the size of the disk here?
-	if size > disk.ProvisionedSize() {
+	if qcowSize > disk.ProvisionedSize() {
 		return nil, newError(
 			EBadArgument,
-			"the specified size (%d bytes) is larger than the target disk %s (%d bytes)",
-			size,
+			"the virtual image size (%d bytes) is larger than the target disk %s (%d bytes)",
+			qcowSize,
 			diskID,
 			disk.ProvisionedSize(),
 		)
@@ -128,6 +127,7 @@ func (o *oVirtClient) StartUploadToDisk(
 		format:        format,
 		disk:          disk,
 		totalBytes:    size,
+		qcowSize:      qcowSize,
 		reader:        reader,
 		retries:       retries,
 	}
@@ -149,6 +149,7 @@ type uploadToDiskProgress struct {
 	totalBytes       uint64
 	err              error
 	format           ImageFormat
+	qcowSize         uint64
 }
 
 func (u *uploadToDiskProgress) Close() error {
@@ -305,7 +306,7 @@ func (o *oVirtClient) StartUploadToNewDisk(
 
 	o.logger.Infof("Starting disk image upload...")
 
-	imageFormat, err := extractQCOWParameters(size, reader)
+	imageFormat, qcowSize, err := extractQCOWParameters(size, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +330,7 @@ func (o *oVirtClient) StartUploadToNewDisk(
 			format:        imageFormat,
 			disk:          nil,
 			totalBytes:    size,
+			qcowSize:      qcowSize,
 			reader:        reader,
 			retries:       retries,
 		},
@@ -359,7 +361,7 @@ func (u *uploadToNewDiskProgress) Do() {
 	disk, err := u.client.CreateDisk(
 		u.storageDomainID,
 		u.diskFormat,
-		u.totalBytes,
+		u.qcowSize,
 		u.diskParams,
 		u.retries...,
 	)

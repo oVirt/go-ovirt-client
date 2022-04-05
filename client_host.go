@@ -4,7 +4,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Host" -n "host"
+//go:generate go run scripts/rest/rest.go -i "Host" -n "host"
 
 // HostClient contains the API portion that deals with hosts.
 type HostClient interface {

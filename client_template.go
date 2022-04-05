@@ -4,7 +4,7 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Template" -n "template" -T "TemplateID"
+//go:generate go run scripts/rest/rest.go -i "Template" -n "template" -T "TemplateID"
 
 // TemplateClient represents the portion of the client that deals with VM templates.
 type TemplateClient interface {

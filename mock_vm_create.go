@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +53,8 @@ func (m *mockClient) CreateVM(clusterID ClusterID, templateID TemplateID, name s
 			if clone := params.Clone(); clone != nil && *clone {
 				vm.templateID = "00000000-0000-0000-0000-000000000000"
 			}
+
+			m.vmIPs[vm.id] = map[string][]net.IP{}
 
 			result = vm
 			return nil

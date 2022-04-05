@@ -4,7 +4,7 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "VnicProfile" -n "VNIC profile" -o "VNICProfile" -s "Profile"
+//go:generate go run scripts/rest/rest.go -i "VnicProfile" -n "VNIC profile" -o "VNICProfile" -s "Profile"
 
 // VNICProfileClient defines the methods related to dealing with virtual NIC profiles.
 type VNICProfileClient interface {

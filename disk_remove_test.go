@@ -25,7 +25,7 @@ func TestDiskRemoveFromRunningVMShouldResultInError(t *testing.T) {
 	disk := assertCanCreateDisk(t, helper)
 	vm := assertCanCreateVM(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), nil)
 	assertCanAttachDisk(t, vm, disk)
-	assertCanStartVM(t, vm)
+	assertCanStartVM(t, helper, vm)
 	if err := disk.Remove(ovirtclient.MaxTries(5)); err == nil {
 		t.Fatalf("Removing a disk from a running VM did not result in an error.")
 	}

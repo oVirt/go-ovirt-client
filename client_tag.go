@@ -4,7 +4,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Tag" -n "tag"
+//go:generate go run scripts/rest/rest.go -i "Tag" -n "tag"
 
 // TagClient describes the functions related to oVirt tags.
 type TagClient interface {

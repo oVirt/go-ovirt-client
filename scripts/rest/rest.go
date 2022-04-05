@@ -30,7 +30,7 @@ type restItem struct {
 }
 
 func main() {
-	name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint, idType := getParameters()
+	name, id, secondaryID, object, tplDir, targetDir, nofmt, lint, idType := getParameters()
 
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -60,24 +60,25 @@ func main() {
 		secondaryID,
 		idType,
 	}
-	if err := filepath.Walk(
-		tplDir, func(fn string, info os.FileInfo, _ error) error {
-			if info.IsDir() {
-				return nil
-			}
-			if !strings.HasSuffix(fn, ".tpl") {
-				return nil
-			}
-			return handleTemplateFile(fn, id, targetDir, restItem, nofmt)
-		},
-	); err != nil {
+	files, err := ioutil.ReadDir(tplDir)
+	if err != nil {
 		log.Fatalln(err)
 	}
-	if !nolint {
+	for _, info := range files {
+		if info.IsDir() {
+			continue
+		}
+		fn := path.Join(tplDir, info.Name())
+		if strings.HasSuffix(fn, ".tpl") {
+			if err := handleTemplateFile(fn, id, targetDir, restItem, nofmt); err != nil {
+				log.Fatalln(err)
+			}
+		}
+	}
+	if lint {
 		if err := runGoLint(targetDir); err != nil {
 			log.Fatalf(
-				"Failed to run golangci-lint. You can skip this step by passing -nolint in the command line "+
-					"or setting the NOLINT environment variable. (%v)",
+				"Failed to run golangci-lint. (%v)",
 				err,
 			)
 		}
@@ -93,9 +94,9 @@ func getParameters() (string, string, string, string, string, string, bool, bool
 	targetDir := "./"
 	watch := false
 	nofmt := false
-	nolint := false
+	lint := false
 	idType := "string"
-	setupFlags(&name, &id, &secondaryID, &object, &tplDir, &targetDir, &watch, &nofmt, &nolint, &idType)
+	setupFlags(&name, &id, &secondaryID, &object, &tplDir, &targetDir, &watch, &nofmt, &lint, &idType)
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
@@ -110,10 +111,10 @@ func getParameters() (string, string, string, string, string, string, bool, bool
 	if os.Getenv("NOFMT") != "" {
 		nofmt = true
 	}
-	if os.Getenv("NOLINT") != "" {
-		nolint = true
+	if os.Getenv("LINT") != "" {
+		lint = true
 	}
-	return name, id, secondaryID, object, tplDir, targetDir, nofmt, nolint, idType
+	return name, id, secondaryID, object, tplDir, targetDir, nofmt, lint, idType
 }
 
 // setupFlags sets up the command line flags. This function is annotated with nolint:funlen since there is no reasonable
@@ -127,7 +128,7 @@ func setupFlags( // nolint:funlen
 	targetDir *string,
 	watch *bool,
 	nofmt *bool,
-	nolint *bool,
+	lint *bool,
 	idType *string,
 ) {
 	flag.StringVar(
@@ -195,10 +196,10 @@ func setupFlags( // nolint:funlen
 		"Do not run gofmt on resulting file.",
 	)
 	flag.BoolVar(
-		nolint,
-		"nolint",
+		lint,
+		"lint",
 		false,
-		"Do not run go golangci-lint on the resulting file.",
+		"Run go golangci-lint on the resulting file.",
 	)
 }
 

@@ -3,6 +3,7 @@ package ovirtclient_test
 import (
 	"bytes"
 	_ "embed"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -52,6 +53,42 @@ func TestImageDownload(t *testing.T) {
 
 //go:embed testimage/image
 var testImage []byte
+
+//go:embed testimage/full.qcow
+var fullTestImage []byte
+
+//go:generate go run scripts/get_test_image/get_test_image.go
+
+type qcowHeader struct {
+	Magic                 [4]byte
+	Version               uint32
+	BackingFileOffset     uint64
+	BackingFileSize       uint32
+	ClusterBits           uint32
+	Size                  uint64
+	CryptMethod           uint32
+	L1Size                uint32
+	L1TableOffset         uint64
+	RefcountTableOffset   uint64
+	RefcountTableClusters uint32
+	NBSnapshots           uint32
+	SnapshotsOffset       uint64
+}
+
+// getFullTestImage downloads a fully functional test image with the QEMU guest image to a temporary directory and
+// offers it as a reader.
+func getFullTestImage(t *testing.T) (io.ReadSeekCloser, uint64, uint64) {
+	if len(fullTestImage) == 0 {
+		t.Skipf("Skipping test, full test image is not available. Did you run go generate?")
+	}
+
+	header := &qcowHeader{}
+	if err := binary.Read(bytes.NewReader(fullTestImage), binary.BigEndian, header); err != nil {
+		panic(fmt.Errorf("cannot read QCOW header from full test image (%w)", err))
+	}
+
+	return &nopReadCloser{bytes.NewReader(fullTestImage)}, uint64(len(fullTestImage)), header.Size
+}
 
 func getTestImageFile() (io.ReadSeekCloser, uint64) {
 	return &nopReadCloser{bytes.NewReader(testImage)}, uint64(len(testImage))
