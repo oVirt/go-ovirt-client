@@ -96,3 +96,40 @@ func assertCanCreateTag(
 
 	return tag
 }
+
+func TestAddTagToVMByName(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	client := helper.GetClient()
+	tagName := fmt.Sprintf("test-%s", helper.GenerateRandomID(5))
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		tagName,
+		nil,
+	)
+	assertCanCreateTag(t, helper, tagName, "")
+
+	fetchedVM, err := client.GetVM(vm.ID())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fetchedVM == nil {
+		t.Fatal("returned VM is nil")
+	}
+
+	err = client.AddTagToVMByName(vm.ID(), tagName)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vms, err := client.SearchVMs(ovirtclient.VMSearchParams().WithTag(tagName))
+	if err != nil {
+		t.Fatalf("Failed to search for VM by Tag (%v)", err)
+	}
+	if len(vms) != 1 {
+		t.Fatalf("Incorrect number of VMs returned (%d)", len(vms))
+	}
+}

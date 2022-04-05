@@ -46,6 +46,8 @@ type VMClient interface {
 	RemoveVM(id string, retries ...RetryStrategy) error
 	// AddTagToVM Add tag specified by id to a VM.
 	AddTagToVM(id string, tagID string, retries ...RetryStrategy) error
+	// AddTagToVMByName Add tag specified by Name to a VM.
+	AddTagToVMByName(id string, tagName string, retries ...RetryStrategy) error
 }
 
 // VMData is the core of VM providing only data access functions.
@@ -1059,6 +1061,9 @@ func (v *vm) Tags(retries ...RetryStrategy) ([]Tag, error) {
 
 func (v *vm) AddTagToVM(tagID string, retries ...RetryStrategy) error {
 	return v.client.AddTagToVM(v.id, tagID, retries...)
+}
+func (v *vm) AddTagToVMByName(tagName string, retries ...RetryStrategy) error {
+	return v.client.AddTagToVMByName(v.id, tagName, retries...)
 }
 
 var vmNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_\-.]*$`)
