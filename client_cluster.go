@@ -4,7 +4,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Cluster" -n "cluster" -T ClusterID
+//go:generate go run scripts/rest/rest.go -i "Cluster" -n "cluster" -T ClusterID
 
 // ClusterClient is a part of the Client that deals with clusters in the oVirt Engine. A cluster is a logical grouping
 // of hosts that share the same storage domains and have the same type of CPU (either Intel or AMD). If the hosts have

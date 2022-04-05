@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"math/rand"
+	"net"
 	"sync"
 	"time"
 
@@ -114,6 +115,7 @@ func getClient(
 		affinityGroups: map[ClusterID]map[AffinityGroupID]*affinityGroup{
 			testCluster.ID(): {},
 		},
+		vmIPs: map[string]map[string][]net.IP{},
 	}
 	return client
 }

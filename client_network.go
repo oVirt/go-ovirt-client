@@ -4,7 +4,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Network" -n "network"
+//go:generate go run scripts/rest/rest.go -i "Network" -n "network"
 
 // NetworkClient describes the functions related to oVirt networks.
 //

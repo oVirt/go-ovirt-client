@@ -135,7 +135,7 @@ func TestNegativeVMAffinityShouldResultInDifferentHosts(t *testing.T) {
 	vm2 := assertCanCreateBootableVM(t, helper)
 	assertCanAddVMToAffinityGroup(t, vm1, ag)
 	assertCanAddVMToAffinityGroup(t, vm2, ag)
-	assertCanStartVM(t, vm1)
+	assertCanStartVM(t, helper, vm1)
 	vm1 = assertVMWillStart(t, vm1)
 	if err := vm2.Start(); err != nil {
 		t.Logf("VM 2 failed to start, we assume there are not enough hosts available. (%v)", err)

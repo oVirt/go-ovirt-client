@@ -7,7 +7,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "StorageDomain" -n "storage domain"
+//go:generate go run scripts/rest/rest.go -i "StorageDomain" -n "storage domain"
 
 // StorageDomainClient contains the portion of the goVirt API that deals with storage domains.
 type StorageDomainClient interface {

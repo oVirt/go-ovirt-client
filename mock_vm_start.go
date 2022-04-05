@@ -1,6 +1,8 @@
 package ovirtclient
 
 import (
+	"fmt"
+	"net"
 	"time"
 )
 
@@ -33,11 +35,33 @@ func (m *mockClient) StartVM(id string, _ ...RetryStrategy) error {
 		m.lock.Unlock()
 		time.Sleep(2 * time.Second)
 		m.lock.Lock()
-		defer m.lock.Unlock()
 		if item.status != VMStatusPoweringUp {
+			m.lock.Unlock()
 			return
 		}
 		item.status = VMStatusUp
+		m.lock.Unlock()
+		time.Sleep(10 * time.Second)
+		m.lock.Lock()
+		if item.status == VMStatusUp {
+			m.vmIPs[item.id] = map[string][]net.IP{
+				"lo": {
+					net.ParseIP("::1"),
+					net.ParseIP("127.0.0.1"),
+				},
+			}
+			i := 0
+			for _, nic := range m.nics {
+				if nic.vmid == item.id {
+					m.vmIPs[item.id][fmt.Sprintf("eth%d", i)] = []net.IP{
+						net.ParseIP("192.168.0.123"),
+						net.ParseIP("fe80::123"),
+					}
+					i++
+				}
+			}
+		}
+		m.lock.Unlock()
 	}()
 	return nil
 }

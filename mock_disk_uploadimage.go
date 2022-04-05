@@ -53,7 +53,12 @@ func (m *mockClient) StartUploadToDisk(
 		return nil, err
 	}
 
-	if size > disk.TotalSize() {
+	imageFormat, qcowSize, err := extractQCOWParameters(size, reader)
+	if err != nil {
+		return nil, err
+	}
+
+	if qcowSize > disk.TotalSize() {
 		return nil, newError(
 			EBadArgument,
 			"the specified size (%d bytes) is larger than the target disk %s (%d bytes)",
@@ -61,11 +66,6 @@ func (m *mockClient) StartUploadToDisk(
 			diskID,
 			disk.TotalSize(),
 		)
-	}
-
-	imageFormat, err := extractQCOWParameters(size, reader)
-	if err != nil {
-		return nil, err
 	}
 
 	if imageFormat != disk.Format() {
@@ -121,7 +121,7 @@ func (m *mockClient) StartUploadToNewDisk(
 		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
 	}
 
-	imageFormat, err := extractQCOWParameters(size, reader)
+	imageFormat, qcowSize, err := extractQCOWParameters(size, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (m *mockClient) StartUploadToNewDisk(
 		)
 	}
 
-	disk, err := m.createDisk(storageDomainID, format, size, params)
+	disk, err := m.createDisk(storageDomainID, format, qcowSize, params)
 	if err != nil {
 		return nil, err
 	}

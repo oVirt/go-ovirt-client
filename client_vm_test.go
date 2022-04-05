@@ -245,7 +245,7 @@ func TestVMStartStop(t *testing.T) {
 	disk := assertCanCreateDisk(t, helper)
 	assertCanAttachDisk(t, vm, disk)
 	assertCanUploadDiskImage(t, helper, disk)
-	assertCanStartVM(t, vm)
+	assertCanStartVM(t, helper, vm)
 	assertVMWillStart(t, vm)
 	assertCanStopVM(t, vm)
 	assertVMWillStop(t, vm)
@@ -471,11 +471,20 @@ func assertCanCreateVMFromTemplate(
 	return vm
 }
 
-func assertCanStartVM(t *testing.T, vm ovirtclient.VM) {
+func assertCanStartVM(t *testing.T, helper ovirtclient.TestHelper, vm ovirtclient.VM) {
 	if err := vm.Start(); err != nil {
 		t.Fatalf("Failed to start VM (%v)", err)
 	}
 	t.Cleanup(func() {
+		vmID := vm.ID()
+		vm, err := helper.GetClient().GetVM(vmID)
+		if err != nil {
+			if !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
+				t.Fatalf("Failed to update VM %s status (%v)", vmID, err)
+			} else {
+				return
+			}
+		}
 		if vm.Status() == ovirtclient.VMStatusDown {
 			return
 		}

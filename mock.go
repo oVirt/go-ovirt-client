@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"math/rand"
+	"net"
 	"sync"
 
 	"github.com/google/uuid"
@@ -37,6 +38,7 @@ type mockClient struct {
 	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
 	tags                              map[string]*tag
 	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
+	vmIPs                             map[string]map[string][]net.IP
 }
 
 func (m *mockClient) GetURL() string {

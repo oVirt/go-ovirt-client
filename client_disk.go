@@ -8,7 +8,7 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Disk" -n "disk"
+//go:generate go run scripts/rest/rest.go -i "Disk" -n "disk"
 
 // DiskClient is the client interface part that deals with disks.
 type DiskClient interface {

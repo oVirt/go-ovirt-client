@@ -50,6 +50,7 @@ The two interfaces are `OBJECTNAME` and `OBJECTNAMEData`. For example, `VM` and 
 You can run the tests against the mock backend simply by running:
 
 ```
+go generate
 go test -v ./...
 ```
 

@@ -26,6 +26,25 @@ func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk 
 	}
 }
 
+func assertCanUploadFullyFunctionalDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk ovirtclient.Disk) {
+	fh, size, virtualSize := getFullTestImage(t)
+
+	originalSize := disk.ProvisionedSize()
+	if originalSize < virtualSize {
+		if _, err := disk.Update(
+			ovirtclient.UpdateDiskParams().MustWithProvisionedSize(virtualSize),
+		); err != nil {
+			t.Fatalf("Failed to resize disk from %d to %d bytes. (%v)", originalSize, virtualSize, err)
+		}
+	}
+
+	client := helper.GetClient()
+
+	if err := client.UploadToDisk(disk.ID(), size, fh); err != nil {
+		t.Fatalf("Failed to upload disk image to disk %s. (%v)", disk.ID(), err)
+	}
+}
+
 func TestImageUploadDiskCreated(t *testing.T) {
 	t.Parallel()
 	fh, size := getTestImageFile()

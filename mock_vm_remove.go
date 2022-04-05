@@ -30,6 +30,7 @@ func (m *mockClient) RemoveVM(id string, retries ...RetryStrategy) error {
 					delete(m.nics, nicID)
 				}
 			}
+			delete(m.vmIPs, id)
 			delete(m.vmDiskAttachmentsByVM, id)
 			delete(m.vms, id)
 

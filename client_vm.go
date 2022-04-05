@@ -2,6 +2,7 @@ package ovirtclient
 
 import (
 	"fmt"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest.go -i "Vm" -n "vm" -o "VM"
+//go:generate go run scripts/rest/rest.go -i "Vm" -n "vm" -o "VM"
 
 // VMClient includes the methods required to deal with virtual machines.
 type VMClient interface {
@@ -48,6 +49,137 @@ type VMClient interface {
 	AddTagToVM(id string, tagID string, retries ...RetryStrategy) error
 	// AddTagToVMByName Add tag specified by Name to a VM.
 	AddTagToVMByName(id string, tagName string, retries ...RetryStrategy) error
+	// GetVMIPAddresses fetches the IP addresses reported by the guest agent in the VM.
+	// Optional parameters can be passed to filter the result list.
+	//
+	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
+	// excluding any IP addresses in the specified parameters.
+	GetVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	// WaitForVMIPAddresses waits for at least one IP address to be reported that is not in specified ranges.
+	//
+	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
+	// excluding any IP addresses in the specified parameters.
+	WaitForVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	// WaitForNonLocalVMIPAddress waits for at least one IP address to be reported that is not in the following ranges:
+	//
+	// - 0.0.0.0/32
+	// - 127.0.0.0/8
+	// - 169.254.0.0/15
+	// - 224.0.0.0/4
+	// - 255.255.255.255/32
+	// - ::/128
+	// - ::1/128
+	// - fe80::/64
+	// - ff00::/8
+	//
+	// It also excludes the following interface names:
+	//
+	// - lo
+	// - dummy*
+	//
+	// The returned result will be a map of network interface names and the list of non-local IP addresses assigned to
+	// them.
+	WaitForNonLocalVMIPAddress(id string, retries ...RetryStrategy) (map[string][]net.IP, error)
+}
+
+// VMIPSearchParams contains the parameters for searching or waiting for IP addresses on a VM.
+type VMIPSearchParams interface {
+	// GetIncludedRanges returns a list of network ranges that the returned IP address must match.
+	GetIncludedRanges() []net.IPNet
+	// GetExcludedRanges returns a list of IP ranges that should not be taken into consideration when returning IP
+	// addresses.
+	GetExcludedRanges() []net.IPNet
+	// GetIncludedInterfaces returns a list of interface names of which the interface name must match at least
+	// one.
+	GetIncludedInterfaces() []string
+	// GetExcludedInterfaces returns a list of interface names that should be excluded from the search.
+	GetExcludedInterfaces() []string
+	// GetIncludedInterfacePatterns returns a list of regular expressions of which at least one must match
+	// the interface name.
+	GetIncludedInterfacePatterns() []*regexp.Regexp
+	// GetExcludedInterfacePatterns returns a list of regular expressions that match interface names needing to be
+	// excluded from the IP address search.
+	GetExcludedInterfacePatterns() []*regexp.Regexp
+}
+
+// BuildableVMIPSearchParams is a buildable version of VMIPSearchParams.
+type BuildableVMIPSearchParams interface {
+	VMIPSearchParams
+
+	WithIncludedRange(ipRange net.IPNet) BuildableVMIPSearchParams
+	WithExcludedRange(ipRange net.IPNet) BuildableVMIPSearchParams
+	WithIncludedInterface(interfaceName string) BuildableVMIPSearchParams
+	WithExcludedInterface(interfaceName string) BuildableVMIPSearchParams
+	WithIncludedInterfacePattern(interfaceNamePattern *regexp.Regexp) BuildableVMIPSearchParams
+	WithExcludedInterfacePattern(interfaceNamePattern *regexp.Regexp) BuildableVMIPSearchParams
+}
+
+// NewVMIPSearchParams returns a buildable parameter set for VM IP searches.
+func NewVMIPSearchParams() BuildableVMIPSearchParams {
+	return &vmIPSearchParams{}
+}
+
+type vmIPSearchParams struct {
+	excludedRanges                []net.IPNet
+	includedRanges                []net.IPNet
+	excludedInterfaceNames        []string
+	includedInterfaceNames        []string
+	excludedInterfaceNamePatterns []*regexp.Regexp
+	includedInterfaceNamePatterns []*regexp.Regexp
+}
+
+func (v *vmIPSearchParams) GetIncludedRanges() []net.IPNet {
+	return v.includedRanges
+}
+
+func (v *vmIPSearchParams) GetIncludedInterfaces() []string {
+	return v.includedInterfaceNames
+}
+
+func (v *vmIPSearchParams) GetIncludedInterfacePatterns() []*regexp.Regexp {
+	return v.includedInterfaceNamePatterns
+}
+
+func (v *vmIPSearchParams) WithIncludedRange(ipRange net.IPNet) BuildableVMIPSearchParams {
+	v.includedRanges = append(v.includedRanges, ipRange)
+	return v
+}
+
+func (v *vmIPSearchParams) WithIncludedInterface(interfaceName string) BuildableVMIPSearchParams {
+	v.includedInterfaceNames = append(v.includedInterfaceNames, interfaceName)
+	return v
+}
+
+func (v *vmIPSearchParams) WithIncludedInterfacePattern(interfaceNamePattern *regexp.Regexp) BuildableVMIPSearchParams {
+	v.includedInterfaceNamePatterns = append(v.includedInterfaceNamePatterns, interfaceNamePattern)
+	return v
+}
+
+func (v *vmIPSearchParams) GetExcludedRanges() []net.IPNet {
+	return v.excludedRanges
+}
+
+func (v *vmIPSearchParams) GetExcludedInterfaces() []string {
+	return v.excludedInterfaceNames
+}
+
+func (v *vmIPSearchParams) GetExcludedInterfacePatterns() []*regexp.Regexp {
+	return v.excludedInterfaceNamePatterns
+}
+
+func (v *vmIPSearchParams) WithExcludedRange(ipRange net.IPNet) BuildableVMIPSearchParams {
+	v.excludedRanges = append(v.excludedRanges, ipRange)
+	return v
+}
+
+func (v *vmIPSearchParams) WithExcludedInterface(interfaceName string) BuildableVMIPSearchParams {
+	v.excludedInterfaceNames = append(v.excludedInterfaceNames, interfaceName)
+	return v
+}
+
+func (v *vmIPSearchParams) WithExcludedInterfacePattern(interfaceNamePattern *regexp.Regexp) BuildableVMIPSearchParams {
+	v.excludedInterfaceNamePatterns = append(v.excludedInterfaceNamePatterns, interfaceNamePattern)
+	return v
 }
 
 // VMData is the core of VM providing only data access functions.
@@ -265,6 +397,36 @@ type VM interface {
 
 	// GetHost retrieves the host object for the current VM. If the VM is not running, nil will be returned.
 	GetHost(retries ...RetryStrategy) (Host, error)
+
+	// GetIPAddresses fetches the IP addresses and returns a map of the interface name and list of IP addresses.
+	//
+	// The optional parameters let you filter the returned interfaces and IP addresses.
+	GetIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	// WaitForIPAddresses waits for at least one IP address to be reported that is not in specified ranges.
+	//
+	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
+	// excluding any IP addresses and interfaces in the specified parameters.
+	WaitForIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	// WaitForNonLocalIPAddress waits for at least one IP address to be reported that is not in the following ranges:
+	//
+	// - 0.0.0.0/32
+	// - 127.0.0.0/8
+	// - 169.254.0.0/15
+	// - 224.0.0.0/4
+	// - 255.255.255.255/32
+	// - ::/128
+	// - ::1/128
+	// - fe80::/64
+	// - ff00::/8
+	//
+	// It also excludes the following interface names:
+	//
+	// - lo
+	// - dummy*
+	//
+	// The returned result will be a map of network interface names and the list of non-local IP addresses assigned to
+	// them.
+	WaitForNonLocalIPAddress(retries ...RetryStrategy) (map[string][]net.IP, error)
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -902,6 +1064,18 @@ type vm struct {
 	hugePages      *VMHugePages
 	initialization Initialization
 	hostID         *string
+}
+
+func (v *vm) WaitForIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
+	return v.client.WaitForVMIPAddresses(v.id, params, retries...)
+}
+
+func (v *vm) WaitForNonLocalIPAddress(retries ...RetryStrategy) (map[string][]net.IP, error) {
+	return v.client.WaitForNonLocalVMIPAddress(v.id, retries...)
+}
+
+func (v *vm) GetIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
+	return v.client.GetVMIPAddresses(v.id, params, retries...)
 }
 
 func (v *vm) HostID() *string {

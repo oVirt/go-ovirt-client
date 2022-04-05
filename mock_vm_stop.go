@@ -1,6 +1,7 @@
 package ovirtclient
 
 import (
+	"net"
 	"time"
 )
 
@@ -11,6 +12,7 @@ func (m *mockClient) StopVM(id string, force bool, _ ...RetryStrategy) error {
 		if (item.status == VMStatusSavingState || item.status == VMStatusRestoringState) && !force {
 			return newError(EConflict, "VM is currently backing up or restoring.")
 		}
+		m.vmIPs[id] = map[string][]net.IP{}
 		if item.status != VMStatusDown {
 			item.status = VMStatusPoweringDown
 			go func() {

@@ -445,8 +445,8 @@ func defaultReadTimeouts() []RetryStrategy {
 func defaultWriteTimeouts() []RetryStrategy {
 	return []RetryStrategy{
 		MaxTries(10),
-		CallTimeout(2 * time.Minute),
-		Timeout(5 * time.Minute),
+		CallTimeout(5 * time.Minute),
+		Timeout(10 * time.Minute),
 	}
 }
 
