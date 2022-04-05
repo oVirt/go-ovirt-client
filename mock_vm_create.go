@@ -47,7 +47,7 @@ func (m *mockClient) CreateVM(clusterID ClusterID, templateID TemplateID, name s
 
 			vm := m.createVM(name, params, clusterID, templateID, cpu)
 
-			m.attachVMDisksFromTemplate(tpl, vm)
+			m.attachVMDisksFromTemplate(tpl, vm, params)
 
 			if clone := params.Clone(); clone != nil && *clone {
 				vm.templateID = "00000000-0000-0000-0000-000000000000"
@@ -95,14 +95,31 @@ func (m *mockClient) createVM(
 	return vm
 }
 
-func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm) {
+func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm, params OptionalVMParameters) {
 	m.vmDiskAttachmentsByVM[vm.id] = make(
 		map[string]*diskAttachment,
 		len(m.templateDiskAttachmentsByTemplate[tpl.id]),
 	)
 	for _, attachment := range m.templateDiskAttachmentsByTemplate[tpl.id] {
 		disk := m.disks[attachment.diskID]
-		newDisk := disk.clone()
+		var sparse *bool
+		for _, diskParam := range params.Disks() {
+			if diskParam.DiskID() == disk.ID() {
+				sparse = diskParam.Sparse()
+				if format := diskParam.Format(); format != nil {
+					if *format != disk.Format() {
+						m.logger.Warningf(
+							"the VM creation client requested a conversion from from %s to %s; the mock library does not support this and the source image data will be used unmodified which may lead to errors",
+							disk.format,
+							format,
+						)
+						disk.format = *format
+					}
+				}
+				break
+			}
+		}
+		newDisk := disk.clone(sparse)
 		_ = newDisk.Lock()
 		newDisk.alias = fmt.Sprintf("disk-%s", generateRandomID(5, m.nonSecureRandom))
 		m.disks[newDisk.ID()] = newDisk

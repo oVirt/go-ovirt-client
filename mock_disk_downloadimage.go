@@ -25,7 +25,7 @@ func (m *mockClient) StartDownloadDisk(diskID string, format ImageFormat, _ ...R
 	}
 
 	if disk.format != format {
-		return nil, newError(EBug, "the mock library doesn't support converting images from %s to %s; please download images in the same format as you uploaded them", disk.format, format)
+		m.logger.Warningf("the image upload client requested a conversion from from %s to %s; the mock library does not support this and the source image data will be used unmodified which may lead to errors", disk.format, format)
 	}
 
 	dl := &mockImageDownload{
@@ -42,7 +42,7 @@ func (m *mockClient) StartDownloadDisk(diskID string, format ImageFormat, _ ...R
 	return dl, nil
 }
 
-// Deprecated: use DownloadImage instead.
+// Deprecated: use DownloadDisk instead.
 func (m *mockClient) DownloadImage(diskID string, format ImageFormat, retries ...RetryStrategy) (
 	ImageDownloadReader,
 	error,

@@ -406,6 +406,9 @@ type OptionalVMParameters interface {
 
 	// Memory returns the VM memory in Bytes.
 	Memory() *int64
+
+	// Disks returns a list of disks that are to be changed from the template.
+	Disks() []OptionalVMDiskParameters
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -449,6 +452,106 @@ type BuildableVMParameters interface {
 	WithClone(clone bool) (BuildableVMParameters, error)
 	// MustWithClone is identical to WithClone, but panics instead of returning an error.
 	MustWithClone(clone bool) BuildableVMParameters
+
+	// WithDisks adds disk configurations to the VM creation to manipulate the disks inherited from templates.
+	WithDisks(disks []OptionalVMDiskParameters) (BuildableVMParameters, error)
+	// MustWithDisks is identical to WithDisks, but panics instead of returning an error.
+	MustWithDisks(disks []OptionalVMDiskParameters) BuildableVMParameters
+}
+
+// OptionalVMDiskParameters describes the disk parameters that can be given to VM creation. These manipulate the
+// disks inherited from the template.
+type OptionalVMDiskParameters interface {
+	// DiskID returns the identifier of the disk that is being changed.
+	DiskID() string
+	// Sparse sets the sparse parameter if set. Note, that Sparse is only supported in oVirt on block devices with QCOW2
+	// images. On NFS you MUST use raw disks to use sparse.
+	Sparse() *bool
+	// Format returns the image format to be used for the specified disk.
+	Format() *ImageFormat
+}
+
+// BuildableVMDiskParameters is a buildable version of OptionalVMDiskParameters.
+type BuildableVMDiskParameters interface {
+	OptionalVMDiskParameters
+
+	// WithSparse enables or disables sparse disk provisioning. Note, that Sparse is only supported in oVirt on block
+	// devices with QCOW2 images. On NFS you MUST use raw images to use sparse. See WithFormat.
+	WithSparse(sparse bool) (BuildableVMDiskParameters, error)
+	// MustWithSparse is identical to WithSparse, but panics instead of returning an error.
+	MustWithSparse(sparse bool) BuildableVMDiskParameters
+
+	// WithFormat adds a disk format to the VM on creation. Note, that QCOW2 is only supported in conjunction with
+	// Sparse on block devices. On NFS you MUST use raw images to use sparse. See WithSparse.
+	WithFormat(format ImageFormat) (BuildableVMDiskParameters, error)
+	// MustWithFormat is identical to WithFormat, but panics instead of returning an error.
+	MustWithFormat(format ImageFormat) BuildableVMDiskParameters
+}
+
+// NewBuildableVMDiskParameters creates a new buildable OptionalVMDiskParameters.
+func NewBuildableVMDiskParameters(diskID string) (BuildableVMDiskParameters, error) {
+	return &vmDiskParameters{
+		diskID,
+		nil,
+		nil,
+	}, nil
+}
+
+// MustNewBuildableVMDiskParameters is identical to NewBuildableVMDiskParameters but panics instead of returning an
+// error.
+func MustNewBuildableVMDiskParameters(diskID string) BuildableVMDiskParameters {
+	builder, err := NewBuildableVMDiskParameters(diskID)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+type vmDiskParameters struct {
+	diskID string
+	sparse *bool
+	format *ImageFormat
+}
+
+func (v *vmDiskParameters) Format() *ImageFormat {
+	return v.format
+}
+
+func (v *vmDiskParameters) WithFormat(format ImageFormat) (BuildableVMDiskParameters, error) {
+	if err := format.Validate(); err != nil {
+		return nil, err
+	}
+	v.format = &format
+	return v, nil
+}
+
+func (v *vmDiskParameters) MustWithFormat(format ImageFormat) BuildableVMDiskParameters {
+	builder, err := v.WithFormat(format)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmDiskParameters) DiskID() string {
+	return v.diskID
+}
+
+func (v *vmDiskParameters) Sparse() *bool {
+	return v.sparse
+}
+
+func (v *vmDiskParameters) WithSparse(sparse bool) (BuildableVMDiskParameters, error) {
+	v.sparse = &sparse
+	return v, nil
+}
+
+func (v *vmDiskParameters) MustWithSparse(sparse bool) BuildableVMDiskParameters {
+	builder, err := v.WithSparse(sparse)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 // UpdateVMParameters returns a set of parameters to change on a VM.
@@ -609,6 +712,8 @@ type vmParams struct {
 	memory         *int64
 
 	clone *bool
+
+	disks []OptionalVMDiskParameters
 }
 
 func (v *vmParams) Clone() *bool {
@@ -622,6 +727,35 @@ func (v *vmParams) WithClone(clone bool) (BuildableVMParameters, error) {
 
 func (v *vmParams) MustWithClone(clone bool) BuildableVMParameters {
 	builder, err := v.WithClone(clone)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) Disks() []OptionalVMDiskParameters {
+	return v.disks
+}
+
+func (v *vmParams) WithDisks(disks []OptionalVMDiskParameters) (BuildableVMParameters, error) {
+	diskIDs := map[string]int{}
+	for i, d := range disks {
+		if previousID, ok := diskIDs[d.DiskID()]; ok {
+			return nil, newError(
+				EBadArgument,
+				"Disk %s appears twice, in position %d and %d.",
+				d.DiskID(),
+				previousID,
+				i,
+			)
+		}
+	}
+	v.disks = disks
+	return v, nil
+}
+
+func (v *vmParams) MustWithDisks(disks []OptionalVMDiskParameters) BuildableVMParameters {
+	builder, err := v.WithDisks(disks)
 	if err != nil {
 		panic(err)
 	}

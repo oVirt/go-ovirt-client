@@ -48,13 +48,22 @@ func TestDiskAttachmentCannotBeAttachedToSecondVM(t *testing.T) {
 }
 
 func assertCanCreateDisk(t *testing.T, helper ovirtclient.TestHelper) ovirtclient.Disk {
+	return assertCanCreateDiskWithParameters(t, helper, ovirtclient.ImageFormatRaw, nil)
+}
+
+func assertCanCreateDiskWithParameters(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	format ovirtclient.ImageFormat,
+	parameters ovirtclient.CreateDiskOptionalParameters,
+) ovirtclient.Disk {
 	t.Logf("Creating test disk...")
 	client := helper.GetClient()
 	disk, err := client.CreateDisk(
 		helper.GetStorageDomainID(),
-		ovirtclient.ImageFormatRaw,
-		512,
-		nil,
+		format,
+		1048576,
+		parameters,
 	)
 	if disk != nil {
 		t.Cleanup(

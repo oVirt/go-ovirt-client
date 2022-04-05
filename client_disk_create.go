@@ -16,7 +16,7 @@ func (o *oVirtClient) StartCreateDisk(
 ) (DiskCreation, error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
 
-	if err := format.Validate(); err != nil {
+	if err := validateDiskCreationParameters(format, size); err != nil {
 		return nil, err
 	}
 
@@ -36,11 +36,7 @@ func (o *oVirtClient) StartCreateDisk(
 		func() error {
 			addResponse, err := o.createDisk(storageDomainID, size, format, correlationID, params)
 			if err != nil {
-				return wrap(
-					err,
-					EUnidentified,
-					"failed to add disk",
-				)
+				return err
 			}
 			sdkDisk, ok := addResponse.Disk()
 			if !ok {
@@ -67,6 +63,18 @@ func (o *oVirtClient) StartCreateDisk(
 		return nil, err
 	}
 	return result, nil
+}
+
+func validateDiskCreationParameters(format ImageFormat, size uint64) error {
+	if err := format.Validate(); err != nil {
+		return err
+	}
+	if size < 1048576 {
+		// 1M is the minimum size for disks in oVirt. Smaller disks can be created, but they lead to bugs in oVirt
+		// when creating disks from templates and changing the format.
+		return newError(EBadArgument, "Disk size must be at least 1048576 bytes (1 MB)")
+	}
+	return nil
 }
 
 func (o *oVirtClient) createDisk(
