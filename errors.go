@@ -230,12 +230,24 @@ func realIdentify(err error) EngineError {
 	var authErr *ovirtsdk.AuthError
 	var notFoundErr *ovirtsdk.NotFoundError
 	switch {
+	case strings.Contains(err.Error(), "stopped after") && strings.Contains(err.Error(), "redirects"):
+		return wrap(
+			err,
+			ENotAnOVirtEngine,
+			"the specified oVirt Engine URL has resulted in a redirect, check if your URL is correct",
+		)
 	case strings.Contains(err.Error(), "parse non-array sso with response"):
-		return wrap(err,
-			ENotAnOVirtEngine, "invalid credentials, or the URL does not point to an oVirt Engine, check your settings")
+		return wrap(
+			err,
+			ENotAnOVirtEngine,
+			"invalid credentials, or the URL does not point to an oVirt Engine, check your settings",
+		)
 	case strings.Contains(err.Error(), "server gave HTTP response to HTTPS client"):
-		return wrap(err,
-			ENotAnOVirtEngine, "the server gave a HTTP response to a HTTPS client, check if your URL is correct")
+		return wrap(
+			err,
+			ENotAnOVirtEngine,
+			"the server gave a HTTP response to a HTTPS client, check if your URL is correct",
+		)
 	case strings.Contains(err.Error(), "tls"):
 		fallthrough
 	case strings.Contains(err.Error(), "x509"):

@@ -38,6 +38,12 @@ type TestHelper interface {
 
 	// GetTLS returns the TLS provider used for this test helper.
 	GetTLS() TLSProvider
+
+	// GetUsername returns the oVirt username.
+	GetUsername() string
+
+	// GetPassword returns the oVirt password.
+	GetPassword() string
 }
 
 // MustNewTestHelper is identical to NewTestHelper, but panics instead of returning an error.
@@ -114,6 +120,8 @@ func NewTestHelper(
 	}
 
 	return &testHelper{
+		username:                 username,
+		password:                 password,
 		client:                   client,
 		tls:                      tlsProvider,
 		clusterID:                clusterID,
@@ -405,6 +413,16 @@ type testHelper struct {
 	blankTemplateID          TemplateID
 	vnicProfileID            string
 	secondaryStorageDomainID string
+	password                 string
+	username                 string
+}
+
+func (t *testHelper) GetUsername() string {
+	return t.username
+}
+
+func (t *testHelper) GetPassword() string {
+	return t.password
 }
 
 func (t *testHelper) GetSecondaryStorageDomainID(te *testing.T) string {
