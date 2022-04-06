@@ -8,7 +8,7 @@ import (
 )
 
 func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk ovirtclient.Disk) {
-	fh, size := getTestImageFile()
+	fh, size := getTestImageFile(t)
 
 	originalSize := disk.ProvisionedSize()
 	if originalSize < size {
@@ -47,7 +47,7 @@ func assertCanUploadFullyFunctionalDiskImage(t *testing.T, helper ovirtclient.Te
 
 func TestImageUploadDiskCreated(t *testing.T) {
 	t.Parallel()
-	fh, size := getTestImageFile()
+	fh, size := getTestImageFile(t)
 
 	helper := getHelper(t)
 	client := helper.GetClient()
