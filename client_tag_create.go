@@ -3,7 +3,7 @@ package ovirtclient
 import ovirtsdk "github.com/ovirt/go-ovirt"
 
 func (o *oVirtClient) CreateTag(name string, params CreateTagParams, retries ...RetryStrategy) (result Tag, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	if params == nil {
 		params = NewCreateTagParams()
 	}

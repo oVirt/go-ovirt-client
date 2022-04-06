@@ -13,7 +13,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 	params CreateDiskAttachmentOptionalParams,
 	retries ...RetryStrategy,
 ) (result DiskAttachment, err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	if err := diskInterface.Validate(); err != nil {
 		return nil, wrap(err, EBadArgument, "failed to create disk attachment")
 	}

@@ -84,6 +84,21 @@ const EConflict ErrorCode = "conflict"
 // EHotPlugFailed indicates that a disk could not be hot plugged.
 const EHotPlugFailed ErrorCode = "hot_plug_failed"
 
+// EInvalidGrant is an error returned from the oVirt Engine when the SSO token expired. In this case we must reconnect
+// and retry the API call.
+const EInvalidGrant ErrorCode = "invalid_grant"
+
+// CanRecover returns true if there is a way to automatically recoverFailure from this error. For the actual recovery an
+// appropriate recovery strategy must be passed to the retry function.
+func (e ErrorCode) CanRecover() bool {
+	switch e {
+	case EInvalidGrant:
+		return true
+	default:
+		return false
+	}
+}
+
 // CanAutoRetry returns false if the given error code is permanent and an automatic retry should not be attempted.
 func (e ErrorCode) CanAutoRetry() bool {
 	switch e {
@@ -139,6 +154,9 @@ type EngineError interface {
 	Code() ErrorCode
 	// Unwrap returns the underlying error
 	Unwrap() error
+	// CanRecover indicates that this error can be automatically recovered with the use of the proper recovery strategy
+	// passed to the retry function.
+	CanRecover() bool
 	// CanAutoRetry returns false if an automatic retry should not be attempted.
 	CanAutoRetry() bool
 }
@@ -190,6 +208,10 @@ func (e *engineError) Code() ErrorCode {
 
 func (e *engineError) Unwrap() error {
 	return e.cause
+}
+
+func (e *engineError) CanRecover() bool {
+	return e.code.CanRecover()
 }
 
 func (e *engineError) CanAutoRetry() bool {
@@ -259,6 +281,8 @@ func realIdentify(err error) EngineError {
 			ENotAnOVirtEngine,
 			"the server gave a HTTP response to a HTTPS client, check if your URL is correct",
 		)
+	case strings.Contains(err.Error(), "invalid_grant: The provided authorization grant for the auth code has expired."):
+		return wrap(err, EInvalidGrant, "please reauthenticate for a new access token")
 	case strings.Contains(err.Error(), "tls"):
 		fallthrough
 	case strings.Contains(err.Error(), "x509"):

@@ -12,7 +12,7 @@ func (o *oVirtClient) CreateTemplate(
 	params OptionalTemplateCreateParameters,
 	retries ...RetryStrategy,
 ) (result Template, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	if params == nil {
 		params = &templateCreateParameters{}
 	}

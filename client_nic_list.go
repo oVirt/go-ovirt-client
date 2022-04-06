@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) ListNICs(vmid string, retries ...RetryStrategy) (result []NIC, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("listing NICs for VM %s", vmid),
 		o.logger,

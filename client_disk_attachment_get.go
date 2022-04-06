@@ -9,7 +9,7 @@ func (o *oVirtClient) GetDiskAttachment(
 	id string,
 	retries ...RetryStrategy,
 ) (result DiskAttachment, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting disk attachment %s on VM %s", id, vmid),
 		o.logger,

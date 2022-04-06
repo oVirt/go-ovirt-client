@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) RemoveDisk(diskID string, retries ...RetryStrategy) error {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("removing disk %s", diskID),
 		o.logger,

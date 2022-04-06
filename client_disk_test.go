@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
-	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
 )
 
 // ExampleDiskClient_CreateDisk is an example of creating an empty disk. This example works with the test

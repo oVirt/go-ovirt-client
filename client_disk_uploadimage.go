@@ -42,7 +42,7 @@ func (o *oVirtClient) UploadToNewDisk(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 	progress, err := o.StartUploadToNewDisk(storageDomainID, format, size, params, reader, retries...)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (o *oVirtClient) UploadToDisk(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) error {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 	progress, err := o.StartUploadToDisk(diskID, size, reader, retries...)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (o *oVirtClient) StartUploadToDisk(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	o.logger.Infof("Starting disk image upload...")
 	disk, err := o.GetDisk(diskID, retries...)
 	if err != nil {
@@ -302,7 +302,7 @@ func (o *oVirtClient) StartUploadToNewDisk(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 
 	o.logger.Infof("Starting disk image upload...")
 

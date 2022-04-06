@@ -77,6 +77,7 @@ func getClient(
 	testDatacenter *datacenterWithClusters,
 ) *mockClient {
 	client := &mockClient{
+		ctx:             nil,
 		logger:          logger,
 		url:             "https://localhost/ovirt-engine/api",
 		lock:            &sync.Mutex{},

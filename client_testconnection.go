@@ -7,7 +7,7 @@ type TestConnectionClient interface {
 }
 
 func (o *oVirtClient) Test(retries ...RetryStrategy) error {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	return retry(
 		"testing oVirt engine connection",
 		o.logger,
@@ -19,7 +19,7 @@ func (o *oVirtClient) Test(retries ...RetryStrategy) error {
 }
 
 func (m *mockClient) Test(retries ...RetryStrategy) error {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(m))
 	return retry(
 		"testing oVirt engine connection",
 		nil,

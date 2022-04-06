@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) RemoveVNICProfile(id string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing VNIC profile %s", id),
 		o.logger,

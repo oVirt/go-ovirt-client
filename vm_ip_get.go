@@ -22,7 +22,7 @@ func (m *mockClient) GetVMIPAddresses(id string, params VMIPSearchParams, _ ...R
 }
 
 func (o *oVirtClient) GetVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (result map[string][]net.IP, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = map[string][]net.IP{}
 	err = retry(
 		fmt.Sprintf("getting IP addresses for VM %s", id),

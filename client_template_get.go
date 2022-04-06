@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetTemplate(id TemplateID, retries ...RetryStrategy) (result Template, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting template %s", id),
 		o.logger,

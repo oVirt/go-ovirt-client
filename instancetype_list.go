@@ -1,7 +1,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListInstanceTypes(retries ...RetryStrategy) (result []InstanceType, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []InstanceType{}
 	err = retry(
 		"listing instance types",

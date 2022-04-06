@@ -10,7 +10,7 @@ func (o *oVirtClient) RemoveVMFromAffinityGroup(
 	agID AffinityGroupID,
 	retries ...RetryStrategy,
 ) error {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("adding VM %s to affinity group %s", vmID, agID),
 		o.logger,

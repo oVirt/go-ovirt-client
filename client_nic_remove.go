@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) RemoveNIC(vmid string, id string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing NIC %s from VM %s", id, vmid),
 		o.logger,

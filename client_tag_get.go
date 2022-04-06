@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetTag(id string, retries ...RetryStrategy) (result Tag, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting tag %s", id),
 		o.logger,

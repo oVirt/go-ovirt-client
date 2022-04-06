@@ -6,7 +6,7 @@ import (
 
 func (o *oVirtClient) GetVMByName(name string, retries ...RetryStrategy) (result VM, err error) {
 
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting vm name %s", name),
 		o.logger,

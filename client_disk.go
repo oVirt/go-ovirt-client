@@ -796,7 +796,7 @@ func (d *diskWait) Disk() Disk {
 }
 
 func (d *diskWait) Wait(retries ...RetryStrategy) (Disk, error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(d.client))
 	if err := d.client.waitForJobFinished(d.correlationID, retries); err != nil {
 		return d.disk, err
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) StartVM(id string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("starting VM %s", id),
 		o.logger,

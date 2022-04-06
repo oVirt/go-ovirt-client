@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) RemoveDiskAttachment(vmID string, diskAttachmentID string, retries ...RetryStrategy) error {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("removing disk attachment %s on VM %s", diskAttachmentID, vmID),
 		o.logger,

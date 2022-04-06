@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) AddTagToVM(id string, tagID string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("adding tag %s to VM %s", tagID, id),
 		o.logger,
@@ -42,7 +42,7 @@ func (m *mockClient) AddTagToVM(id string, tagID string, retries ...RetryStrateg
 }
 
 func (o *oVirtClient) AddTagToVMByName(id string, tagName string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("adding tag %s to VM %s", tagName, id),
 		o.logger,

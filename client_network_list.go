@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListNetworks(retries ...RetryStrategy) (result []Network, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Network{}
 	err = retry(
 		"listing networks",

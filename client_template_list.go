@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListTemplates(retries ...RetryStrategy) (result []Template, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Template{}
 	err = retry(
 		"listing templates",

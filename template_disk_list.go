@@ -8,7 +8,7 @@ func (o *oVirtClient) ListTemplateDiskAttachments(
 	templateID TemplateID,
 	retries ...RetryStrategy,
 ) (result []TemplateDiskAttachment, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("listing disk attachments for template %s", templateID),
 		o.logger,

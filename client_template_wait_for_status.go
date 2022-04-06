@@ -9,7 +9,7 @@ func (o *oVirtClient) WaitForTemplateStatus(
 	status TemplateStatus,
 	retries ...RetryStrategy,
 ) (result Template, err error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 	err = retry(
 		fmt.Sprintf("waiting for template %s to enter status \"%s\"", id, status),
 		o.logger,

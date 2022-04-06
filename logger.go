@@ -1,7 +1,7 @@
 package ovirtclient
 
 import (
-	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
 )
 
 // Logger is a thin wrapper around ovirtclientlog.Logger for convenience.

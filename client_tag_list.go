@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListTags(retries ...RetryStrategy) (result []Tag, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Tag{}
 	err = retry(
 		"listing tags",

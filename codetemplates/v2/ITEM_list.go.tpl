@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) List{{ .Object }}s(retries ...RetryStrategy) (result []{{ .Object }}, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []{{ .Object }}{}
 	err = retry(
 		"listing {{ .Name }}s",

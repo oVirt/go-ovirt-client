@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetHost(id string, retries ...RetryStrategy) (result Host, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting host %s", id),
 		o.logger,

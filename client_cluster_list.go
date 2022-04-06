@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListClusters(retries ...RetryStrategy) (result []Cluster, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Cluster{}
 	err = retry(
 		"listing clusters",

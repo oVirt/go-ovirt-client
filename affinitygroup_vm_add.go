@@ -13,7 +13,7 @@ func (o *oVirtClient) AddVMToAffinityGroup(
 	agID AffinityGroupID,
 	retries ...RetryStrategy,
 ) error {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	vm, err := ovirtsdk4.NewVmBuilder().Id(vmID).Build()
 	if err != nil {
 		return wrap(err, EBug, "Failed to build SDK VM object")

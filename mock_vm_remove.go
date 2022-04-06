@@ -4,7 +4,7 @@ import "fmt"
 
 func (m *mockClient) RemoveVM(id string, retries ...RetryStrategy) error {
 
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(m))
 
 	return retry(
 		fmt.Sprintf("removing VM %s", id),

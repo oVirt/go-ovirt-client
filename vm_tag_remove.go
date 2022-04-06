@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) RemoveTagFromVM(id string, tagID string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing tag from VM %s", id),
 		o.logger,

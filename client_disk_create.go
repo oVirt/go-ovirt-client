@@ -14,7 +14,7 @@ func (o *oVirtClient) StartCreateDisk(
 	params CreateDiskOptionalParameters,
 	retries ...RetryStrategy,
 ) (DiskCreation, error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 
 	if err := validateDiskCreationParameters(format, size); err != nil {
 		return nil, err
@@ -139,8 +139,8 @@ func (o *oVirtClient) CreateDisk(
 	params CreateDiskOptionalParameters,
 	retries ...RetryStrategy,
 ) (Disk, error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
-	waitRetries := defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
+	waitRetries := defaultRetries(retries, defaultLongTimeouts(o))
 	result, err := o.StartCreateDisk(storageDomainID, format, size, params, retries...)
 	if err != nil {
 		return nil, err

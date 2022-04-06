@@ -6,6 +6,8 @@ github.com/ovirt/go-ovirt v0.0.0-20220427092237-114c47f2835c h1:jXRFpl7+W0YZj/fg
 github.com/ovirt/go-ovirt v0.0.0-20220427092237-114c47f2835c/go.mod h1:Zkdj9/rW6eyuw0uOeEns6O3pP5G2ak+bI/tgkQ/tEZI=
 github.com/ovirt/go-ovirt-client-log/v2 v2.2.0 h1:7iZQs+8moX7aopeAdNU1b12mF/yWWBVA/Pey55F9PTQ=
 github.com/ovirt/go-ovirt-client-log/v2 v2.2.0/go.mod h1:mDoU3KIwftpsgZGzXGk5d2UEJYTY0bYMfg/GwPapXL0=
+github.com/ovirt/go-ovirt-client-log/v3 v3.0.0 h1:uvACVHYhYPMkNJrrgWiABcfELB6qoFfsDDUTbpb4Jv4=
+github.com/ovirt/go-ovirt-client-log/v3 v3.0.0/go.mod h1:chKKxCv4lRjxezrTG+EIhkWXGhDAWByglPVXh/iYdnQ=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

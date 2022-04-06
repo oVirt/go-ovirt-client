@@ -18,7 +18,7 @@ func (o *oVirtClient) StartImageDownload(diskID string, format ImageFormat, retr
 }
 
 func (o *oVirtClient) StartDownloadDisk(diskID string, format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 
 	o.logger.Infof("Starting disk %s image download...", diskID)
 	disk, err := o.GetDisk(diskID)

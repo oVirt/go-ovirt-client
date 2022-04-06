@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListDisks(retries ...RetryStrategy) (result []Disk, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Disk{}
 	err = retry(
 		"listing disks",

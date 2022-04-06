@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetDisk(id string, retries ...RetryStrategy) (result Disk, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting disk %s", id),
 		o.logger,

@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) GetInstanceType(id InstanceTypeID, retries ...RetryStrategy) (result InstanceType, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting instance type %s", id),
 		o.logger,

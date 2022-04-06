@@ -12,13 +12,13 @@ func (o *oVirtClient) CreateVNICProfile(
 	params OptionalVNICProfileParameters,
 	retries ...RetryStrategy,
 ) (result VNICProfile, err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 
 	if err := validateVNICProfileCreationParameters(name, networkID, params); err != nil {
 		return nil, err
 	}
 
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("creating VNIC profile %s", name),
 		o.logger,

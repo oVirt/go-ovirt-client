@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetStorageDomain(id string, retries ...RetryStrategy) (result StorageDomain, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting storage domain %s", id),
 		o.logger,

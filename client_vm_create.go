@@ -86,7 +86,7 @@ func vmPlacementPolicyParameterConverter(params OptionalVMParameters, builder *o
 }
 
 func (o *oVirtClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
 		return nil, err

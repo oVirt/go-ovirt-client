@@ -15,7 +15,7 @@ func (m *mockClient) CreateVM(
 	params OptionalVMParameters,
 	retries ...RetryStrategy,
 ) (result VM, err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(m))
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
 		return nil, err

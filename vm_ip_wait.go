@@ -18,9 +18,9 @@ func waitForIPAddresses(
 	params VMIPSearchParams,
 	retries []RetryStrategy,
 	logger Logger,
-	client VMClient,
+	client Client,
 ) (result map[string][]net.IP, err error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(client))
 	err = retry(
 		fmt.Sprintf("waiting for IP addresses on VM %s", id),
 		logger,

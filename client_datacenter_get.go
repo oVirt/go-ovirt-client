@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetDatacenter(id string, retries ...RetryStrategy) (result Datacenter, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting datacenter %s", id),
 		o.logger,
