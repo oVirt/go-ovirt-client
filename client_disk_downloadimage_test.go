@@ -2,7 +2,7 @@ package ovirtclient_test
 
 import (
 	"bytes"
-	_ "embed"
+	"embed"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -14,8 +14,8 @@ import (
 
 func TestImageDownload(t *testing.T) {
 	t.Parallel()
-	testImageData := getTestImageData()
-	fh, size := getTestImageFile()
+	fh, size := getTestImageFile(t)
+	testImageData, _ := getTestImageData(t)
 
 	helper := getHelper(t)
 	client := helper.GetClient()
@@ -51,11 +51,8 @@ func TestImageDownload(t *testing.T) {
 	}
 }
 
-//go:embed testimage/image
-var testImage []byte
-
-//go:embed testimage/full.qcow
-var fullTestImage []byte
+//go:embed testimage/*
+var testImageFS embed.FS
 
 //go:generate go run scripts/get_test_image/get_test_image.go
 
@@ -78,20 +75,35 @@ type qcowHeader struct {
 // getFullTestImage downloads a fully functional test image with the QEMU guest image to a temporary directory and
 // offers it as a reader.
 func getFullTestImage(t *testing.T) (io.ReadSeekCloser, uint64, uint64) {
-	if len(fullTestImage) == 0 {
-		t.Skipf("Skipping test, full test image is not available. Did you run go generate?")
+	fh, err := testImageFS.Open("testimage/full.qcow")
+	if err != nil {
+		t.Skipf("testimage/full.qcow not found in the test environment. Did you run go generate? (%v)", err)
+	}
+	defer func() {
+		_ = fh.Close()
+	}()
+	stat, err := fh.Stat()
+	if err != nil {
+		t.Skipf("testimage/full.qcow not found in the test environment. Did you run go generate? (%v)", err)
+	}
+	size := stat.Size()
+
+	fullTestImage, err := ioutil.ReadAll(fh)
+	if err != nil {
+		t.Skipf("testimage/full.qcow not found in the test environment. Did you run go generate? (%v)", err)
 	}
 
 	header := &qcowHeader{}
 	if err := binary.Read(bytes.NewReader(fullTestImage), binary.BigEndian, header); err != nil {
-		panic(fmt.Errorf("cannot read QCOW header from full test image (%w)", err))
+		t.Fatalf("cannot read QCOW header from full test image (%v)", err)
 	}
 
-	return &nopReadCloser{bytes.NewReader(fullTestImage)}, uint64(len(fullTestImage)), header.Size
+	return &nopReadCloser{bytes.NewReader(fullTestImage)}, uint64(size), header.Size
 }
 
-func getTestImageFile() (io.ReadSeekCloser, uint64) {
-	return &nopReadCloser{bytes.NewReader(testImage)}, uint64(len(testImage))
+func getTestImageFile(t *testing.T) (io.ReadSeekCloser, uint64) {
+	testImage, size := getTestImageData(t)
+	return &nopReadCloser{bytes.NewReader(testImage)}, size
 }
 
 type nopReadCloser struct {
@@ -102,8 +114,25 @@ func (n nopReadCloser) Close() error {
 	return nil
 }
 
-func getTestImageData() []byte {
-	return testImage
+func getTestImageData(t *testing.T) ([]byte, uint64) {
+	fh, err := testImageFS.Open("testimage/image")
+	if err != nil {
+		t.Errorf("testimage/image not found in the test environment. (%v)", err)
+	}
+	defer func() {
+		_ = fh.Close()
+	}()
+	stat, err := fh.Stat()
+	if err != nil {
+		t.Errorf("testimage/image not found in the test environment. (%v)", err)
+	}
+	size := stat.Size()
+
+	testImage, err := ioutil.ReadAll(fh)
+	if err != nil {
+		t.Errorf("testimage/image not found in the test environment. (%v)", err)
+	}
+	return testImage, uint64(size)
 }
 
 func downloadImage(
