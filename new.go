@@ -163,16 +163,18 @@ func testConnection(conn Client) error {
 }
 
 func validateUsername(username string) error {
-	usernameParts := strings.SplitN(username, "@", 2)
-	//nolint:gomnd
-	if len(usernameParts) != 2 {
-		return newError(EBadArgument, "username must contain exactly one @ sign (format should be admin@internal)")
+	usernameParts := strings.Split(username, "@")
+	if len(usernameParts) < 2 {
+		return newError(EBadArgument, "username must contain at least one @ sign (format should be admin@internal)")
 	}
-	if len(usernameParts[0]) == 0 {
-		return newError(EBadArgument, "no user supplied before @ sign in username (format should be admin@internal)")
+	user := strings.Join(usernameParts[:len(usernameParts)-1], "@")
+	scope := usernameParts[len(usernameParts)-1]
+
+	if len(user) == 0 {
+		return newError(EBadArgument, "no user supplied before the @ sign in username (format should be admin@internal)")
 	}
-	if len(usernameParts[1]) == 0 {
-		return newError(EBadArgument, "no scope supplied after @ sign in username (format should be admin@internal)")
+	if len(scope) == 0 {
+		return newError(EBadArgument, "no user supplied after the @ sign in username (format should be admin@internal)")
 	}
 	return nil
 }
