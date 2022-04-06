@@ -12,6 +12,9 @@ func (o *oVirtClient) CreateAffinityGroup(
 	params CreateAffinityGroupOptionalParams,
 	retries ...RetryStrategy,
 ) (result AffinityGroup, err error) {
+	if params == nil {
+		params = CreateAffinityGroupParams()
+	}
 	retries = defaultRetries(retries, defaultWriteTimeouts())
 	err = retry(
 		fmt.Sprintf("creating affinity group in cluster %s", clusterID),

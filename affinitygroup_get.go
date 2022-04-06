@@ -19,8 +19,9 @@ func (o *oVirtClient) GetAffinityGroup(clusterID ClusterID, id AffinityGroupID, 
 			if !ok {
 				return newError(
 					ENotFound,
-					"no cluster returned when getting cluster ID %s",
+					"no affinity group returned when getting affinity group ID %s in cluster ID %s",
 					id,
+					clusterID,
 				)
 			}
 			result, err = convertSDKAffinityGroup(sdkObject, o)

@@ -24,6 +24,9 @@ const ETLSError ErrorCode = "tls_error"
 // ENotFound signals that the resource requested was not found.
 const ENotFound ErrorCode = "not_found"
 
+// EMultipleResults indicates that multiple items were found where only one was expected.
+const EMultipleResults ErrorCode = "multiple_results"
+
 // EBug signals an error that should never happen. Please report this.
 const EBug ErrorCode = "bug"
 
@@ -93,6 +96,8 @@ func (e ErrorCode) CanAutoRetry() bool {
 	case ETLSError:
 		return false
 	case ENotFound:
+		return false
+	case EMultipleResults:
 		return false
 	case EBug:
 		return false
