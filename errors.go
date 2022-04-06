@@ -78,6 +78,9 @@ const ELocalIO ErrorCode = "local_io_error"
 // conflicting way. For example, you tried to attach a disk that is already attached.
 const EConflict ErrorCode = "conflict"
 
+// EHotPlugFailed indicates that a disk could not be hot plugged.
+const EHotPlugFailed ErrorCode = "hot_plug_failed"
+
 // CanAutoRetry returns false if the given error code is permanent and an automatic retry should not be attempted.
 func (e ErrorCode) CanAutoRetry() bool {
 	switch e {
@@ -241,6 +244,8 @@ func realIdentify(err error) EngineError {
 		return wrap(err, ENotFound, "the requested resource was not found")
 	case strings.Contains(err.Error(), "Disk is locked"):
 		return wrap(err, EDiskLocked, "the disk is locked")
+	case strings.Contains(err.Error(), "Failed to hot-plug disk"):
+		return wrap(err, EHotPlugFailed, "failed to hot-plug disk")
 	case strings.Contains(err.Error(), "Related operation is currently in progress."):
 		return wrap(err, ERelatedOperationInProgress, "a related operation is in progress")
 	case strings.Contains(err.Error(), "Disk configuration") && strings.Contains(err.Error(), " is incompatible with the storage domain type."):
