@@ -21,6 +21,8 @@ type AffinityGroupClient interface {
 	// GetAffinityGroup returns a specific affinity group based on its ID. An error is returned if the affinity label
 	// doesn't exist.
 	GetAffinityGroup(clusterID ClusterID, id AffinityGroupID, retries ...RetryStrategy) (AffinityGroup, error)
+	// GetAffinityGroupByName returns an affinity group by name.
+	GetAffinityGroupByName(clusterID ClusterID, name string, retries ...RetryStrategy) (AffinityGroup, error)
 	// RemoveAffinityGroup removes the affinity group specified.
 	RemoveAffinityGroup(clusterID ClusterID, id AffinityGroupID, retries ...RetryStrategy) error
 
