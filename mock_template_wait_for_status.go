@@ -9,7 +9,7 @@ func (m *mockClient) WaitForTemplateStatus(
 	status TemplateStatus,
 	retries ...RetryStrategy,
 ) (result Template, err error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(m))
 	err = retry(
 		fmt.Sprintf("waiting for template %s to enter status \"%s\"", id, status),
 		nil,

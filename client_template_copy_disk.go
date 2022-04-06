@@ -11,7 +11,7 @@ func (o *oVirtClient) CopyTemplateDiskToStorageDomain(
 	diskID string,
 	storageDomainID string,
 	retries ...RetryStrategy) (result Disk, err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	progress, err := o.StartCopyTemplateDiskToStorageDomain(diskID, storageDomainID, retries...)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (o *oVirtClient) StartCopyTemplateDiskToStorageDomain(
 	diskID string,
 	storageDomainID string,
 	retries ...RetryStrategy) (DiskUpdate, error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	correlationID := fmt.Sprintf("template_disk_copy_%s", generateRandomID(5, o.nonSecureRandom))
 	sdkStorageDomain := ovirtsdk.NewStorageDomainBuilder().Id(storageDomainID)
 	sdkDisk := ovirtsdk.NewDiskBuilder().Id(diskID)

@@ -22,7 +22,7 @@ func (o *oVirtClient) StartUpdateDisk(id string, params UpdateDiskParameters, re
 	DiskUpdate,
 	error,
 ) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 
 	sdkDisk := ovirtsdk.NewDiskBuilder().Id(id)
 	if alias := params.Alias(); alias != nil {

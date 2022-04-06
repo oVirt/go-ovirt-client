@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListVNICProfiles(retries ...RetryStrategy) (result []VNICProfile, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []VNICProfile{}
 	err = retry(
 		"listing VNIC profiles",

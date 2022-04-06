@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListDatacenters(retries ...RetryStrategy) (result []Datacenter, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Datacenter{}
 	err = retry(
 		"listing datacenters",

@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (vm VM, err error) {
-	retries = defaultRetries(retries, defaultLongTimeouts())
+	retries = defaultRetries(retries, defaultLongTimeouts(o))
 	err = retry(
 		fmt.Sprintf("waiting for VM %s status %s", id, status),
 		o.logger,

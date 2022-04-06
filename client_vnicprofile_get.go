@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetVNICProfile(id string, retries ...RetryStrategy) (result VNICProfile, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting VNIC profile %s", id),
 		o.logger,

@@ -33,7 +33,7 @@ func (o *oVirtClient) SupportsFeature(feature Feature, retries ...RetryStrategy)
 		return false, newError(EBug, "unknown feature: %s", feature)
 	}
 
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		"fetching engine version",
 		o.logger,

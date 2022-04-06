@@ -322,7 +322,7 @@ func (d *storageDomainDiskWait) Disk() Disk {
 }
 
 func (d *storageDomainDiskWait) Wait(retries ...RetryStrategy) (Disk, error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(d.client))
 	d.lock.Lock()
 	diskID := d.disk.ID()
 	storageDomainID := d.storageDomain.ID()

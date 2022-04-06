@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) RemoveDiskFromStorageDomain(id string, diskID string, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing disk %s from storage domain %s", diskID, id),
 		o.logger,

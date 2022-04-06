@@ -11,7 +11,7 @@ func (o *oVirtClient) UpdateVM(
 	params UpdateVMParameters,
 	retries ...RetryStrategy,
 ) (result VM, err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 
 	vm := &ovirtsdk.Vm{}
 	vm.SetId(id)

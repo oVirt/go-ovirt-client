@@ -3,7 +3,7 @@ package ovirtclient
 import "fmt"
 
 func (o *oVirtClient) RemoveAffinityGroup(clusterID ClusterID, id AffinityGroupID, retries ...RetryStrategy) error {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("removing affinity group %s from cluster %s", id, clusterID),
 		o.logger,
@@ -24,7 +24,7 @@ func (o *oVirtClient) RemoveAffinityGroup(clusterID ClusterID, id AffinityGroupI
 
 func (m *mockClient) RemoveAffinityGroup(clusterID ClusterID, id AffinityGroupID, retries ...RetryStrategy) error {
 
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(m))
 
 	return retry(
 		fmt.Sprintf("removing affinity group %s from cluster %s", id, clusterID),

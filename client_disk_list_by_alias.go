@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) ListDisksByAlias(alias string, retries ...RetryStrategy) (result []Disk, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Disk{}
 	err = retry(
 		fmt.Sprintf("listing disk by alias %s", alias),

@@ -8,7 +8,7 @@ func (o *oVirtClient) ListDiskAttachments(
 	vmid string,
 	retries ...RetryStrategy,
 ) (result []DiskAttachment, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []DiskAttachment{}
 	err = retry(
 		fmt.Sprintf("listing disk attachments on VM %s", vmid),

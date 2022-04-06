@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListHosts(retries ...RetryStrategy) (result []Host, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Host{}
 	err = retry(
 		"listing hosts",

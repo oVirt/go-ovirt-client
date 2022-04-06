@@ -82,7 +82,7 @@ func (o *oVirtClient) vmTagCriteria(params VMSearchParameters, criteria []string
 }
 
 func (o *oVirtClient) SearchVMs(params VMSearchParameters, retries ...RetryStrategy) (result []VM, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []VM{}
 	qs, err := o.vmSearchCriteria(params)
 	if err != nil {

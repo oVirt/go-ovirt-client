@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
@@ -170,21 +171,10 @@ func NewWithVerify(
 		return nil, wrap(err, ETLSError, "failed to create TLS configuration")
 	}
 
-	connBuilder := ovirtsdk4.NewConnectionBuilder().
-		URL(u).
-		Username(username).
-		Password(password).
-		TLSConfig(tlsConfig)
-	proxyFunc, err := processExtraSettings(extraSettings, connBuilder)
+	proxyFunc, err := getProxyFunc(extraSettings)
 	if err != nil {
 		return nil, err
 	}
-
-	conn, err := connBuilder.Build()
-	if err != nil {
-		return nil, wrap(err, EUnidentified, "failed to create underlying oVirt connection")
-	}
-
 	httpClient := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -193,30 +183,57 @@ func NewWithVerify(
 	}
 
 	client := &oVirtClient{
-		conn:            conn,
-		httpClient:      httpClient,
-		logger:          logger,
-		url:             u,
-		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
+		&sync.Mutex{},
+		nil,
+		nil,
+		httpClient,
+		logger,
+		u,
+		username,
+		password,
+		tlsConfig,
+		extraSettings,
+		rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
+		verify,
 	}
 
-	if verify != nil {
-		if err := verify(client); err != nil {
-			return nil, err
-		}
+	if err := client.Reconnect(); err != nil {
+		return nil, err
 	}
 
 	return client, nil
 }
 
+func getProxyFunc(extraSettings ExtraSettings) (func(req *http.Request) (*url.URL, error), error) {
+	proxyFunc := http.ProxyFromEnvironment
+	if extraSettings == nil {
+		return proxyFunc, nil
+	}
+	proxy := extraSettings.Proxy()
+	if proxy == nil {
+		return proxyFunc, nil
+	}
+	if *proxy != "" {
+		u, err := url.Parse(*proxy)
+		if err != nil {
+			return nil, wrap(err, EBadArgument, "failed to parse proxy URL: %s", *proxy)
+		}
+		proxyFunc = func(req *http.Request) (*url.URL, error) {
+			return u, nil
+		}
+	} else {
+		proxyFunc = nil
+	}
+	return proxyFunc, nil
+}
+
 func processExtraSettings(
 	extraSettings ExtraSettings,
 	connBuilder *ovirtsdk4.ConnectionBuilder,
-) (func(req *http.Request) (*url.URL, error), error) {
-	proxyFunc := http.ProxyFromEnvironment
+) error {
 	if extraSettings == nil {
 		connBuilder.ProxyFromEnvironment()
-		return proxyFunc, nil
+		return nil
 	}
 	if len(extraSettings.ExtraHeaders()) > 0 {
 		connBuilder.Headers(extraSettings.ExtraHeaders())
@@ -227,21 +244,16 @@ func processExtraSettings(
 	proxy := extraSettings.Proxy()
 	if proxy == nil {
 		connBuilder.ProxyFromEnvironment()
-		return proxyFunc, nil
+		return nil
 	}
 	if *proxy != "" {
 		u, err := url.Parse(*proxy)
 		if err != nil {
-			return nil, wrap(err, EBadArgument, "failed to parse proxy URL: %s", *proxy)
+			return wrap(err, EBadArgument, "failed to parse proxy URL: %s", *proxy)
 		}
 		connBuilder.Proxy(u)
-		proxyFunc = func(req *http.Request) (*url.URL, error) {
-			return u, nil
-		}
-	} else {
-		proxyFunc = nil
 	}
-	return proxyFunc, nil
+	return nil
 }
 
 func testConnection(conn Client) error {

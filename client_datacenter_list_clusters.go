@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) ListDatacenterClusters(id string, retries ...RetryStrategy) (result []Cluster, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Cluster{}
 	err = retry(
 		fmt.Sprintf("listing datacenters %s clusters", id),

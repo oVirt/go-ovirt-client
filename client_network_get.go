@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetNetwork(id string, retries ...RetryStrategy) (result Network, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting network %s", id),
 		o.logger,

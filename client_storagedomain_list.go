@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListStorageDomains(retries ...RetryStrategy) (result []StorageDomain, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []StorageDomain{}
 	err = retry(
 		"listing storage domains",

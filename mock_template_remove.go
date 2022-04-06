@@ -5,7 +5,7 @@ import (
 )
 
 func (m *mockClient) RemoveTemplate(id TemplateID, retries ...RetryStrategy) (err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(m))
 	err = retry(
 		fmt.Sprintf("removing template %s", id),
 		m.logger,

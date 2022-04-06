@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) ListVMTags(id string, retries ...RetryStrategy) (result []Tag, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("listing tags for vm %s", id),
 		o.logger,

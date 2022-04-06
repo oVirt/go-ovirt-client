@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
 )
 
 // TestHelper is a helper to run tests against an oVirt engine. When created it scans the oVirt Engine and tries to find

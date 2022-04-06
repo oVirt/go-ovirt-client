@@ -3,7 +3,7 @@
 package ovirtclient
 
 func (o *oVirtClient) ListVMs(retries ...RetryStrategy) (result []VM, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []VM{}
 	err = retry(
 		"listing vms",

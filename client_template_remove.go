@@ -8,7 +8,7 @@ func (o *oVirtClient) RemoveTemplate(
 	templateID TemplateID,
 	retries ...RetryStrategy,
 ) (err error) {
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing template %s", templateID),
 		o.logger,

@@ -24,7 +24,7 @@ func (o *oVirtClient) UpdateNIC(
 
 	req.Nic(nicBuilder.MustBuild())
 
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("updating NIC %s for VM %s", nicID, vmid),
 		o.logger,

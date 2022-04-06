@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetCluster(id ClusterID, retries ...RetryStrategy) (result Cluster, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting cluster %s", id),
 		o.logger,

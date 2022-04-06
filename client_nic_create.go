@@ -17,7 +17,7 @@ func (o *oVirtClient) CreateNIC(
 		return nil, err
 	}
 
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("creating NIC for VM %s", vmid),
 		o.logger,

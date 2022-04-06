@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) GetAffinityGroupByName(clusterID ClusterID, name string, retries ...RetryStrategy) (result AffinityGroup, err error) {
-	retries = defaultRetries(retries, defaultReadTimeouts())
+	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting affinity group %s", name),
 		o.logger,
@@ -55,7 +55,7 @@ func (o *oVirtClient) GetAffinityGroupByName(clusterID ClusterID, name string, r
 
 func (m *mockClient) GetAffinityGroupByName(clusterID ClusterID, name string, retries ...RetryStrategy) (result AffinityGroup, err error) {
 
-	retries = defaultRetries(retries, defaultWriteTimeouts())
+	retries = defaultRetries(retries, defaultWriteTimeouts(m))
 
 	err = retry(
 		fmt.Sprintf("getting affinity group %s from cluster %s", name, clusterID),
