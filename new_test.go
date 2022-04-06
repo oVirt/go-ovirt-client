@@ -4,11 +4,40 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
+
+func TestBadOVirtURL(t *testing.T) {
+	helper, err := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewTestLogger(t))
+	if err != nil {
+		t.Skipf("🚧 Skipping test: no live credentials provided.")
+		return
+	}
+	url := helper.GetClient().GetURL()
+	tls := helper.GetTLS()
+	username := helper.GetUsername()
+	password := helper.GetPassword()
+
+	logger := ovirtclientlog.NewTestLogger(t)
+	_, err = ovirtclient.New(
+		strings.TrimSuffix(strings.TrimSuffix(url, "/api"), "/api/"),
+		username,
+		password,
+		tls,
+		logger,
+		nil,
+	)
+	if err == nil {
+		t.Fatalf("Creating a connection to an endpoint not ending in /api did not result in an error.")
+	}
+	if !ovirtclient.HasErrorCode(err, ovirtclient.ENotAnOVirtEngine) {
+		t.Fatalf("Creating a connection to an endpoint not ending in /api has not correctly resulted in an ENotAnOVirtEngine (%v)", err)
+	}
+}
 
 func TestInvalidCredentials(t *testing.T) {
 	t.Parallel()
