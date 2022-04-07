@@ -1,6 +1,7 @@
 package ovirtclient
 
 import (
+	"errors"
 	"fmt"
 
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
@@ -32,7 +33,11 @@ func (o *oVirtClient) AddVMToAffinityGroup(
 				Add().
 				Vm(vm).
 				Send()
-			return err
+			// Work around bug 1932320 on older oVirt versions.
+			if err != nil && !errors.Is(err, ovirtsdk4.XMLTagNotMatchError{ActualTag: "action", ExpectedTag: "vm"}) {
+				return err
+			}
+			return nil
 		},
 	)
 }
