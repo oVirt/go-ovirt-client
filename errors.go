@@ -235,6 +235,12 @@ func realIdentify(err error) EngineError {
 	var authErr *ovirtsdk.AuthError
 	var notFoundErr *ovirtsdk.NotFoundError
 	switch {
+	case strings.Contains(err.Error(), "Physical Memory Guaranteed cannot exceed Memory Size"):
+		return wrap(
+			err,
+			EBadArgument,
+			"guaranteed memory size must be lower than the memory size",
+		)
 	case strings.Contains(err.Error(), "stopped after") && strings.Contains(err.Error(), "redirects"):
 		return wrap(
 			err,
