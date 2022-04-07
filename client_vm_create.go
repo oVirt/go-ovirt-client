@@ -65,6 +65,22 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 	}
 }
 
+func vmPlacementPolicyParameterConverter(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if pp := params.PlacementPolicy(); pp != nil {
+		placementPolicyBuilder := ovirtsdk.NewVmPlacementPolicyBuilder()
+		if affinity := (*pp).Affinity(); affinity != nil {
+			placementPolicyBuilder.Affinity(ovirtsdk.VmAffinity(*affinity))
+		}
+		hosts := make([]ovirtsdk.HostBuilder, len((*pp).HostIDs()))
+		for i, hostID := range (*pp).HostIDs() {
+			hostBuilder := ovirtsdk.NewHostBuilder().Id(hostID)
+			hosts[i] = *hostBuilder
+		}
+		placementPolicyBuilder.HostsBuilderOfAny(hosts...)
+		builder.PlacementPolicyBuilder(placementPolicyBuilder)
+	}
+}
+
 func (o *oVirtClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
 	retries = defaultRetries(retries, defaultLongTimeouts())
 
@@ -129,6 +145,7 @@ func createSDKVM(
 		vmBuilderHugePages,
 		vmBuilderInitialization,
 		vmBuilderMemory,
+		vmPlacementPolicyParameterConverter,
 	}
 
 	for _, part := range parts {

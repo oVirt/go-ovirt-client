@@ -8,7 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func (m *mockClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
+func (m *mockClient) CreateVM(
+	clusterID ClusterID,
+	templateID TemplateID,
+	name string,
+	params OptionalVMParameters,
+	retries ...RetryStrategy,
+) (result VM, err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts())
 
 	if err := validateVMCreationParameters(clusterID, templateID, name, params); err != nil {
@@ -81,18 +87,28 @@ func (m *mockClient) createVM(
 		memory = *params.Memory()
 	}
 
+	var pp *vmPlacementPolicy
+	if params.PlacementPolicy() != nil {
+		placementPolicyParams := *params.PlacementPolicy()
+		pp = &vmPlacementPolicy{
+			placementPolicyParams.Affinity(),
+			placementPolicyParams.HostIDs(),
+		}
+	}
+
 	vm := &vm{
-		client:         m,
-		id:             id,
-		name:           name,
-		comment:        params.Comment(),
-		clusterID:      clusterID,
-		templateID:     templateID,
-		status:         VMStatusDown,
-		cpu:            cpu,
-		hugePages:      params.HugePages(),
-		memory:         memory,
-		initialization: init,
+		client:          m,
+		id:              id,
+		name:            name,
+		comment:         params.Comment(),
+		clusterID:       clusterID,
+		templateID:      templateID,
+		status:          VMStatusDown,
+		cpu:             cpu,
+		hugePages:       params.HugePages(),
+		memory:          memory,
+		initialization:  init,
+		placementPolicy: pp,
 	}
 	m.vms[id] = vm
 	return vm

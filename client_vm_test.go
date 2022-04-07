@@ -439,6 +439,50 @@ func checkVMDiskSparseness(t *testing.T, checkVM ovirtclient.VM, sparse bool, me
 	}
 }
 
+func TestPlacementPolicy(t *testing.T) {
+	helper := getHelper(t)
+
+	hosts, err := helper.GetClient().ListHosts()
+	if err != nil {
+		t.Fatalf("Failed to list hosts (%v).", err)
+	}
+	if len(hosts) == 0 {
+		t.Fatalf("No hosts found in Engine!")
+	}
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams().WithPlacementPolicy(
+			ovirtclient.
+				NewVMPlacementPolicyParameters().
+				MustWithAffinity(ovirtclient.VMAffinityPinned).
+				MustWithHostIDs([]string{hosts[0].ID()}),
+		),
+	)
+	pp, ok := vm.PlacementPolicy()
+	if !ok {
+		t.Fatalf("No placement policy returned after creating a VM with a set placement policy.")
+	}
+	if pp.Affinity() == nil {
+		t.Fatalf("Placement policy has no affinity even though it was set on VM creation.")
+	}
+	if affinity := *pp.Affinity(); affinity != ovirtclient.VMAffinityPinned {
+		t.Fatalf(
+			"Incorrect affinity on placement policy (expected: %s, got: %s)",
+			ovirtclient.VMAffinityPinned,
+			affinity,
+		)
+	}
+	hostIDs := pp.HostIDs()
+	if len(hostIDs) != 1 {
+		t.Fatalf("Incorrect number of host IDs in host list (expected: %d, got: %d)", len(hostIDs), 1)
+	}
+	if hostIDs[0] != hosts[0].ID() {
+		t.Fatalf("Incorrect host ID in host list (expected: %s, got: %s)", hosts[0].ID(), hostIDs[0])
+	}
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
