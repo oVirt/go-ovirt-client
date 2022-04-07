@@ -200,6 +200,9 @@ type VMData interface {
 	CPU() VMCPU
 	// Memory return the Memory of a VM in Bytes.
 	Memory() int64
+	// MemoryPolicy returns the memory policy set on the VM, if any. The second parameter returned is true if the
+	// memory policy is set.
+	MemoryPolicy() (MemoryPolicy, bool)
 	// TagIDs returns a list of tags for this VM.
 	TagIDs() []string
 	// HugePages returns the hugepage settings for the VM, if any.
@@ -613,6 +616,9 @@ type OptionalVMParameters interface {
 	// Memory returns the VM memory in Bytes.
 	Memory() *int64
 
+	// MemoryPolicy returns the memory policy configuration for this VM, if any.
+	MemoryPolicy() *MemoryPolicyParameters
+
 	// Disks returns a list of disks that are to be changed from the template.
 	Disks() []OptionalVMDiskParameters
 
@@ -649,6 +655,9 @@ type BuildableVMParameters interface {
 	WithMemory(memory int64) (BuildableVMParameters, error)
 	// MustWithMemory is identical to WithMemory, but panics instead of returning an error.
 	MustWithMemory(memory int64) BuildableVMParameters
+	// WithMemoryPolicy sets the memory policy parameters for the VM.
+	WithMemoryPolicy(memory MemoryPolicyParameters) BuildableVMParameters
+
 	// WithInitialization sets the virtual machine’s initialization configuration.
 	WithInitialization(initialization Initialization) (BuildableVMParameters, error)
 	// MustWithInitialization is identical to WithInitialization, but panics instead of returning an error.
@@ -741,6 +750,59 @@ func (v vmPlacementPolicyParameters) MustWithHostIDs(hostIDs []string) Buildable
 		panic(err)
 	}
 	return builder
+}
+
+// MemoryPolicyParameters contain the parameters for the memory policy setting on the VM.
+type MemoryPolicyParameters interface {
+	Guaranteed() *int64
+}
+
+// BuildableMemoryPolicyParameters is a buildable version of MemoryPolicyParameters.
+type BuildableMemoryPolicyParameters interface {
+	MemoryPolicyParameters
+
+	WithGuaranteed(guaranteed int64) (BuildableMemoryPolicyParameters, error)
+	MustWithGuaranteed(guaranteed int64) BuildableMemoryPolicyParameters
+}
+
+// NewMemoryPolicyParameters creates a new instance of BuildableMemoryPolicyParameters.
+func NewMemoryPolicyParameters() BuildableMemoryPolicyParameters {
+	return &memoryPolicyParameters{}
+}
+
+type memoryPolicyParameters struct {
+	guaranteed *int64
+}
+
+func (m *memoryPolicyParameters) MustWithGuaranteed(guaranteed int64) BuildableMemoryPolicyParameters {
+	builder, err := m.WithGuaranteed(guaranteed)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (m *memoryPolicyParameters) Guaranteed() *int64 {
+	return m.guaranteed
+}
+
+func (m *memoryPolicyParameters) WithGuaranteed(guaranteed int64) (BuildableMemoryPolicyParameters, error) {
+	m.guaranteed = &guaranteed
+	return m, nil
+}
+
+// MemoryPolicy is the memory policy set on the VM.
+type MemoryPolicy interface {
+	// Guaranteed returns the number of guaranteed bytes to the VM.
+	Guaranteed() *int64
+}
+
+type memoryPolicy struct {
+	guaranteed *int64
+}
+
+func (m memoryPolicy) Guaranteed() *int64 {
+	return m.guaranteed
 }
 
 // OptionalVMDiskParameters describes the disk parameters that can be given to VM creation. These manipulate the
@@ -994,6 +1056,7 @@ type vmParams struct {
 
 	initialization Initialization
 	memory         *int64
+	memoryPolicy   *MemoryPolicyParameters
 
 	clone *bool
 
@@ -1009,6 +1072,15 @@ func (v *vmParams) WithPlacementPolicy(placementPolicy VMPlacementPolicyParamete
 
 func (v *vmParams) PlacementPolicy() *VMPlacementPolicyParameters {
 	return v.placementPolicy
+}
+
+func (v *vmParams) MemoryPolicy() *MemoryPolicyParameters {
+	return v.memoryPolicy
+}
+
+func (v *vmParams) WithMemoryPolicy(memory MemoryPolicyParameters) BuildableVMParameters {
+	v.memoryPolicy = &memory
+	return v
 }
 
 func (v *vmParams) Clone() *bool {
@@ -1198,10 +1270,15 @@ type vm struct {
 	initialization  Initialization
 	hostID          *string
 	placementPolicy *vmPlacementPolicy
+	memoryPolicy    *memoryPolicy
 }
 
 func (v *vm) PlacementPolicy() (VMPlacementPolicy, bool) {
 	return v.placementPolicy, v.placementPolicy != nil
+}
+
+func (v *vm) MemoryPolicy() (MemoryPolicy, bool) {
+	return v.memoryPolicy, v.memoryPolicy != nil
 }
 
 func (v *vm) WaitForIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
@@ -1264,14 +1341,21 @@ func (v *vm) Initialization() Initialization {
 // shared state issues.
 func (v *vm) withName(name string) *vm {
 	return &vm{
-		client:     v.client,
-		id:         v.id,
-		name:       name,
-		comment:    v.comment,
-		clusterID:  v.clusterID,
-		templateID: v.templateID,
-		status:     v.status,
-		cpu:        v.cpu,
+		v.client,
+		v.id,
+		name,
+		v.comment,
+		v.clusterID,
+		v.templateID,
+		v.status,
+		v.cpu,
+		v.memory,
+		v.tagIDs,
+		v.hugePages,
+		v.initialization,
+		v.hostID,
+		v.placementPolicy,
+		v.memoryPolicy,
 	}
 }
 
@@ -1279,14 +1363,21 @@ func (v *vm) withName(name string) *vm {
 // shared state issues.
 func (v *vm) withComment(comment string) *vm {
 	return &vm{
-		client:     v.client,
-		id:         v.id,
-		name:       v.name,
-		comment:    comment,
-		clusterID:  v.clusterID,
-		templateID: v.templateID,
-		status:     v.status,
-		cpu:        v.cpu,
+		v.client,
+		v.id,
+		v.name,
+		comment,
+		v.clusterID,
+		v.templateID,
+		v.status,
+		v.cpu,
+		v.memory,
+		v.tagIDs,
+		v.hugePages,
+		v.initialization,
+		v.hostID,
+		v.placementPolicy,
+		v.memoryPolicy,
 	}
 }
 
@@ -1405,6 +1496,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmPlacementPolicyConverter,
 		vmHostConverter,
 		vmMemoryConverter,
+		vmMemoryPolicyConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -1413,6 +1505,25 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmMemoryPolicyConverter(object *ovirtsdk.Vm, v *vm) error {
+	if memPolicy, ok := object.MemoryPolicy(); ok {
+		resultMemPolicy := &memoryPolicy{}
+		if guaranteed, ok := memPolicy.Guaranteed(); ok {
+			if guaranteed < -1 {
+				return newError(
+					EBug,
+					"the engine returned a negative guaranteed memory value for VM %s (%d)",
+					object.MustId(),
+					guaranteed,
+				)
+			}
+			resultMemPolicy.guaranteed = &guaranteed
+		}
+		v.memoryPolicy = resultMemPolicy
+	}
+	return nil
 }
 
 func vmHostConverter(sdkObject *ovirtsdk.Vm, v *vm) error {

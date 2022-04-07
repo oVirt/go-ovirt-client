@@ -421,6 +421,34 @@ func TestVMCreationWithSparseDisks(t *testing.T) {
 	)
 }
 
+func TestGuaranteedMemory(t *testing.T) {
+	helper := getHelper(t)
+	expectedGuaranteed := int64(2 * 1024 * 1024 * 1024)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.
+			CreateVMParams().
+			WithMemoryPolicy(
+				ovirtclient.
+					NewMemoryPolicyParameters().
+					MustWithGuaranteed(expectedGuaranteed),
+			).MustWithMemory(expectedGuaranteed),
+	)
+	memoryPolicy, ok := vm.MemoryPolicy()
+	if !ok {
+		t.Fatalf("Memory policy is not set on VM.")
+	}
+	guaranteed := memoryPolicy.Guaranteed()
+	if guaranteed == nil {
+		t.Fatalf("Guaranteed memory is not set on VM.")
+	}
+	if *guaranteed != expectedGuaranteed {
+		t.Fatalf("Incorrect guaranteed memory value (expected: %d, got: %d)", expectedGuaranteed, *guaranteed)
+	}
+}
+
 func checkVMDiskSparseness(t *testing.T, checkVM ovirtclient.VM, sparse bool, message string) {
 	t.Helper()
 	diskAttachments, err := checkVM.ListDiskAttachments()

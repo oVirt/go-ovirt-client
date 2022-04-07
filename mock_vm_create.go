@@ -86,6 +86,16 @@ func (m *mockClient) createVM(
 	if params.Memory() != nil {
 		memory = *params.Memory()
 	}
+	var memPolicy *memoryPolicy
+	if memoryPolicyParams := params.MemoryPolicy(); memoryPolicyParams != nil {
+		var guaranteed *int64
+		if guaranteedMemory := (*memoryPolicyParams).Guaranteed(); guaranteedMemory != nil {
+			guaranteed = guaranteedMemory
+		}
+		memPolicy = &memoryPolicy{
+			guaranteed,
+		}
+	}
 
 	var pp *vmPlacementPolicy
 	if params.PlacementPolicy() != nil {
@@ -109,6 +119,7 @@ func (m *mockClient) createVM(
 		memory:          memory,
 		initialization:  init,
 		placementPolicy: pp,
+		memoryPolicy:    memPolicy,
 	}
 	m.vms[id] = vm
 	return vm
