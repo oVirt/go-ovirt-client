@@ -16,7 +16,13 @@ import (
 // VMClient includes the methods required to deal with virtual machines.
 type VMClient interface {
 	// CreateVM creates a virtual machine.
-	CreateVM(clusterID ClusterID, templateID TemplateID, name string, optional OptionalVMParameters, retries ...RetryStrategy) (VM, error)
+	CreateVM(
+		clusterID ClusterID,
+		templateID TemplateID,
+		name string,
+		optional OptionalVMParameters,
+		retries ...RetryStrategy,
+	) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
 	GetVM(id string, retries ...RetryStrategy) (VM, error)
 	// GetVMByName returns a single virtual machine based on a Name.
@@ -220,6 +226,8 @@ type VMData interface {
 	PlacementPolicy() (placementPolicy VMPlacementPolicy, ok bool)
 	// InstanceTypeID is the source type ID for the instance parameters.
 	InstanceTypeID() *InstanceTypeID
+	// VMType returns the VM type for the current VM.
+	VMType() VMType
 }
 
 // VMPlacementPolicy is the structure that holds the rules for VM migration to other hosts.
@@ -640,6 +648,9 @@ type OptionalVMParameters interface {
 
 	// InstanceTypeID returns the instance type ID if set.
 	InstanceTypeID() *InstanceTypeID
+
+	// VMType is the type of the VM created.
+	VMType() *VMType
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -699,6 +710,63 @@ type BuildableVMParameters interface {
 	WithInstanceTypeID(instanceTypeID InstanceTypeID) (BuildableVMParameters, error)
 	// MustWithInstanceTypeID is identical to WithInstanceTypeID but panics instead of returning an error.
 	MustWithInstanceTypeID(instanceTypeID InstanceTypeID) BuildableVMParameters
+
+	// WithVMType sets the virtual machine type.
+	WithVMType(vmType VMType) (BuildableVMParameters, error)
+	// MustWithVMType is identical to WithVMType, but panics instead of returning an error.
+	MustWithVMType(vmType VMType) BuildableVMParameters
+}
+
+// VMType contains some preconfigured settings, such as the availability of remote desktop, for the VM.
+type VMType string
+
+const (
+	// VMTypeDesktop indicates that the virtual machine is intended to be used as a desktop and enables the SPICE
+	// virtual console, and a sound device will be added to the VM.
+	VMTypeDesktop VMType = "desktop"
+	// VMTypeServer indicates that the VM will be used as a server. In this case a sound device will not be added to the
+	// VM.
+	VMTypeServer VMType = "server"
+	// VMTypeHighPerformance indicates that the VM should be configured for high performance. This entails the following
+	// options:
+	//
+	// - Enable headless mode.
+	// - Enable serial console.
+	// - Enable pass-through host CPU.
+	// - Enable I/O threads.
+	// - Enable I/O threads pinning and set the pinning topology.
+	// - Enable the paravirtualized random number generator PCI (virtio-rng) device.
+	// - Disable all USB devices.
+	// - Disable the soundcard device.
+	// - Disable the smartcard device.
+	// - Disable the memory balloon device.
+	// - Disable the watchdog device.
+	// - Disable migration.
+	// - Disable high availability.
+	VMTypeHighPerformance VMType = "high_performance"
+)
+
+// Validate checks if the VMType value is valid.
+func (v VMType) Validate() error {
+	switch v {
+	case VMTypeDesktop:
+		return nil
+	case VMTypeServer:
+		return nil
+	case VMTypeHighPerformance:
+		return nil
+	default:
+		return newError(EBadArgument, "Invalid VM type: %s", v)
+	}
+}
+
+// VMTypeValues returns all possible values for VM types.
+func VMTypeValues() []VMType {
+	return []VMType{
+		VMTypeDesktop,
+		VMTypeServer,
+		VMTypeHighPerformance,
+	}
 }
 
 // VMPlacementPolicyParameters contains the optional parameters on VM placement.
@@ -1092,6 +1160,28 @@ type vmParams struct {
 	placementPolicy *VMPlacementPolicyParameters
 
 	instanceTypeID *InstanceTypeID
+
+	vmType *VMType
+}
+
+func (v *vmParams) VMType() *VMType {
+	return v.vmType
+}
+
+func (v *vmParams) WithVMType(vmType VMType) (BuildableVMParameters, error) {
+	if err := vmType.Validate(); err != nil {
+		return nil, err
+	}
+	v.vmType = &vmType
+	return v, nil
+}
+
+func (v *vmParams) MustWithVMType(vmType VMType) BuildableVMParameters {
+	builder, err := v.WithVMType(vmType)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (v *vmParams) InstanceTypeID() *InstanceTypeID {
@@ -1318,6 +1408,11 @@ type vm struct {
 	placementPolicy *vmPlacementPolicy
 	memoryPolicy    *memoryPolicy
 	instanceTypeID  *InstanceTypeID
+	vmType          VMType
+}
+
+func (v *vm) VMType() VMType {
+	return v.vmType
 }
 
 func (v *vm) InstanceTypeID() *InstanceTypeID {
@@ -1420,6 +1515,7 @@ func (v *vm) withName(name string) *vm {
 		v.placementPolicy,
 		v.memoryPolicy,
 		v.instanceTypeID,
+		v.vmType,
 	}
 }
 
@@ -1443,6 +1539,7 @@ func (v *vm) withComment(comment string) *vm {
 		v.placementPolicy,
 		v.memoryPolicy,
 		v.instanceTypeID,
+		v.vmType,
 	}
 }
 
@@ -1479,7 +1576,10 @@ func (v *vm) Remove(retries ...RetryStrategy) error {
 	return v.client.RemoveVM(v.id, retries...)
 }
 
-func (v *vm) CreateNIC(name string, vnicProfileID string, params OptionalNICParameters, retries ...RetryStrategy) (NIC, error) {
+func (v *vm) CreateNIC(name string, vnicProfileID string, params OptionalNICParameters, retries ...RetryStrategy) (
+	NIC,
+	error,
+) {
 	return v.client.CreateNIC(v.id, vnicProfileID, name, params, retries...)
 }
 
@@ -1563,6 +1663,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmMemoryConverter,
 		vmMemoryPolicyConverter,
 		vmInstanceTypeIDConverter,
+		vmTypeConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -1571,6 +1672,15 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmTypeConverter(object *ovirtsdk.Vm, v *vm) error {
+	vmType, ok := object.Type()
+	if !ok {
+		return newFieldNotFound("vm", "vm type")
+	}
+	v.vmType = VMType(vmType)
+	return nil
 }
 
 func vmInstanceTypeIDConverter(object *ovirtsdk.Vm, v *vm) error {

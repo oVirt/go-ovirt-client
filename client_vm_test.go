@@ -367,6 +367,31 @@ func TestVMCreationWithInstanceTypeID(t *testing.T) {
 	}
 }
 
+func TestVMType(t *testing.T) {
+	helper := getHelper(t)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.NewCreateVMParams(),
+	)
+	if vm.VMType() != ovirtclient.VMTypeServer {
+		t.Fatalf("Incorrect default VM type: %s", vm.VMType())
+	}
+
+	for _, vmType := range ovirtclient.VMTypeValues() {
+		vm := assertCanCreateVM(
+			t,
+			helper,
+			fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+			ovirtclient.NewCreateVMParams().MustWithVMType(vmType),
+		)
+		if vm.VMType() != vmType {
+			t.Fatalf("Incorrect VM type (expected: %s, got: %s)", vmType, vm.VMType())
+		}
+	}
+}
+
 func assertCanCreateVM(
 	t *testing.T,
 	helper ovirtclient.TestHelper,

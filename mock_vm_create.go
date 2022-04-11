@@ -105,22 +105,29 @@ func (m *mockClient) createVM(
 			placementPolicyParams.HostIDs(),
 		}
 	}
+	vmType := VMTypeServer
+	if paramVMType := params.VMType(); paramVMType != nil {
+		vmType = *paramVMType
+	}
 
 	vm := &vm{
-		client:          m,
-		id:              id,
-		name:            name,
-		comment:         params.Comment(),
-		clusterID:       clusterID,
-		templateID:      templateID,
-		status:          VMStatusDown,
-		cpu:             cpu,
-		hugePages:       params.HugePages(),
-		memory:          memory,
-		initialization:  init,
-		placementPolicy: pp,
-		memoryPolicy:    memPolicy,
-		instanceTypeID:  params.InstanceTypeID(),
+		m,
+		id,
+		name,
+		params.Comment(),
+		clusterID,
+		templateID,
+		VMStatusDown,
+		cpu,
+		memory,
+		nil,
+		params.HugePages(),
+		init,
+		nil,
+		pp,
+		memPolicy,
+		params.InstanceTypeID(),
+		vmType,
 	}
 	m.vms[id] = vm
 	return vm
