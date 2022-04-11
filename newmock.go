@@ -115,9 +115,42 @@ func getClient(
 		affinityGroups: map[ClusterID]map[AffinityGroupID]*affinityGroup{
 			testCluster.ID(): {},
 		},
-		vmIPs: map[string]map[string][]net.IP{},
+		vmIPs:         map[string]map[string][]net.IP{},
+		instanceTypes: nil,
 	}
+	client.instanceTypes = getInstanceTypes(client)
 	return client
+}
+
+func getInstanceTypes(client *mockClient) map[InstanceTypeID]*instanceType {
+	instanceTypes := map[InstanceTypeID]*instanceType{
+		"00000009-0009-0009-0009-0000000000f1": {
+			client,
+			"00000009-0009-0009-0009-0000000000f1",
+			"Large",
+		},
+		"00000007-0007-0007-0007-00000000010a": {
+			client,
+			"00000007-0007-0007-0007-00000000010a",
+			"Medium",
+		},
+		"00000005-0005-0005-0005-0000000002e6": {
+			client,
+			"00000005-0005-0005-0005-0000000002e6",
+			"Small",
+		},
+		"00000003-0003-0003-0003-0000000000be": {
+			client,
+			"00000003-0003-0003-0003-0000000000be",
+			"Tiny",
+		},
+		"0000000b-000b-000b-000b-00000000021f": {
+			client,
+			"0000000b-000b-000b-000b-00000000021f",
+			"XLarge",
+		},
+	}
+	return instanceTypes
 }
 
 func generateTestVNICProfile(testNetwork *network) *vnicProfile {

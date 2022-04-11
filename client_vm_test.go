@@ -342,6 +342,31 @@ func TestCannotRemoveTemplateIfVMCloneIsNotSet(t *testing.T) {
 	assertCannotRemoveTemplate(t, helper, template.ID())
 }
 
+func TestVMCreationWithInstanceTypeID(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	instanceTypes, err := helper.GetClient().ListInstanceTypes()
+	if err != nil {
+		t.Fatalf("Failed to list instance types (%v)", err)
+	}
+	if len(instanceTypes) == 0 {
+		t.Fatalf("No instance types defined in engine.")
+	}
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.NewCreateVMParams().MustWithInstanceTypeID(instanceTypes[0].ID()),
+	)
+	if vm.InstanceTypeID() == nil {
+		t.Fatalf("VM %s has empty instance type ID.", vm.ID())
+	}
+	if *vm.InstanceTypeID() != instanceTypes[0].ID() {
+		t.Fatalf("Incorrect instance type ID returned (expected: %s, got: %s)", instanceTypes[0].ID(), *vm.InstanceTypeID())
+	}
+}
+
 func assertCanCreateVM(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
