@@ -120,6 +120,7 @@ func (m *mockClient) createVM(
 		initialization:  init,
 		placementPolicy: pp,
 		memoryPolicy:    memPolicy,
+		instanceTypeID:  params.InstanceTypeID(),
 	}
 	m.vms[id] = vm
 	return vm

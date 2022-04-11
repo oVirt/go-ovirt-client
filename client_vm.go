@@ -218,6 +218,8 @@ type VMData interface {
 	// PlacementPolicy returns placement policy applied to this VM, if any. It may be nil if no placement policy is set.
 	// The second returned value will be false if no placement policy exists.
 	PlacementPolicy() (placementPolicy VMPlacementPolicy, ok bool)
+	// InstanceTypeID is the source type ID for the instance parameters.
+	InstanceTypeID() *InstanceTypeID
 }
 
 // VMPlacementPolicy is the structure that holds the rules for VM migration to other hosts.
@@ -635,6 +637,9 @@ type OptionalVMParameters interface {
 
 	// PlacementPolicy returns a VM placement policy to apply, if any.
 	PlacementPolicy() *VMPlacementPolicyParameters
+
+	// InstanceTypeID returns the instance type ID if set.
+	InstanceTypeID() *InstanceTypeID
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -689,6 +694,11 @@ type BuildableVMParameters interface {
 
 	// WithPlacementPolicy adds a placement policy dictating which hosts the VM can be migrated to.
 	WithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) BuildableVMParameters
+
+	// WithInstanceTypeID sets the instance type ID on the VM.
+	WithInstanceTypeID(instanceTypeID InstanceTypeID) (BuildableVMParameters, error)
+	// MustWithInstanceTypeID is identical to WithInstanceTypeID but panics instead of returning an error.
+	MustWithInstanceTypeID(instanceTypeID InstanceTypeID) BuildableVMParameters
 }
 
 // VMPlacementPolicyParameters contains the optional parameters on VM placement.
@@ -1049,11 +1059,17 @@ func (u *updateVMParams) WithComment(comment string) (BuildableUpdateVMParameter
 	return u, nil
 }
 
-// CreateVMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
-func CreateVMParams() BuildableVMParameters {
+// NewCreateVMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
+func NewCreateVMParams() BuildableVMParameters {
 	return &vmParams{
 		lock: &sync.Mutex{},
 	}
+}
+
+// CreateVMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
+// Deprecated: use NewCreateVMParams instead.
+func CreateVMParams() BuildableVMParameters {
+	return NewCreateVMParams()
 }
 
 type vmParams struct {
@@ -1074,6 +1090,25 @@ type vmParams struct {
 	disks []OptionalVMDiskParameters
 
 	placementPolicy *VMPlacementPolicyParameters
+
+	instanceTypeID *InstanceTypeID
+}
+
+func (v *vmParams) InstanceTypeID() *InstanceTypeID {
+	return v.instanceTypeID
+}
+
+func (v *vmParams) WithInstanceTypeID(instanceTypeID InstanceTypeID) (BuildableVMParameters, error) {
+	v.instanceTypeID = &instanceTypeID
+	return v, nil
+}
+
+func (v *vmParams) MustWithInstanceTypeID(instanceTypeID InstanceTypeID) BuildableVMParameters {
+	builder, err := v.WithInstanceTypeID(instanceTypeID)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (v *vmParams) WithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) BuildableVMParameters {
@@ -1282,6 +1317,11 @@ type vm struct {
 	hostID          *string
 	placementPolicy *vmPlacementPolicy
 	memoryPolicy    *memoryPolicy
+	instanceTypeID  *InstanceTypeID
+}
+
+func (v *vm) InstanceTypeID() *InstanceTypeID {
+	return v.instanceTypeID
 }
 
 func (v *vm) AddTag(tagID string, retries ...RetryStrategy) (err error) {
@@ -1379,6 +1419,7 @@ func (v *vm) withName(name string) *vm {
 		v.hostID,
 		v.placementPolicy,
 		v.memoryPolicy,
+		v.instanceTypeID,
 	}
 }
 
@@ -1401,6 +1442,7 @@ func (v *vm) withComment(comment string) *vm {
 		v.hostID,
 		v.placementPolicy,
 		v.memoryPolicy,
+		v.instanceTypeID,
 	}
 }
 
@@ -1520,6 +1562,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmHostConverter,
 		vmMemoryConverter,
 		vmMemoryPolicyConverter,
+		vmInstanceTypeIDConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -1528,6 +1571,14 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmInstanceTypeIDConverter(object *ovirtsdk.Vm, v *vm) error {
+	if instanceType, ok := object.InstanceType(); ok {
+		instanceTypeID := InstanceTypeID(instanceType.MustId())
+		v.instanceTypeID = &instanceTypeID
+	}
+	return nil
 }
 
 func vmMemoryPolicyConverter(object *ovirtsdk.Vm, v *vm) error {

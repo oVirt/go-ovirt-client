@@ -39,6 +39,7 @@ type mockClient struct {
 	tags                              map[string]*tag
 	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
 	vmIPs                             map[string]map[string][]net.IP
+	instanceTypes                     map[InstanceTypeID]*instanceType
 }
 
 func (m *mockClient) GetURL() string {
