@@ -148,6 +148,7 @@ func createSDKVM(
 		vmPlacementPolicyParameterConverter,
 		vmBuilderMemoryPolicy,
 		vmInstanceTypeID,
+		vmTypeCreator,
 	}
 
 	for _, part := range parts {
@@ -181,6 +182,12 @@ func createSDKVM(
 		return nil, wrap(err, EBug, "failed to build VM")
 	}
 	return vm, nil
+}
+
+func vmTypeCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if vmType := params.VMType(); vmType != nil {
+		builder.Type(ovirtsdk.VmType(*vmType))
+	}
 }
 
 func vmInstanceTypeID(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
@@ -245,6 +252,12 @@ func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, na
 				previousID,
 				i,
 			)
+		}
+	}
+
+	if vmType := params.VMType(); vmType != nil {
+		if err := vmType.Validate(); err != nil {
+			return err
 		}
 	}
 
