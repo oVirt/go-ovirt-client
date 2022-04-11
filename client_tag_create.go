@@ -2,15 +2,21 @@ package ovirtclient
 
 import ovirtsdk "github.com/ovirt/go-ovirt"
 
-func (o *oVirtClient) CreateTag(name string, description string, retries ...RetryStrategy) (result Tag, err error) {
+func (o *oVirtClient) CreateTag(name string, params CreateTagParams, retries ...RetryStrategy) (result Tag, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts())
+	if params == nil {
+		params = NewCreateTagParams()
+	}
 
 	err = retry(
 		"creating tag",
 		o.logger,
 		retries,
 		func() error {
-			tagBuilder := ovirtsdk.NewTagBuilder().Name(name).Description(description)
+			tagBuilder := ovirtsdk.NewTagBuilder().Name(name)
+			if description := params.Description(); description != nil {
+				tagBuilder.Description(*description)
+			}
 			response, e := o.conn.SystemService().TagsService().Add().Tag(tagBuilder.MustBuild()).Send()
 			if e != nil {
 				return e
@@ -31,5 +37,5 @@ func (o *oVirtClient) CreateTag(name string, description string, retries ...Retr
 			}
 			return nil
 		})
-	return
+	return result, err
 }
