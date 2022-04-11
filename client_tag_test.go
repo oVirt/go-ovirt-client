@@ -77,9 +77,13 @@ func assertCanCreateTag(
 	description string,
 ) ovirtclient.Tag {
 	client := helper.GetClient()
+	params := ovirtclient.NewCreateTagParams()
+	if description != "" {
+		params.MustWithDescription(description)
+	}
 	tag, err := client.CreateTag(
 		name,
-		description,
+		params,
 	)
 	if err != nil {
 		t.Fatalf("Failed to create Tag (%v)", err)
