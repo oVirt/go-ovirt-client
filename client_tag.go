@@ -57,12 +57,12 @@ type createTagParams struct {
 	description *string
 }
 
-func (c createTagParams) WithDescription(description string) (BuildableTagParams, error) {
+func (c *createTagParams) WithDescription(description string) (BuildableTagParams, error) {
 	c.description = &description
 	return c, nil
 }
 
-func (c createTagParams) MustWithDescription(description string) BuildableTagParams {
+func (c *createTagParams) MustWithDescription(description string) BuildableTagParams {
 	builder, err := c.WithDescription(description)
 	if err != nil {
 		panic(err)
@@ -70,7 +70,7 @@ func (c createTagParams) MustWithDescription(description string) BuildableTagPar
 	return builder
 }
 
-func (c createTagParams) Description() *string {
+func (c *createTagParams) Description() *string {
 	return c.description
 }
 
