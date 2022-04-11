@@ -49,6 +49,10 @@ type VMClient interface {
 	AddTagToVM(id string, tagID string, retries ...RetryStrategy) error
 	// AddTagToVMByName Add tag specified by Name to a VM.
 	AddTagToVMByName(id string, tagName string, retries ...RetryStrategy) error
+	// RemoveTagFromVM removes the specified tag from the specified VM.
+	RemoveTagFromVM(id string, tagID string, retries ...RetryStrategy) error
+	// ListVMTags lists the tags attached to a VM.
+	ListVMTags(id string, retries ...RetryStrategy) (result []Tag, err error)
 	// GetVMIPAddresses fetches the IP addresses reported by the guest agent in the VM.
 	// Optional parameters can be passed to filter the result list.
 	//
@@ -474,6 +478,13 @@ type VM interface {
 	// The returned result will be a map of network interface names and the list of non-local IP addresses assigned to
 	// them.
 	WaitForNonLocalIPAddress(retries ...RetryStrategy) (map[string][]net.IP, error)
+
+	// AddTag adds the specified tag to the current VM.
+	AddTag(tagID string, retries ...RetryStrategy) (err error)
+	// RemoveTag removes the tag from the current VM.
+	RemoveTag(tagID string, retries ...RetryStrategy) (err error)
+	// ListTags lists the tags attached to the current VM.
+	ListTags(retries ...RetryStrategy) (result []Tag, err error)
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -1271,6 +1282,18 @@ type vm struct {
 	hostID          *string
 	placementPolicy *vmPlacementPolicy
 	memoryPolicy    *memoryPolicy
+}
+
+func (v *vm) AddTag(tagID string, retries ...RetryStrategy) (err error) {
+	return v.client.AddTagToVM(v.id, tagID, retries...)
+}
+
+func (v *vm) RemoveTag(tagID string, retries ...RetryStrategy) (err error) {
+	return v.client.RemoveTagFromVM(v.id, tagID, retries...)
+}
+
+func (v *vm) ListTags(retries ...RetryStrategy) (result []Tag, err error) {
+	return v.client.ListVMTags(v.id, retries...)
 }
 
 func (v *vm) PlacementPolicy() (VMPlacementPolicy, bool) {

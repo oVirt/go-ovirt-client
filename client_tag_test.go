@@ -11,11 +11,26 @@ func TestTagCreation(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
 
-	tag := assertCanCreateTag(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), "")
+	name := fmt.Sprintf("test-%s", helper.GenerateRandomID(5))
+	tag := assertCanCreateTag(t, helper, name, "")
 	tag2 := assertCanGetTag(t, helper, tag.ID())
 
 	if tag.ID() != tag2.ID() {
 		t.Fatalf("IDs of the returned tag don't match.")
+	}
+	if tag.Name() != tag2.Name() {
+		t.Fatalf("Tag name mismatch.")
+	}
+}
+
+func TestTagCreationWithDescription(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	tag := assertCanCreateTag(t, helper, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), "Hello world!")
+
+	if *tag.Description() != "Hello world!" {
+		t.Fatalf("Tag description mismatch (expected: %s, got: %s).", "Hello world!", *tag.Description())
 	}
 }
 
@@ -79,7 +94,7 @@ func assertCanCreateTag(
 	client := helper.GetClient()
 	params := ovirtclient.NewCreateTagParams()
 	if description != "" {
-		params.MustWithDescription(description)
+		params = params.MustWithDescription(description)
 	}
 	tag, err := client.CreateTag(
 		name,
