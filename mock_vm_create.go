@@ -82,33 +82,6 @@ func (m *mockClient) createVM(
 	if init == nil {
 		init = &initialization{}
 	}
-	memory := int64(1073741824)
-	if params.Memory() != nil {
-		memory = *params.Memory()
-	}
-	var memPolicy *memoryPolicy
-	if memoryPolicyParams := params.MemoryPolicy(); memoryPolicyParams != nil {
-		var guaranteed *int64
-		if guaranteedMemory := (*memoryPolicyParams).Guaranteed(); guaranteedMemory != nil {
-			guaranteed = guaranteedMemory
-		}
-		memPolicy = &memoryPolicy{
-			guaranteed,
-		}
-	}
-
-	var pp *vmPlacementPolicy
-	if params.PlacementPolicy() != nil {
-		placementPolicyParams := *params.PlacementPolicy()
-		pp = &vmPlacementPolicy{
-			placementPolicyParams.Affinity(),
-			placementPolicyParams.HostIDs(),
-		}
-	}
-	vmType := VMTypeServer
-	if paramVMType := params.VMType(); paramVMType != nil {
-		vmType = *paramVMType
-	}
 
 	vm := &vm{
 		m,
@@ -119,18 +92,73 @@ func (m *mockClient) createVM(
 		templateID,
 		VMStatusDown,
 		cpu,
-		memory,
+		m.createVMMemory(params),
 		nil,
 		params.HugePages(),
 		init,
 		nil,
-		pp,
-		memPolicy,
+		m.createPlacementPolicy(params),
+		m.createVMMemoryPolicy(params),
 		params.InstanceTypeID(),
-		vmType,
+		m.createVMType(params),
+		m.createVMOS(params),
 	}
 	m.vms[id] = vm
 	return vm
+}
+
+func (m *mockClient) createVMMemory(params OptionalVMParameters) int64 {
+	memory := int64(1073741824)
+	if params.Memory() != nil {
+		memory = *params.Memory()
+	}
+	return memory
+}
+
+func (m *mockClient) createVMMemoryPolicy(params OptionalVMParameters) *memoryPolicy {
+	var memPolicy *memoryPolicy
+	if memoryPolicyParams := params.MemoryPolicy(); memoryPolicyParams != nil {
+		var guaranteed *int64
+		if guaranteedMemory := (*memoryPolicyParams).Guaranteed(); guaranteedMemory != nil {
+			guaranteed = guaranteedMemory
+		}
+		memPolicy = &memoryPolicy{
+			guaranteed,
+		}
+	}
+	return memPolicy
+}
+
+func (m *mockClient) createVMOS(params OptionalVMParameters) *vmOS {
+	os := &vmOS{
+		t: "other",
+	}
+	if osParams, ok := params.OS(); ok {
+		if osType := osParams.Type(); osType != nil {
+			os.t = *osType
+		}
+	}
+	return os
+}
+
+func (m *mockClient) createVMType(params OptionalVMParameters) VMType {
+	vmType := VMTypeServer
+	if paramVMType := params.VMType(); paramVMType != nil {
+		vmType = *paramVMType
+	}
+	return vmType
+}
+
+func (m *mockClient) createPlacementPolicy(params OptionalVMParameters) *vmPlacementPolicy {
+	var pp *vmPlacementPolicy
+	if params.PlacementPolicy() != nil {
+		placementPolicyParams := *params.PlacementPolicy()
+		pp = &vmPlacementPolicy{
+			placementPolicyParams.Affinity(),
+			placementPolicyParams.HostIDs(),
+		}
+	}
+	return pp
 }
 
 func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm, params OptionalVMParameters) {

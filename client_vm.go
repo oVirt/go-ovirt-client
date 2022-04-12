@@ -228,6 +228,22 @@ type VMData interface {
 	InstanceTypeID() *InstanceTypeID
 	// VMType returns the VM type for the current VM.
 	VMType() VMType
+
+	// OS returns the operating system structure.
+	OS() VMOS
+}
+
+// VMOS is the structure describing the virtual machine operating system, if set.
+type VMOS interface {
+	Type() string
+}
+
+type vmOS struct {
+	t string
+}
+
+func (v vmOS) Type() string {
+	return v.t
 }
 
 // VMPlacementPolicy is the structure that holds the rules for VM migration to other hosts.
@@ -651,6 +667,9 @@ type OptionalVMParameters interface {
 
 	// VMType is the type of the VM created.
 	VMType() *VMType
+
+	// OS returns the operating system parameters, and true if the OS parameter has been set.
+	OS() (VMOSParameters, bool)
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -715,6 +734,49 @@ type BuildableVMParameters interface {
 	WithVMType(vmType VMType) (BuildableVMParameters, error)
 	// MustWithVMType is identical to WithVMType, but panics instead of returning an error.
 	MustWithVMType(vmType VMType) BuildableVMParameters
+
+	// WithOS adds the operating system parameters to the VM creation.
+	WithOS(parameters VMOSParameters) BuildableVMParameters
+}
+
+// VMOSParameters contains the VM parameters pertaining to the operating system.
+type VMOSParameters interface {
+	// Type returns the type-string for the operating system.
+	Type() *string
+}
+
+// BuildableVMOSParameters is a buildable version of VMOSParameters.
+type BuildableVMOSParameters interface {
+	VMOSParameters
+
+	WithType(t string) (BuildableVMOSParameters, error)
+	MustWithType(t string) BuildableVMOSParameters
+}
+
+// NewVMOSParameters creates a new VMOSParameters structure.
+func NewVMOSParameters() BuildableVMOSParameters {
+	return &vmOSParameters{}
+}
+
+type vmOSParameters struct {
+	t *string
+}
+
+func (v *vmOSParameters) Type() *string {
+	return v.t
+}
+
+func (v *vmOSParameters) WithType(t string) (BuildableVMOSParameters, error) {
+	v.t = &t
+	return v, nil
+}
+
+func (v *vmOSParameters) MustWithType(t string) BuildableVMOSParameters {
+	builder, err := v.WithType(t)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 // VMType contains some preconfigured settings, such as the availability of remote desktop, for the VM.
@@ -1162,6 +1224,19 @@ type vmParams struct {
 	instanceTypeID *InstanceTypeID
 
 	vmType *VMType
+
+	os    VMOSParameters
+	osSet bool
+}
+
+func (v *vmParams) OS() (VMOSParameters, bool) {
+	return v.os, v.osSet
+}
+
+func (v *vmParams) WithOS(os VMOSParameters) BuildableVMParameters {
+	v.os = os
+	v.osSet = true
+	return v
 }
 
 func (v *vmParams) VMType() *VMType {
@@ -1409,6 +1484,11 @@ type vm struct {
 	memoryPolicy    *memoryPolicy
 	instanceTypeID  *InstanceTypeID
 	vmType          VMType
+	os              *vmOS
+}
+
+func (v *vm) OS() VMOS {
+	return v.os
 }
 
 func (v *vm) VMType() VMType {
@@ -1516,6 +1596,7 @@ func (v *vm) withName(name string) *vm {
 		v.memoryPolicy,
 		v.instanceTypeID,
 		v.vmType,
+		v.os,
 	}
 }
 
@@ -1540,6 +1621,7 @@ func (v *vm) withComment(comment string) *vm {
 		v.memoryPolicy,
 		v.instanceTypeID,
 		v.vmType,
+		v.os,
 	}
 }
 
@@ -1664,6 +1746,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmMemoryPolicyConverter,
 		vmInstanceTypeIDConverter,
 		vmTypeConverter,
+		vmOSConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -1672,6 +1755,20 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmOSConverter(object *ovirtsdk.Vm, v *vm) error {
+	sdkOS, ok := object.Os()
+	if !ok {
+		return newFieldNotFound("vm", "os")
+	}
+	v.os = &vmOS{}
+	osType, ok := sdkOS.Type()
+	if !ok {
+		return newFieldNotFound("os on vm", "type")
+	}
+	v.os.t = osType
+	return nil
 }
 
 func vmTypeConverter(object *ovirtsdk.Vm, v *vm) error {

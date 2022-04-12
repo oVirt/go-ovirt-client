@@ -149,6 +149,7 @@ func createSDKVM(
 		vmBuilderMemoryPolicy,
 		vmInstanceTypeID,
 		vmTypeCreator,
+		vmOSCreator,
 	}
 
 	for _, part := range parts {
@@ -182,6 +183,16 @@ func createSDKVM(
 		return nil, wrap(err, EBug, "failed to build VM")
 	}
 	return vm, nil
+}
+
+func vmOSCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if os, ok := params.OS(); ok {
+		osBuilder := ovirtsdk.NewOperatingSystemBuilder()
+		if t := os.Type(); t != nil {
+			osBuilder.Type(*t)
+		}
+		builder.OsBuilder(osBuilder)
+	}
 }
 
 func vmTypeCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {

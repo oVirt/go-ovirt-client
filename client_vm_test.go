@@ -561,6 +561,21 @@ func TestPlacementPolicy(t *testing.T) {
 	}
 }
 
+func TestVMOSParameter(t *testing.T) {
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.NewCreateVMParams().WithOS(ovirtclient.NewVMOSParameters().MustWithType("rhcos_x64")),
+	)
+	os := vm.OS()
+	if os.Type() != "rhcos_x64" {
+		t.Fatalf("Incorrect OS type (expected: %s, got: %s)", "rhcos_x64", os.Type())
+	}
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
