@@ -291,10 +291,17 @@ func VMAffinityValues() []VMAffinity {
 type VMCPU interface {
 	// Topo is the desired CPU topology for this VM.
 	Topo() VMCPUTopo
+	// Mode returns the mode of the CPU.
+	Mode() *CPUMode
 }
 
 type vmCPU struct {
 	topo *vmCPUTopo
+	mode *CPUMode
+}
+
+func (v vmCPU) Mode() *CPUMode {
+	return v.mode
 }
 
 func (v vmCPU) Topo() VMCPUTopo {
@@ -638,7 +645,7 @@ type OptionalVMParameters interface {
 	Comment() string
 
 	// CPU contains the CPU topology, if any.
-	CPU() VMCPUTopo
+	CPU() VMCPUParams
 
 	// HugePages returns the optional value for the HugePages setting for VMs.
 	HugePages() *VMHugePages
@@ -683,14 +690,16 @@ type BuildableVMParameters interface {
 	MustWithComment(comment string) BuildableVMParameters
 
 	// WithCPU adds a VMCPUTopo to the VM.
-	WithCPU(cpu VMCPUTopo) (BuildableVMParameters, error)
+	WithCPU(cpu VMCPUParams) (BuildableVMParameters, error)
 	// MustWithCPU adds a VMCPUTopo and panics if an error happens.
-	MustWithCPU(cpu VMCPUTopo) BuildableVMParameters
+	MustWithCPU(cpu VMCPUParams) BuildableVMParameters
 	// WithCPUParameters is a simplified function that calls NewVMCPUTopo and adds the CPU topology to
 	// the VM.
+	// Deprecated: use WithCPU instead.
 	WithCPUParameters(cores, threads, sockets uint) (BuildableVMParameters, error)
 	// MustWithCPUParameters is a simplified function that calls MustNewVMCPUTopo and adds the CPU topology to
 	// the VM.
+	// Deprecated: use MustWithCPU instead.
 	MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters
 
 	// WithHugePages sets the HugePages setting for the VM.
@@ -739,6 +748,169 @@ type BuildableVMParameters interface {
 	WithOS(parameters VMOSParameters) BuildableVMParameters
 }
 
+// VMCPUParams contain the CPU parameters for a VM.
+type VMCPUParams interface {
+	// Mode is the mode the CPU is used in. See CPUMode for details.
+	Mode() *CPUMode
+	// Topo contains the topology of the CPU.
+	Topo() VMCPUTopoParams
+}
+
+// BuildableVMCPUParams is a buildable version of VMCPUParams.
+type BuildableVMCPUParams interface {
+	VMCPUParams
+
+	WithMode(mode CPUMode) (BuildableVMCPUParams, error)
+	MustWithMode(mode CPUMode) BuildableVMCPUParams
+
+	WithTopo(topo VMCPUTopoParams) (BuildableVMCPUParams, error)
+	MustWithTopo(topo VMCPUTopoParams) BuildableVMCPUParams
+}
+
+// NewVMCPUParams creates a new VMCPUParams object.
+func NewVMCPUParams() BuildableVMCPUParams {
+	return &vmCPUParams{}
+}
+
+type vmCPUParams struct {
+	mode *CPUMode
+	topo VMCPUTopoParams
+}
+
+func (v *vmCPUParams) WithMode(mode CPUMode) (BuildableVMCPUParams, error) {
+	if err := mode.Validate(); err != nil {
+		return nil, err
+	}
+	v.mode = &mode
+	return v, nil
+}
+
+func (v *vmCPUParams) MustWithMode(mode CPUMode) BuildableVMCPUParams {
+	builder, err := v.WithMode(mode)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmCPUParams) WithTopo(topo VMCPUTopoParams) (BuildableVMCPUParams, error) {
+	v.topo = topo
+	return v, nil
+}
+
+func (v *vmCPUParams) MustWithTopo(topo VMCPUTopoParams) BuildableVMCPUParams {
+	b, err := v.WithTopo(topo)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (v vmCPUParams) Mode() *CPUMode {
+	return v.mode
+}
+
+func (v vmCPUParams) Topo() VMCPUTopoParams {
+	return v.topo
+}
+
+// VMCPUTopoParams contain the CPU topology parameters for a VM.
+type VMCPUTopoParams interface {
+	// Sockets returns the number of sockets to be added to the VM. Must be at least 1.
+	Sockets() uint
+	// Threads returns the number of CPU threads to be added to the VM. Must be at least 1.
+	Threads() uint
+	// Cores returns the number of CPU cores to be added to the VM. Must be at least 1.
+	Cores() uint
+}
+
+// BuildableVMCPUTopoParams is a buildable version of VMCPUTopoParams.
+type BuildableVMCPUTopoParams interface {
+	VMCPUTopoParams
+
+	WithSockets(sockets uint) (BuildableVMCPUTopoParams, error)
+	MustWithSockets(sockets uint) BuildableVMCPUTopoParams
+	WithCores(cores uint) (BuildableVMCPUTopoParams, error)
+	MustWithCores(cores uint) BuildableVMCPUTopoParams
+	WithThreads(threads uint) (BuildableVMCPUTopoParams, error)
+	MustWithThreads(threads uint) BuildableVMCPUTopoParams
+}
+
+// NewVMCPUTopoParams creates a new BuildableVMCPUTopoParams.
+func NewVMCPUTopoParams() BuildableVMCPUTopoParams {
+	return &vmCPUTopoParams{
+		sockets: 1,
+		cores:   1,
+		threads: 1,
+	}
+}
+
+type vmCPUTopoParams struct {
+	sockets uint
+	cores   uint
+	threads uint
+}
+
+func (v vmCPUTopoParams) Sockets() uint {
+	return v.sockets
+}
+
+func (v vmCPUTopoParams) Threads() uint {
+	return v.threads
+}
+
+func (v vmCPUTopoParams) Cores() uint {
+	return v.cores
+}
+
+func (v *vmCPUTopoParams) WithSockets(sockets uint) (BuildableVMCPUTopoParams, error) {
+	if sockets == 0 {
+		return nil, newError(EBadArgument, "sockets must be at least 1")
+	}
+	v.sockets = sockets
+	return v, nil
+}
+
+func (v *vmCPUTopoParams) MustWithSockets(sockets uint) BuildableVMCPUTopoParams {
+	builder, err := v.WithSockets(sockets)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmCPUTopoParams) WithCores(cores uint) (BuildableVMCPUTopoParams, error) {
+	if cores == 0 {
+		return nil, newError(EBadArgument, "cores must be at least 1")
+	}
+	v.cores = cores
+	return v, nil
+}
+
+func (v *vmCPUTopoParams) MustWithCores(cores uint) BuildableVMCPUTopoParams {
+	builder, err := v.WithCores(cores)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmCPUTopoParams) WithThreads(threads uint) (BuildableVMCPUTopoParams, error) {
+	if threads == 0 {
+		return nil, newError(EBadArgument, "threads must be at least 1")
+	}
+	v.threads = threads
+	return v, nil
+}
+
+func (v *vmCPUTopoParams) MustWithThreads(threads uint) BuildableVMCPUTopoParams {
+	builder, err := v.WithThreads(threads)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 // VMOSParameters contains the VM parameters pertaining to the operating system.
 type VMOSParameters interface {
 	// Type returns the type-string for the operating system.
@@ -777,6 +949,41 @@ func (v *vmOSParameters) MustWithType(t string) BuildableVMOSParameters {
 		panic(err)
 	}
 	return builder
+}
+
+// CPUMode is the mode of the CPU on a VM.
+type CPUMode string
+
+const (
+	// CPUModeCustom contains custom settings for the CPU.
+	CPUModeCustom CPUMode = "custom"
+	// CPUModeHostModel copies the host CPU make and model.
+	CPUModeHostModel CPUMode = "host_model"
+	// CPUModeHostPassthrough passes through the host CPU for nested virtualization.
+	CPUModeHostPassthrough CPUMode = "host_passthrough"
+)
+
+// Validate checks if the CPU mode is valid.
+func (c CPUMode) Validate() error {
+	switch c {
+	case CPUModeCustom:
+		return nil
+	case CPUModeHostModel:
+		return nil
+	case CPUModeHostPassthrough:
+		return nil
+	default:
+		return newError(EBadArgument, "invalid CPU mode: %s", c)
+	}
+}
+
+// CPUModeValues lists all valid CPU modes.
+func CPUModeValues() []CPUMode {
+	return []CPUMode{
+		CPUModeCustom,
+		CPUModeHostModel,
+		CPUModeHostPassthrough,
+	}
 }
 
 // VMType contains some preconfigured settings, such as the availability of remote desktop, for the VM.
@@ -1207,7 +1414,7 @@ type vmParams struct {
 
 	name    string
 	comment string
-	cpu     VMCPUTopo
+	cpu     VMCPUParams
 
 	hugePages *VMHugePages
 
@@ -1399,16 +1606,16 @@ func (v *vmParams) MustWithInitializationParameters(customScript, hostname strin
 	return v.MustWithInitialization(init)
 }
 
-func (v *vmParams) CPU() VMCPUTopo {
+func (v *vmParams) CPU() VMCPUParams {
 	return v.cpu
 }
 
-func (v *vmParams) WithCPU(cpu VMCPUTopo) (BuildableVMParameters, error) {
+func (v *vmParams) WithCPU(cpu VMCPUParams) (BuildableVMParameters, error) {
 	v.cpu = cpu
 	return v, nil
 }
 
-func (v *vmParams) MustWithCPU(cpu VMCPUTopo) BuildableVMParameters {
+func (v *vmParams) MustWithCPU(cpu VMCPUParams) BuildableVMParameters {
 	builder, err := v.WithCPU(cpu)
 	if err != nil {
 		panic(err)
@@ -1417,15 +1624,34 @@ func (v *vmParams) MustWithCPU(cpu VMCPUTopo) BuildableVMParameters {
 }
 
 func (v *vmParams) WithCPUParameters(cores, threads, sockets uint) (BuildableVMParameters, error) {
-	cpu, err := NewVMCPUTopo(cores, threads, sockets)
+	params := NewVMCPUTopoParams()
+	params, err := params.WithCores(cores)
 	if err != nil {
 		return nil, err
 	}
-	return v.WithCPU(cpu)
+	params, err = params.WithThreads(threads)
+	if err != nil {
+		return nil, err
+	}
+	params, err = params.WithSockets(sockets)
+	if err != nil {
+		return nil, err
+	}
+
+	topo, err := NewVMCPUParams().WithTopo(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return v.WithCPU(topo)
 }
 
 func (v *vmParams) MustWithCPUParameters(cores, threads, sockets uint) BuildableVMParameters {
-	return v.MustWithCPU(MustNewVMCPUTopo(cores, threads, sockets))
+	b, err := v.WithCPUParameters(cores, threads, sockets)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func (v *vmParams) MustWithName(name string) BuildableVMParameters {
@@ -1969,12 +2195,18 @@ func convertSDKVMCPU(sdkObject *ovirtsdk.Vm) (*vmCPU, error) {
 	if !ok {
 		return nil, newFieldNotFound("CPU topo in CPU in VM", "sockets")
 	}
+	sdkCPUMode, ok := sdkCPU.Mode()
+	var cpuMode *CPUMode
+	if ok {
+		cpuMode = (*CPUMode)(&sdkCPUMode)
+	}
 	cpu := &vmCPU{
 		topo: &vmCPUTopo{
 			uint(cores),
 			uint(threads),
 			uint(sockets),
 		},
+		mode: cpuMode,
 	}
 	return cpu, nil
 }
