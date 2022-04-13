@@ -172,6 +172,9 @@ func createSDKVM(
 			if format := d.Format(); format != nil {
 				diskBuilder.Format(ovirtsdk.DiskFormat(*format))
 			}
+			if storageDomainID := d.StorageDomainID(); storageDomainID != nil {
+				diskBuilder.StorageDomainsBuilderOfAny(*ovirtsdk.NewStorageDomainBuilder().Id(*storageDomainID))
+			}
 			diskAttachment.DiskBuilder(diskBuilder)
 			sdkDisk, err := diskAttachment.Build()
 			if err != nil {

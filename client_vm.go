@@ -1173,6 +1173,8 @@ type OptionalVMDiskParameters interface {
 	Sparse() *bool
 	// Format returns the image format to be used for the specified disk.
 	Format() *ImageFormat
+	// StorageDomainID returns the optional storage domain ID to use for this disk.
+	StorageDomainID() *string
 }
 
 // BuildableVMDiskParameters is a buildable version of OptionalVMDiskParameters.
@@ -1190,12 +1192,18 @@ type BuildableVMDiskParameters interface {
 	WithFormat(format ImageFormat) (BuildableVMDiskParameters, error)
 	// MustWithFormat is identical to WithFormat, but panics instead of returning an error.
 	MustWithFormat(format ImageFormat) BuildableVMDiskParameters
+
+	// WithStorageDomainID adds a storage domain to use for the disk.
+	WithStorageDomainID(storageDomainID string) (BuildableVMDiskParameters, error)
+	// MustWithStorageDomainID is identical to WithStorageDomainID but panics instead of returning an error.
+	MustWithStorageDomainID(storageDomainID string) BuildableVMDiskParameters
 }
 
 // NewBuildableVMDiskParameters creates a new buildable OptionalVMDiskParameters.
 func NewBuildableVMDiskParameters(diskID string) (BuildableVMDiskParameters, error) {
 	return &vmDiskParameters{
 		diskID,
+		nil,
 		nil,
 		nil,
 	}, nil
@@ -1212,9 +1220,27 @@ func MustNewBuildableVMDiskParameters(diskID string) BuildableVMDiskParameters {
 }
 
 type vmDiskParameters struct {
-	diskID string
-	sparse *bool
-	format *ImageFormat
+	diskID          string
+	sparse          *bool
+	format          *ImageFormat
+	storageDomainID *string
+}
+
+func (v *vmDiskParameters) StorageDomainID() *string {
+	return v.storageDomainID
+}
+
+func (v *vmDiskParameters) WithStorageDomainID(storageDomainID string) (BuildableVMDiskParameters, error) {
+	v.storageDomainID = &storageDomainID
+	return v, nil
+}
+
+func (v *vmDiskParameters) MustWithStorageDomainID(storageDomainID string) BuildableVMDiskParameters {
+	b, err := v.WithStorageDomainID(storageDomainID)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func (v *vmDiskParameters) Format() *ImageFormat {

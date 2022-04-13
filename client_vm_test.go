@@ -604,6 +604,62 @@ func TestVMCPUMode(t *testing.T) {
 	}
 }
 
+func TestVMDiskStorageDomain(t *testing.T) {
+	helper := getHelper(t)
+
+	storageDomain2 := helper.GetSecondaryStorageDomainID(t)
+	disk := assertCanCreateDiskWithParameters(t, helper, ovirtclient.ImageFormatCow, nil)
+	vm := assertCanCreateVM(t, helper, helper.GenerateTestResourceName(t), nil)
+	assertCanAttachDisk(t, vm, disk)
+	tpl := assertCanCreateTemplate(t, helper, vm)
+	diskAttachments, err := tpl.ListDiskAttachments()
+	if err != nil {
+		t.Fatalf("Failed to list template %s diks attachments (%v)", tpl.ID(), err)
+	}
+	vm2, err := helper.GetClient().CreateVM(
+		helper.GetClusterID(),
+		tpl.ID(),
+		helper.GenerateTestResourceName(t),
+		ovirtclient.
+			NewCreateVMParams().
+			MustWithClone(true).
+			MustWithDisks(
+				[]ovirtclient.OptionalVMDiskParameters{
+					ovirtclient.
+						MustNewBuildableVMDiskParameters(diskAttachments[0].DiskID()).
+						MustWithStorageDomainID(storageDomain2),
+				},
+			),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create VM from template %s (%v)", tpl.ID(), err)
+	}
+	t.Cleanup(func() {
+		if err := vm2.Remove(); err != nil && !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
+			t.Fatalf("Failed to clean up VM %s after test (%v)", vm2.ID(), err)
+		}
+	})
+
+	vmDiskAttachments, err := vm2.ListDiskAttachments()
+	if err != nil {
+		t.Fatalf("Failed to list VM %s disk attachments (%v)", vm2.ID(), err)
+	}
+	disk2, err := vmDiskAttachments[0].Disk()
+	if err != nil {
+		t.Fatalf("Failed to fetch disk %s (%v)", vmDiskAttachments[0].DiskID(), err)
+	}
+	found := false
+	for _, storageDomainID := range disk2.StorageDomainIDs() {
+		if storageDomainID == storageDomain2 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Disk %s is not on the required storage domain %s.", disk2.ID(), storageDomain2)
+	}
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
