@@ -37,6 +37,7 @@ func NewMockWithLogger(logger Logger) MockClient {
 				threads: 1,
 				sockets: 1,
 			},
+			nil,
 		},
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,9 @@ type TestHelper interface {
 
 	// GetPassword returns the oVirt password.
 	GetPassword() string
+
+	// GenerateTestResourceName generates a test resource name from the test name.
+	GenerateTestResourceName(t *testing.T) string
 }
 
 // MustNewTestHelper is identical to NewTestHelper, but panics instead of returning an error.
@@ -415,6 +419,10 @@ type testHelper struct {
 	secondaryStorageDomainID string
 	password                 string
 	username                 string
+}
+
+func (t *testHelper) GenerateTestResourceName(test *testing.T) string {
+	return strings.ReplaceAll(fmt.Sprintf("%s-%s", test.Name(), t.GenerateRandomID(5)), "/", "_")
 }
 
 func (t *testHelper) GetUsername() string {

@@ -17,14 +17,18 @@ func vmBuilderComment(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) 
 
 func vmBuilderCPU(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if cpu := params.CPU(); cpu != nil {
-		builder.CpuBuilder(
-			ovirtsdk.NewCpuBuilder().TopologyBuilder(
-				ovirtsdk.
-					NewCpuTopologyBuilder().
-					Cores(int64(cpu.Cores())).
-					Threads(int64(cpu.Threads())).
-					Sockets(int64(cpu.Sockets())),
-			))
+		cpuBuilder := ovirtsdk.NewCpuBuilder()
+		if cpuTopo := cpu.Topo(); cpuTopo != nil {
+			cpuBuilder.TopologyBuilder(ovirtsdk.
+				NewCpuTopologyBuilder().
+				Cores(int64(cpu.Topo().Cores())).
+				Threads(int64(cpu.Topo().Threads())).
+				Sockets(int64(cpu.Topo().Sockets())))
+		}
+		if mode := cpu.Mode(); mode != nil {
+			cpuBuilder.Mode(ovirtsdk.CpuMode(*mode))
+		}
+		builder.CpuBuilder(cpuBuilder)
 	}
 }
 

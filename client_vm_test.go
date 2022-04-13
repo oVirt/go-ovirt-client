@@ -576,6 +576,34 @@ func TestVMOSParameter(t *testing.T) {
 	}
 }
 
+func TestVMCPUMode(t *testing.T) {
+	helper := getHelper(t)
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		nil,
+	)
+	if vm.CPU().Mode() != nil {
+		t.Fatalf("Incorrect CPU mode: %s", *vm.CPU().Mode())
+	}
+
+	m := ovirtclient.CPUModeHostPassthrough
+	vm = assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		ovirtclient.NewCreateVMParams().MustWithCPU(ovirtclient.NewVMCPUParams().MustWithMode(m)),
+	)
+	if vm.CPU().Mode() == nil {
+		t.Fatalf("CPU mode is nil, expected %s.", m)
+	}
+	if *vm.CPU().Mode() != m {
+		t.Fatalf("Incorrect CPU mode (expected: %s, got: %s)", m, *vm.CPU().Mode())
+	}
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,

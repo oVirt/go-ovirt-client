@@ -214,12 +214,16 @@ func (m *mockClient) createVMCPU(params OptionalVMParameters, tpl *template) *vm
 	cpuParams := params.CPU()
 	switch {
 	case cpuParams != nil:
-		cpu = &vmCPU{
-			topo: &vmCPUTopo{
-				cores:   cpuParams.Cores(),
-				sockets: cpuParams.Sockets(),
-				threads: cpuParams.Threads(),
-			},
+		cpu = &vmCPU{}
+		if topo := cpuParams.Topo(); topo != nil {
+			cpu.topo = &vmCPUTopo{
+				cores:   topo.Cores(),
+				sockets: topo.Sockets(),
+				threads: topo.Threads(),
+			}
+		}
+		if mode := cpuParams.Mode(); mode != nil {
+			cpu.mode = mode
 		}
 	case tpl.cpu != nil:
 		cpu = tpl.cpu.clone()
