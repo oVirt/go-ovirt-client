@@ -18,21 +18,14 @@ func (o *oVirtClient) GetVMByName(name string, retries ...RetryStrategy) (result
 			}
 			for _, sdkObject := range response.MustVms().Slice() {
 				if mName, ok := sdkObject.Name(); ok {
+					// We re-scan for the name here since the search function may result other VMs too.
 					if name == mName {
 						result, err = convertSDKVM(sdkObject, o)
-						if err != nil {
-							return wrap(
-								err,
-								EBug,
-								"failed to convert vm %s",
-								name,
-							)
-						}
-
+						return err
 					}
 				}
 			}
-			return nil
+			return newError(ENotFound, "No VM found with name %s", name)
 		})
 	return result, err
 }
@@ -45,5 +38,5 @@ func (m *mockClient) GetVMByName(name string, _ ...RetryStrategy) (result VM, er
 			return vm, nil
 		}
 	}
-	return nil, newError(ENotFound, "vm with Name %s not found", name)
+	return nil, newError(ENotFound, "No VM found with name %s", name)
 }
