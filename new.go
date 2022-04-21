@@ -137,6 +137,7 @@ func NewWithVerify(
 
 	httpClient := http.Client{
 		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: tlsConfig,
 		},
 	}
