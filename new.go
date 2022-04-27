@@ -3,6 +3,7 @@ package ovirtclient
 import (
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -18,6 +19,59 @@ type ExtraSettings interface {
 	ExtraHeaders() map[string]string
 	// Compression enables GZIP or DEFLATE compression on HTTP queries
 	Compression() bool
+	// Proxy returns the proxy server to use for connecting the oVirt engine. If none is set, the system settings are
+	// used. If an empty string is passed, no proxy is used.
+	Proxy() *string
+}
+
+// ExtraSettingsBuilder is a buildable version of ExtraSettings.
+type ExtraSettingsBuilder interface {
+	ExtraSettings
+
+	// WithExtraHeaders adds extra headers to send along with each request.
+	WithExtraHeaders(map[string]string) ExtraSettingsBuilder
+	// WithCompression enables compression on HTTP requests.
+	WithCompression() ExtraSettingsBuilder
+	// WithProxy explicitly sets a proxy server to use for requests.
+	WithProxy(string) ExtraSettingsBuilder
+}
+
+// NewExtraSettings creates a builder for ExtraSettings.
+func NewExtraSettings() ExtraSettingsBuilder {
+	return &extraSettings{}
+}
+
+type extraSettings struct {
+	headers     map[string]string
+	compression bool
+	proxy       *string
+}
+
+func (e *extraSettings) ExtraHeaders() map[string]string {
+	return e.headers
+}
+
+func (e *extraSettings) Compression() bool {
+	return e.compression
+}
+
+func (e *extraSettings) Proxy() *string {
+	return e.proxy
+}
+
+func (e *extraSettings) WithExtraHeaders(m map[string]string) ExtraSettingsBuilder {
+	e.headers = m
+	return e
+}
+
+func (e *extraSettings) WithCompression() ExtraSettingsBuilder {
+	e.compression = true
+	return e
+}
+
+func (e *extraSettings) WithProxy(addr string) ExtraSettingsBuilder {
+	e.proxy = &addr
+	return e
 }
 
 // New creates a new copy of the enhanced oVirt client. It accepts the following options:
@@ -97,7 +151,7 @@ func New(
 // NewWithVerify is equivalent to New, but allows customizing the verification function for the connection.
 // Alternatively, a nil can be passed to disable connection verification.
 func NewWithVerify(
-	url string,
+	u string,
 	username string,
 	password string,
 	tls TLSProvider,
@@ -105,11 +159,11 @@ func NewWithVerify(
 	extraSettings ExtraSettings,
 	verify func(connection Client) error,
 ) (ClientWithLegacySupport, error) {
-	if err := validateURL(url); err != nil {
-		return nil, wrap(err, EBadArgument, "invalid URL: %s", url)
+	if err := validateURL(u); err != nil {
+		return nil, wrap(err, EBadArgument, "invalid URL: %s", u)
 	}
 	if err := validateUsername(username); err != nil {
-		return nil, wrap(err, "invalid username: %s", username)
+		return nil, wrap(err, EBadArgument, "invalid username: %s", username)
 	}
 	tlsConfig, err := tls.CreateTLSConfig()
 	if err != nil {
@@ -117,17 +171,13 @@ func NewWithVerify(
 	}
 
 	connBuilder := ovirtsdk4.NewConnectionBuilder().
-		URL(url).
+		URL(u).
 		Username(username).
 		Password(password).
 		TLSConfig(tlsConfig)
-	if extraSettings != nil {
-		if len(extraSettings.ExtraHeaders()) > 0 {
-			connBuilder.Headers(extraSettings.ExtraHeaders())
-		}
-		if extraSettings.Compression() {
-			connBuilder.Compress(true)
-		}
+	proxyFunc, err := processExtraSettings(extraSettings, connBuilder)
+	if err != nil {
+		return nil, err
 	}
 
 	conn, err := connBuilder.Build()
@@ -138,6 +188,7 @@ func NewWithVerify(
 	httpClient := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
+			Proxy:           proxyFunc,
 		},
 	}
 
@@ -145,7 +196,7 @@ func NewWithVerify(
 		conn:            conn,
 		httpClient:      httpClient,
 		logger:          logger,
-		url:             url,
+		url:             u,
 		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}
 
@@ -156,6 +207,41 @@ func NewWithVerify(
 	}
 
 	return client, nil
+}
+
+func processExtraSettings(
+	extraSettings ExtraSettings,
+	connBuilder *ovirtsdk4.ConnectionBuilder,
+) (func(req *http.Request) (*url.URL, error), error) {
+	proxyFunc := http.ProxyFromEnvironment
+	if extraSettings == nil {
+		connBuilder.ProxyFromEnvironment()
+		return proxyFunc, nil
+	}
+	if len(extraSettings.ExtraHeaders()) > 0 {
+		connBuilder.Headers(extraSettings.ExtraHeaders())
+	}
+	if extraSettings.Compression() {
+		connBuilder.Compress(true)
+	}
+	proxy := extraSettings.Proxy()
+	if proxy == nil {
+		connBuilder.ProxyFromEnvironment()
+		return proxyFunc, nil
+	}
+	if *proxy != "" {
+		u, err := url.Parse(*proxy)
+		if err != nil {
+			return nil, wrap(err, EBadArgument, "failed to parse proxy URL: %s", *proxy)
+		}
+		connBuilder.Proxy(u)
+		proxyFunc = func(req *http.Request) (*url.URL, error) {
+			return u, nil
+		}
+	} else {
+		proxyFunc = nil
+	}
+	return proxyFunc, nil
 }
 
 func testConnection(conn Client) error {

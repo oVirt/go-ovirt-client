@@ -14,20 +14,44 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"testing"
 	"time"
 )
 
 var (
-	nextFreePort     = 8080          // nolint:gochecknoglobals
 	nextFreePortLock = &sync.Mutex{} // nolint:gochecknoglobals
 )
 
-func getNextFreePort() int {
+func getNextFreePort(t *testing.T) int {
+	t.Helper()
+
 	nextFreePortLock.Lock()
 	defer nextFreePortLock.Unlock()
 
-	port := nextFreePort
-	nextFreePort++
+	listenConfig := net.ListenConfig{}
+	ctx := context.Background()
+
+	if deadline, ok := t.Deadline(); ok {
+		var cancel func()
+		ctx, cancel = context.WithDeadline(ctx, deadline)
+		defer cancel()
+	}
+
+	l, err := listenConfig.Listen(ctx, "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Failed to allocate port for test %s (%v)", t.Name(), err)
+	}
+	port := l.Addr().(*net.TCPAddr).Port
+	if err = l.Close(); err != nil {
+		t.Fatalf(
+			"Failed to close temporary listen socket on port %d for test %s (%v)",
+			port,
+			t.Name(),
+			err,
+		)
+	}
+
+	t.Logf("Allocating port %d for test %s", port, t.Name())
 	return port
 }
 

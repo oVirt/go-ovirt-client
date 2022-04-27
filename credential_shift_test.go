@@ -27,7 +27,7 @@ func TestCredentialChangeAfterSetup(t *testing.T) {
 		t.Fatalf("failed to create server certificate (%v)", err)
 	}
 
-	port := getNextFreePort()
+	port := getNextFreePort(t)
 
 	srv, err := newTestServer(port, serverCert, serverPrivKey, &unauthorizedHandler{})
 	if err != nil {
