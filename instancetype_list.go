@@ -1,4 +1,4 @@
-package ovirtclient
+package ovirtclient //nolint:dupl
 
 func (o *oVirtClient) ListInstanceTypes(retries ...RetryStrategy) (result []InstanceType, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
