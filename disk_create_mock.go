@@ -35,6 +35,10 @@ func (m *mockClient) createDisk(
 	size uint64,
 	params CreateDiskOptionalParameters,
 ) (*diskWithData, error) {
+	if err := validateDiskCreationParameters(format, size); err != nil {
+		return nil, err
+	}
+
 	if _, ok := m.storageDomains[storageDomainID]; !ok {
 		return nil, newError(ENotFound, "storage domain with ID %s not found", storageDomainID)
 	}

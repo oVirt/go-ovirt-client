@@ -359,10 +359,15 @@ func (u *uploadToNewDiskProgress) Do() {
 		u.cancel()
 	}()
 
+	size := u.qcowSize
+	if size < 1024*1024 {
+		size = 1024 * 1024
+	}
+
 	disk, err := u.client.CreateDisk(
 		u.storageDomainID,
 		u.diskFormat,
-		u.qcowSize,
+		size,
 		u.diskParams,
 		u.retries...,
 	)
@@ -520,6 +525,10 @@ func (m *mockClient) StartUploadToNewDisk(
 			imageFormat,
 			format,
 		)
+	}
+
+	if qcowSize < 1024*1024 {
+		qcowSize = 1024 * 1024
 	}
 
 	disk, err := m.createDisk(storageDomainID, format, qcowSize, params)
