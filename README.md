@@ -117,41 +117,45 @@ You can also create the test helper manually:
 
 ```go
 import (
-    "os"
-    "testing"
+	"os"
+	"testing"
 
-    ovirtclient "github.com/ovirt/go-ovirt-client"
-    ovirtclientlog "github.com/ovirt/go-ovirt-client-log"
+	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
 )
 
 func TestSomething(t *testing.T) {
-    // Create a logger that logs to the standard Go log here
-    logger := ovirtclientlog.NewTestLogger(t)
+	// Create a logger that logs to the standard Go log here
+	logger := ovirtclientlog.NewTestLogger(t)
 
-    // Set to true to use in-memory mock, otherwise this will use a live connection.
-    mock := false
+	// Set to true to use in-memory mock, otherwise this will use a live connection
+	isMock := true
 
-    // Create the test helper
-    helper, err := ovirtclient.NewTestHelper(
-        "https://localhost/ovirt-engine/api",
-        "admin@internal",
-        "super-secret",
-        ovirtclient.TLS().CACertsFromSystem(),
-        // The following parameters define which infrastructure parts to use for testing.
-        // Leave these empty for auto-detection / fixture setup.
-        os.Getenv("OVIRT_CLUSTER_ID"),
-        os.Getenv("OVIRT_BLANK_TEMPLATE_ID"),
-        os.Getenv("OVIRT_STORAGE_DOMAIN_ID"),
-        os.Getenv("OVIRT_VNIC_PROFILE_ID"),
-        mock,
-        logger,
-    )
-    if err != nil {
-        t.Fatal(err)
-    }
-    // Fetch the cluster ID for testing
-    clusterID := helper.GetClusterID()
-    //...
+	// The following parameters define which infrastructure parts to use for testing
+	params := ovirtclient.TestHelperParams().
+		WithClusterID(ovirtclient.ClusterID(os.Getenv("OVIRT_CLUSTER_ID"))).
+		WithBlankTemplateID(ovirtclient.TemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID"))).
+		WithStorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID")).
+		WithSecondaryStorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID")).
+		WithVNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID"))
+
+	// Create the test helper
+	helper, err := ovirtclient.NewTestHelper(
+		"https://localhost/ovirt-engine/api",
+		"admin@internal",
+		"super-secret",
+		// Leave these empty for auto-detection /fixture setup
+		params,
+		ovirtclient.TLS().CACertsFromSystem(),
+		isMock,
+		logger,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Fetch the cluster ID for testing
+	clusterID := helper.GetClusterID()
+	//...
 }
 ```
 
