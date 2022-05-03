@@ -126,7 +126,7 @@ func TestBadTLS(t *testing.T) {
 
 	port := getNextFreePort(t)
 
-	srv, err := newTestServer(port, serverCert, serverPrivKey, &noopHandler{})
+	srv, err := newTestServer(t, port, serverCert, serverPrivKey, &noopHandler{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestCredentialChangeAfterSetup(t *testing.T) {
 
 	port := getNextFreePort(t)
 
-	srv, err := newTestServer(port, serverCert, serverPrivKey, &unauthorizedHandler{})
+	srv, err := newTestServer(t, port, serverCert, serverPrivKey, &unauthorizedHandler{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +240,7 @@ func TestProxy(t *testing.T) {
 
 	port := getNextFreePort(t)
 
-	srv, err := newTestServer(port, serverCert, serverPrivKey, &unauthorizedHandler{})
+	srv, err := newTestServer(t, port, serverCert, serverPrivKey, &unauthorizedHandler{})
 	if err != nil {
 		t.Fatal(err)
 	}
