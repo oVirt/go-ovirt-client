@@ -138,15 +138,20 @@ func createSignedCert(usage []x509.ExtKeyUsage, caPrivateKey *rsa.PrivateKey, ca
 	return certPrivKeyPEM.Bytes(), certPEM.Bytes(), nil
 }
 
-func newTestServer(port int, serverCert []byte, serverPrivKey []byte, handler http.Handler) (*testServer, error) {
+func newTestServer(t *testing.T, port int, serverCert []byte, serverPrivKey []byte, handler http.Handler) (
+	*testServer,
+	error,
+) {
 	cert, err := tls.X509KeyPair(serverCert, serverPrivKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create key pair (%w)", err)
 	}
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
-		Handler: handler,
+		Addr:     fmt.Sprintf("127.0.0.1:%d", port),
+		Handler:  handler,
+		ErrorLog: testLogger(t),
 		TLSConfig: &tls.Config{
+			PreferServerCipherSuites: true,
 			Certificates: []tls.Certificate{
 				cert,
 			},
