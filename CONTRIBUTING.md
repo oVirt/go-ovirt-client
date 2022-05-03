@@ -59,7 +59,7 @@ Before you submit, we would like to ask you to run your tests against the live o
 ```
 OVIRT_URL=https://url-of-your-engine
 OVIRT_USERNAME=admin@internal
-OVIRT_PASSWRD=your-ovirt-password
+OVIRT_PASSWORD=your-ovirt-password
 # Use the system certificate store to verify the engine certificate.
 OVIRT_SYSTEM=1
 # Alternatively, use one of these options:
