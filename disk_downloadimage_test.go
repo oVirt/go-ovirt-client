@@ -30,11 +30,13 @@ func TestImageDownload(t *testing.T) {
 		fh,
 	)
 	t.Cleanup(func() {
-		disk := uploadResult.Disk()
-		if disk != nil {
-			diskID := uploadResult.Disk().ID()
-			if err := client.RemoveDisk(diskID); err != nil {
-				t.Fatal(fmt.Errorf("failed to remove disk (%w)", err))
+		if uploadResult != nil {
+			disk := uploadResult.Disk()
+			if disk != nil {
+				diskID := uploadResult.Disk().ID()
+				if err := client.RemoveDisk(diskID); err != nil {
+					t.Fatal(fmt.Errorf("failed to remove disk (%w)", err))
+				}
 			}
 		}
 	})
