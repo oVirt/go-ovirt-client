@@ -102,7 +102,7 @@ func getClient(
 		vnicProfiles: map[VNICProfileID]*vnicProfile{
 			testVNICProfile.ID(): testVNICProfile,
 		},
-		networks: map[string]*network{
+		networks: map[NetworkID]*network{
 			testNetwork.ID(): testNetwork,
 		},
 		dataCenters: map[string]*datacenterWithClusters{
@@ -165,7 +165,7 @@ func generateTestVNICProfile(testNetwork *network) *vnicProfile {
 
 func generateTestNetwork(testDatacenter *datacenterWithClusters) *network {
 	return &network{
-		id:   uuid.NewString(),
+		id:   NetworkID(uuid.NewString()),
 		name: "test",
 		dcID: testDatacenter.ID(),
 	}

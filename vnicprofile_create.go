@@ -8,7 +8,7 @@ import (
 
 func (o *oVirtClient) CreateVNICProfile(
 	name string,
-	networkID string,
+	networkID NetworkID,
 	params OptionalVNICProfileParameters,
 	retries ...RetryStrategy,
 ) (result VNICProfile, err error) {
@@ -26,7 +26,7 @@ func (o *oVirtClient) CreateVNICProfile(
 		func() error {
 			profileBuilder := ovirtsdk.NewVnicProfileBuilder()
 			profileBuilder.Name(name)
-			profileBuilder.Network(ovirtsdk.NewNetworkBuilder().Id(networkID).MustBuild())
+			profileBuilder.Network(ovirtsdk.NewNetworkBuilder().Id(string(networkID)).MustBuild())
 			req := o.conn.SystemService().VnicProfilesService().Add()
 			response, err := req.Profile(profileBuilder.MustBuild()).Send()
 			if err != nil {
@@ -44,7 +44,7 @@ func (o *oVirtClient) CreateVNICProfile(
 
 func (m *mockClient) CreateVNICProfile(
 	name string,
-	networkID string,
+	networkID NetworkID,
 	params OptionalVNICProfileParameters,
 	_ ...RetryStrategy,
 ) (VNICProfile, error) {
@@ -77,7 +77,7 @@ func (m *mockClient) CreateVNICProfile(
 	return m.vnicProfiles[id], nil
 }
 
-func validateVNICProfileCreationParameters(name string, networkID string, _ OptionalVNICProfileParameters) error {
+func validateVNICProfileCreationParameters(name string, networkID NetworkID, _ OptionalVNICProfileParameters) error {
 	if name == "" {
 		return newError(EBadArgument, "name cannot be empty for VNIC profile creation")
 	}

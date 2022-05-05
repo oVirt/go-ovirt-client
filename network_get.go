@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetNetwork(id string, retries ...RetryStrategy) (result Network, err error) {
+func (o *oVirtClient) GetNetwork(id NetworkID, retries ...RetryStrategy) (result Network, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting network %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().NetworksService().NetworkService(id).Get().Send()
+			response, err := o.conn.SystemService().NetworksService().NetworkService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetNetwork(id string, retries ...RetryStrategy) (result Ne
 	return
 }
 
-func (m *mockClient) GetNetwork(id string, _ ...RetryStrategy) (Network, error) {
+func (m *mockClient) GetNetwork(id NetworkID, _ ...RetryStrategy) (Network, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.networks[id]; ok {
