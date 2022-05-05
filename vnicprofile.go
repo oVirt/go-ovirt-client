@@ -12,7 +12,7 @@ type VNICProfileID string
 // VNICProfileClient defines the methods related to dealing with virtual NIC profiles.
 type VNICProfileClient interface {
 	// CreateVNICProfile creates a new VNIC profile with the specified name and network ID.
-	CreateVNICProfile(name string, networkID string, params OptionalVNICProfileParameters, retries ...RetryStrategy) (VNICProfile, error)
+	CreateVNICProfile(name string, networkID NetworkID, params OptionalVNICProfileParameters, retries ...RetryStrategy) (VNICProfile, error)
 	// GetVNICProfile returns a single VNIC Profile based on the ID
 	GetVNICProfile(id VNICProfileID, retries ...RetryStrategy) (VNICProfile, error)
 	// ListVNICProfiles lists all VNIC Profiles.
@@ -43,7 +43,7 @@ type VNICProfileData interface {
 	// Name returns the human-readable name of the VNIC profile.
 	Name() string
 	// NetworkID returns the network ID the VNICProfile is attached to.
-	NetworkID() string
+	NetworkID() NetworkID
 }
 
 // VNICProfile is a collection of settings that can be applied to individual virtual network interface cards in the
@@ -80,7 +80,7 @@ func convertSDKVNICProfile(sdkObject *ovirtsdk.VnicProfile, client Client) (VNIC
 
 		id:        VNICProfileID(id),
 		name:      name,
-		networkID: networkID,
+		networkID: NetworkID(networkID),
 	}, nil
 }
 
@@ -88,7 +88,7 @@ type vnicProfile struct {
 	client Client
 
 	id        VNICProfileID
-	networkID string
+	networkID NetworkID
 	name      string
 }
 
@@ -104,7 +104,7 @@ func (v vnicProfile) Name() string {
 	return v.name
 }
 
-func (v vnicProfile) NetworkID() string {
+func (v vnicProfile) NetworkID() NetworkID {
 	return v.networkID
 }
 
