@@ -535,7 +535,7 @@ func TestPlacementPolicy(t *testing.T) {
 			ovirtclient.
 				NewVMPlacementPolicyParameters().
 				MustWithAffinity(ovirtclient.VMAffinityPinned).
-				MustWithHostIDs([]string{hosts[0].ID()}),
+				MustWithHostIDs([]ovirtclient.HostID{hosts[0].ID()}),
 		),
 	)
 	pp, ok := vm.PlacementPolicy()

@@ -223,7 +223,7 @@ type VMData interface {
 	// Initialization returns the virtual machine’s initialization configuration.
 	Initialization() Initialization
 	// HostID returns the ID of the host if available.
-	HostID() *string
+	HostID() *HostID
 	// PlacementPolicy returns placement policy applied to this VM, if any. It may be nil if no placement policy is set.
 	// The second returned value will be false if no placement policy exists.
 	PlacementPolicy() (placementPolicy VMPlacementPolicy, ok bool)
@@ -252,7 +252,7 @@ func (v vmOS) Type() string {
 // VMPlacementPolicy is the structure that holds the rules for VM migration to other hosts.
 type VMPlacementPolicy interface {
 	Affinity() *VMAffinity
-	HostIDs() []string
+	HostIDs() []HostID
 }
 
 // VMAffinity is the affinity used in the placement policy on determining if a VM can be migrated to a different host.
@@ -1048,7 +1048,7 @@ type VMPlacementPolicyParameters interface {
 	Affinity() *VMAffinity
 	// HostIDs returns a list of host IDs to apply as possible migration targets. The default is an empty list,
 	// which means the VM can be migrated to any host.
-	HostIDs() []string
+	HostIDs() []HostID
 }
 
 // BuildableVMPlacementPolicyParameters is a buildable version of the VMPlacementPolicyParameters.
@@ -1061,9 +1061,9 @@ type BuildableVMPlacementPolicyParameters interface {
 	MustWithAffinity(affinity VMAffinity) BuildableVMPlacementPolicyParameters
 
 	// WithHostIDs sets the list of hosts this VM can be migrated to.
-	WithHostIDs(hostIDs []string) (BuildableVMPlacementPolicyParameters, error)
+	WithHostIDs(hostIDs []HostID) (BuildableVMPlacementPolicyParameters, error)
 	// MustWithHostIDs is identical to WithHostIDs, but panics instead of returning an error.
-	MustWithHostIDs(hostIDs []string) BuildableVMPlacementPolicyParameters
+	MustWithHostIDs(hostIDs []HostID) BuildableVMPlacementPolicyParameters
 }
 
 // NewVMPlacementPolicyParameters creates a new BuildableVMPlacementPolicyParameters for use on VM creation.
@@ -1073,14 +1073,14 @@ func NewVMPlacementPolicyParameters() BuildableVMPlacementPolicyParameters {
 
 type vmPlacementPolicyParameters struct {
 	affinity *VMAffinity
-	hostIDs  []string
+	hostIDs  []HostID
 }
 
 func (v vmPlacementPolicyParameters) Affinity() *VMAffinity {
 	return v.affinity
 }
 
-func (v vmPlacementPolicyParameters) HostIDs() []string {
+func (v vmPlacementPolicyParameters) HostIDs() []HostID {
 	return v.hostIDs
 }
 
@@ -1100,12 +1100,12 @@ func (v vmPlacementPolicyParameters) MustWithAffinity(affinity VMAffinity) Build
 	return builder
 }
 
-func (v vmPlacementPolicyParameters) WithHostIDs(hostIDs []string) (BuildableVMPlacementPolicyParameters, error) {
+func (v vmPlacementPolicyParameters) WithHostIDs(hostIDs []HostID) (BuildableVMPlacementPolicyParameters, error) {
 	v.hostIDs = hostIDs
 	return v, nil
 }
 
-func (v vmPlacementPolicyParameters) MustWithHostIDs(hostIDs []string) BuildableVMPlacementPolicyParameters {
+func (v vmPlacementPolicyParameters) MustWithHostIDs(hostIDs []HostID) BuildableVMPlacementPolicyParameters {
 	builder, err := v.WithHostIDs(hostIDs)
 	if err != nil {
 		panic(err)
@@ -1734,7 +1734,7 @@ type vm struct {
 	tagIDs          []string
 	hugePages       *VMHugePages
 	initialization  Initialization
-	hostID          *string
+	hostID          *HostID
 	placementPolicy *vmPlacementPolicy
 	memoryPolicy    *memoryPolicy
 	instanceTypeID  *InstanceTypeID
@@ -1786,7 +1786,7 @@ func (v *vm) GetIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (
 	return v.client.GetVMIPAddresses(v.id, params, retries...)
 }
 
-func (v *vm) HostID() *string {
+func (v *vm) HostID() *HostID {
 	return v.hostID
 }
 
@@ -2065,7 +2065,7 @@ func vmMemoryPolicyConverter(object *ovirtsdk.Vm, v *vm) error {
 func vmHostConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	if host, ok := sdkObject.Host(); ok {
 		if hostID, ok := host.Id(); ok && hostID != "" {
-			v.hostID = &hostID
+			v.hostID = (*HostID)(&hostID)
 		}
 	}
 	return nil
@@ -2081,9 +2081,9 @@ func vmPlacementPolicyConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 		}
 		hosts, ok := pp.Hosts()
 		if ok {
-			hostIDs := make([]string, len(hosts.Slice()))
+			hostIDs := make([]HostID, len(hosts.Slice()))
 			for i, host := range hosts.Slice() {
-				hostIDs[i] = host.MustId()
+				hostIDs[i] = HostID(host.MustId())
 			}
 			placementPolicy.hostIDs = hostIDs
 		}
@@ -2296,14 +2296,14 @@ const (
 
 type vmPlacementPolicy struct {
 	affinity *VMAffinity
-	hostIDs  []string
+	hostIDs  []HostID
 }
 
 func (v vmPlacementPolicy) Affinity() *VMAffinity {
 	return v.affinity
 }
 
-func (v vmPlacementPolicy) HostIDs() []string {
+func (v vmPlacementPolicy) HostIDs() []HostID {
 	return v.hostIDs
 }
 
