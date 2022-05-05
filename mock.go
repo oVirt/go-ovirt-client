@@ -25,7 +25,7 @@ type mockClient struct {
 	lock                              *sync.Mutex
 	nonSecureRandom                   *rand.Rand
 	vms                               map[VMID]*vm
-	storageDomains                    map[string]*storageDomain
+	storageDomains                    map[StorageDomainID]*storageDomain
 	disks                             map[string]*diskWithData
 	clusters                          map[ClusterID]*cluster
 	hosts                             map[string]*host

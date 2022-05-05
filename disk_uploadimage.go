@@ -18,7 +18,7 @@ import (
 // Deprecated: use UploadToNewDisk instead.
 func (o *oVirtClient) UploadImage(
 	alias string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	sparse bool,
 	size uint64,
 	reader io.ReadSeekCloser,
@@ -36,7 +36,7 @@ func (o *oVirtClient) UploadImage(
 }
 
 func (o *oVirtClient) UploadToNewDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
@@ -58,7 +58,7 @@ func (o *oVirtClient) UploadToNewDisk(
 // Deprecated: use StartUploadToNewDisk instead.
 func (o *oVirtClient) StartImageUpload(
 	alias string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	sparse bool,
 	size uint64,
 	reader io.ReadSeekCloser,
@@ -296,7 +296,7 @@ func (u *uploadToDiskProgress) Read(p []byte) (n int, err error) {
 }
 
 func (o *oVirtClient) StartUploadToNewDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
@@ -348,7 +348,7 @@ func (o *oVirtClient) StartUploadToNewDisk(
 type uploadToNewDiskProgress struct {
 	uploadToDiskProgress
 
-	storageDomainID string
+	storageDomainID StorageDomainID
 	diskFormat      ImageFormat
 	diskParams      CreateDiskOptionalParameters
 }
@@ -399,7 +399,7 @@ func (u *uploadToNewDiskProgress) Do() {
 
 func (m *mockClient) StartImageUpload(
 	alias string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	sparse bool,
 	size uint64,
 	reader io.ReadSeekCloser,
@@ -417,7 +417,7 @@ func (m *mockClient) StartImageUpload(
 
 func (m *mockClient) UploadImage(
 	alias string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	sparse bool,
 	size uint64,
 	reader io.ReadSeekCloser,
@@ -498,7 +498,7 @@ func (m *mockClient) UploadToDisk(diskID string, size uint64, reader io.ReadSeek
 }
 
 func (m *mockClient) StartUploadToNewDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
@@ -558,7 +558,7 @@ func (m *mockClient) StartUploadToNewDisk(
 }
 
 func (m *mockClient) UploadToNewDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,

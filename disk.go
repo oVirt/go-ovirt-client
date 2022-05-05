@@ -41,7 +41,7 @@ type DiskClient interface {
 	// Deprecated: Use StartUploadToNewDisk instead.
 	StartImageUpload(
 		alias string,
-		storageDomainID string,
+		storageDomainID StorageDomainID,
 		sparse bool,
 		size uint64,
 		reader io.ReadSeekCloser,
@@ -75,7 +75,7 @@ type DiskClient interface {
 	//         //...
 	//     }
 	StartUploadToNewDisk(
-		storageDomainID string,
+		storageDomainID StorageDomainID,
 		format ImageFormat,
 		size uint64,
 		params CreateDiskOptionalParameters,
@@ -89,7 +89,7 @@ type DiskClient interface {
 	// Deprecated: Use UploadToNewDisk instead.
 	UploadImage(
 		alias string,
-		storageDomainID string,
+		storageDomainID StorageDomainID,
 		sparse bool,
 		size uint64,
 		reader io.ReadSeekCloser,
@@ -99,7 +99,7 @@ type DiskClient interface {
 	// UploadToNewDisk is identical to StartUploadToNewDisk, but waits until the upload is complete. It
 	// returns the disk ID as a result, or the error if one happened.
 	UploadToNewDisk(
-		storageDomainID string,
+		storageDomainID StorageDomainID,
 		format ImageFormat,
 		size uint64,
 		params CreateDiskOptionalParameters,
@@ -204,7 +204,7 @@ type DiskClient interface {
 	// StartCreateDisk starts creating an empty disk with the specified parameters and returns a DiskCreation object,
 	// which can be queried for completion. Optional parameters can be created using CreateDiskParams().
 	StartCreateDisk(
-		storageDomainID string,
+		storageDomainID StorageDomainID,
 		format ImageFormat,
 		size uint64,
 		params CreateDiskOptionalParameters,
@@ -218,7 +218,7 @@ type DiskClient interface {
 	// the ready state. Since the disk is almost certainly in a locked state, this may mean that there is a disk left
 	// behind.
 	CreateDisk(
-		storageDomainID string,
+		storageDomainID StorageDomainID,
 		format ImageFormat,
 		size uint64,
 		params CreateDiskOptionalParameters,
@@ -465,7 +465,7 @@ type DiskData interface {
 	// StorageDomainIDs returns a list of storage domains this disk is present on. This will typically be a single
 	// disk, but may have multiple disk when the disk has been copied over to other storage domains. The disk is always
 	// present on at least one disk, so this list will never be empty.
-	StorageDomainIDs() []string
+	StorageDomainIDs() []StorageDomainID
 	// Status returns the status the disk is in.
 	Status() DiskStatus
 	// Sparse indicates sparse provisioning on the disk.
@@ -640,15 +640,15 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 	if !ok {
 		return nil, newError(EFieldMissing, "disk does not contain an ID")
 	}
-	var storageDomainIDs []string
+	var storageDomainIDs []StorageDomainID
 	if sdkStorageDomain, ok := sdkDisk.StorageDomain(); ok {
 		storageDomainID, _ := sdkStorageDomain.Id()
-		storageDomainIDs = append(storageDomainIDs, storageDomainID)
+		storageDomainIDs = append(storageDomainIDs, StorageDomainID(storageDomainID))
 	}
 	if sdkStorageDomains, ok := sdkDisk.StorageDomains(); ok {
 		for _, sd := range sdkStorageDomains.Slice() {
 			storageDomainID, _ := sd.Id()
-			storageDomainIDs = append(storageDomainIDs, storageDomainID)
+			storageDomainIDs = append(storageDomainIDs, StorageDomainID(storageDomainID))
 		}
 	}
 	if len(storageDomainIDs) == 0 {
@@ -699,7 +699,7 @@ type disk struct {
 	alias            string
 	provisionedSize  uint64
 	format           ImageFormat
-	storageDomainIDs []string
+	storageDomainIDs []StorageDomainID
 	status           DiskStatus
 	totalSize        uint64
 	sparse           bool
@@ -709,7 +709,7 @@ func (d *disk) WaitForOK(retries ...RetryStrategy) (Disk, error) {
 	return d.client.WaitForDiskOK(d.id, retries...)
 }
 
-func (d *disk) StorageDomainIDs() []string {
+func (d *disk) StorageDomainIDs() []StorageDomainID {
 	return d.storageDomainIDs
 }
 

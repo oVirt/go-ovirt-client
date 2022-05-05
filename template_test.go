@@ -170,7 +170,7 @@ func TestGetTemplateByName(t *testing.T) {
 
 }
 
-func assertCanGetDiskFromStorageDomain(t *testing.T, helper ovirtclient.TestHelper, storageDomainID string, disk ovirtclient.Disk) ovirtclient.Disk {
+func assertCanGetDiskFromStorageDomain(t *testing.T, helper ovirtclient.TestHelper, storageDomainID ovirtclient.StorageDomainID, disk ovirtclient.Disk) ovirtclient.Disk {
 	newDisk, err := helper.GetClient().GetDiskFromStorageDomain(storageDomainID, disk.ID())
 
 	if err != nil {

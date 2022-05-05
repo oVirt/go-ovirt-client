@@ -7,25 +7,28 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "StorageDomain" -n "storage domain"
+//go:generate go run scripts/rest/rest.go -i "StorageDomain" -n "storage domain" -T StorageDomainID
+
+// StorageDomainID is a specialized type for storage domain IDs.
+type StorageDomainID string
 
 // StorageDomainClient contains the portion of the goVirt API that deals with storage domains.
 type StorageDomainClient interface {
 	// ListStorageDomains lists all storage domains.
 	ListStorageDomains(retries ...RetryStrategy) ([]StorageDomain, error)
 	// GetStorageDomain returns a single storage domain, or an error if the storage domain could not be found.
-	GetStorageDomain(id string, retries ...RetryStrategy) (StorageDomain, error)
+	GetStorageDomain(id StorageDomainID, retries ...RetryStrategy) (StorageDomain, error)
 	// GetDiskFromStorageDomain returns a single disk from a specific storage domain, or an error if no disk can be found.
-	GetDiskFromStorageDomain(id string, diskID string, retries ...RetryStrategy) (result Disk, err error)
+	GetDiskFromStorageDomain(id StorageDomainID, diskID string, retries ...RetryStrategy) (result Disk, err error)
 	// RemoveDiskFromStorageDomain removes a disk from a specific storage domain, but leaves the disk on other storage
 	// domains if any. If the disk is not present on any more storage domains, the entire disk will be removed.
-	RemoveDiskFromStorageDomain(id string, diskID string, retries ...RetryStrategy) error
+	RemoveDiskFromStorageDomain(id StorageDomainID, diskID string, retries ...RetryStrategy) error
 }
 
 // StorageDomainData is the core of StorageDomain, providing only data access functions.
 type StorageDomainData interface {
 	// ID is the unique identified for the storage system connected to oVirt.
-	ID() string
+	ID() StorageDomainID
 	// Name is the user-given name for the storage domain.
 	Name() string
 	// Available returns the number of available bytes on the storage domain
@@ -263,7 +266,7 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client C
 	return &storageDomain{
 		client: client,
 
-		id:             id,
+		id:             StorageDomainID(id),
 		name:           name,
 		available:      uint64(available),
 		storageType:    StorageDomainType(storageType),
@@ -275,7 +278,7 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client C
 type storageDomain struct {
 	client Client
 
-	id             string
+	id             StorageDomainID
 	name           string
 	available      uint64
 	storageType    StorageDomainType
@@ -283,7 +286,7 @@ type storageDomain struct {
 	externalStatus StorageDomainExternalStatus
 }
 
-func (s storageDomain) ID() string {
+func (s storageDomain) ID() StorageDomainID {
 	return s.id
 }
 
