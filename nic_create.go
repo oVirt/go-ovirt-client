@@ -78,7 +78,7 @@ func (m *mockClient) CreateNIC(
 		}
 	}
 
-	id := uuid.Must(uuid.NewUUID()).String()
+	id := NICID(uuid.Must(uuid.NewUUID()).String())
 
 	nic := &nic{
 		client:        m,

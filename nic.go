@@ -4,6 +4,9 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
+// NICID is the ID for a network interface.
+type NICID string
+
 // NICClient defines the methods related to dealing with network interfaces.
 type NICClient interface {
 	// CreateNIC adds a new NIC to a VM specified in vmid.
@@ -17,16 +20,16 @@ type NICClient interface {
 	// UpdateNIC allows updating the NIC.
 	UpdateNIC(
 		vmid VMID,
-		nicID string,
+		nicID NICID,
 		params UpdateNICParameters,
 		retries ...RetryStrategy,
 	) (NIC, error)
 	// GetNIC returns one specific NIC with the ID specified in id, attached to a VM with the ID specified in vmid.
-	GetNIC(vmid VMID, id string, retries ...RetryStrategy) (NIC, error)
+	GetNIC(vmid VMID, id NICID, retries ...RetryStrategy) (NIC, error)
 	// ListNICs lists all NICs attached to the VM specified in vmid.
 	ListNICs(vmid VMID, retries ...RetryStrategy) ([]NIC, error)
 	// RemoveNIC removes the network interface specified.
-	RemoveNIC(vmid VMID, id string, retries ...RetryStrategy) error
+	RemoveNIC(vmid VMID, id NICID, retries ...RetryStrategy) error
 }
 
 // OptionalNICParameters is an interface that declares the source of optional parameters for NIC creation.
@@ -117,7 +120,7 @@ func (u *updateNICParams) MustWithVNICProfileID(id string) BuildableUpdateNICPar
 // NICData is the core of NIC which only provides data-access functions.
 type NICData interface {
 	// ID is the identifier for this network interface.
-	ID() string
+	ID() NICID
 	// Name is the user-given name of the network interface.
 	Name() string
 	// VMID is the identified of the VM this NIC is attached to. May be nil if the NIC is not attached.
@@ -169,7 +172,7 @@ func convertSDKNIC(sdkObject *ovirtsdk.Nic, cli Client) (NIC, error) {
 	}
 	return &nic{
 		cli,
-		id,
+		NICID(id),
 		name,
 		VMID(vmid),
 		vnicProfileID,
@@ -179,7 +182,7 @@ func convertSDKNIC(sdkObject *ovirtsdk.Nic, cli Client) (NIC, error) {
 type nic struct {
 	client Client
 
-	id            string
+	id            NICID
 	name          string
 	vmid          VMID
 	vnicProfileID string
@@ -201,7 +204,7 @@ func (n nic) VNICProfileID() string {
 	return n.vnicProfileID
 }
 
-func (n nic) ID() string {
+func (n nic) ID() NICID {
 	return n.id
 }
 
