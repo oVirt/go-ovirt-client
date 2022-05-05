@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) ListDatacenterClusters(id string, retries ...RetryStrategy) (result []Cluster, err error) {
+func (o *oVirtClient) ListDatacenterClusters(id DatacenterID, retries ...RetryStrategy) (result []Cluster, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = []Cluster{}
 	err = retry(
@@ -15,7 +15,7 @@ func (o *oVirtClient) ListDatacenterClusters(id string, retries ...RetryStrategy
 			response, e := o.conn.
 				SystemService().
 				DataCentersService().
-				DataCenterService(id).
+				DataCenterService(string(id)).
 				ClustersService().
 				List().
 				Send()
@@ -38,7 +38,7 @@ func (o *oVirtClient) ListDatacenterClusters(id string, retries ...RetryStrategy
 	return result, err
 }
 
-func (m *mockClient) ListDatacenterClusters(id string, _ ...RetryStrategy) ([]Cluster, error) {
+func (m *mockClient) ListDatacenterClusters(id DatacenterID, _ ...RetryStrategy) ([]Cluster, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

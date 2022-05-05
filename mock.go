@@ -33,7 +33,7 @@ type mockClient struct {
 	nics                              map[NICID]*nic
 	vnicProfiles                      map[VNICProfileID]*vnicProfile
 	networks                          map[NetworkID]*network
-	dataCenters                       map[string]*datacenterWithClusters
+	dataCenters                       map[DatacenterID]*datacenterWithClusters
 	vmDiskAttachmentsByVM             map[VMID]map[string]*diskAttachment
 	vmDiskAttachmentsByDisk           map[DiskID]*diskAttachment
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment

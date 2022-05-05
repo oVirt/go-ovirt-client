@@ -27,7 +27,7 @@ type NetworkData interface {
 	// Name returns the user-give nname for this network.
 	Name() string
 	// DatacenterID is the identifier of the datacenter object.
-	DatacenterID() string
+	DatacenterID() DatacenterID
 }
 
 // Network is the interface defining the fields for networks.
@@ -59,7 +59,7 @@ func convertSDKNetwork(sdkObject *ovirtsdk4.Network, client *oVirtClient) (Netwo
 		client: client,
 		id:     NetworkID(id),
 		name:   name,
-		dcID:   dcID,
+		dcID:   DatacenterID(dcID),
 	}, nil
 }
 
@@ -68,7 +68,7 @@ type network struct {
 
 	id   NetworkID
 	name string
-	dcID string
+	dcID DatacenterID
 }
 
 func (n network) ID() NetworkID {
@@ -79,7 +79,7 @@ func (n network) Name() string {
 	return n.name
 }
 
-func (n network) DatacenterID() string {
+func (n network) DatacenterID() DatacenterID {
 	return n.dcID
 }
 
