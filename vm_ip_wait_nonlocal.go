@@ -26,10 +26,10 @@ var nonLocalIPSearchParams = NewVMIPSearchParams().
 	WithExcludedInterface("lo").
 	WithExcludedInterfacePattern(regexp.MustCompile("^dummy[0-9]+$"))
 
-func (m *mockClient) WaitForNonLocalVMIPAddress(id string, retries ...RetryStrategy) (map[string][]net.IP, error) {
+func (m *mockClient) WaitForNonLocalVMIPAddress(id VMID, retries ...RetryStrategy) (map[string][]net.IP, error) {
 	return m.WaitForVMIPAddresses(id, nonLocalIPSearchParams, retries...)
 }
 
-func (o *oVirtClient) WaitForNonLocalVMIPAddress(id string, retries ...RetryStrategy) (map[string][]net.IP, error) {
+func (o *oVirtClient) WaitForNonLocalVMIPAddress(id VMID, retries ...RetryStrategy) (map[string][]net.IP, error) {
 	return o.WaitForVMIPAddresses(id, nonLocalIPSearchParams, retries...)
 }

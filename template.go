@@ -9,7 +9,7 @@ import (
 // TemplateClient represents the portion of the client that deals with VM templates.
 type TemplateClient interface {
 	// CreateTemplate creates a new template from an existing VM.
-	CreateTemplate(vmID string, name string, params OptionalTemplateCreateParameters, retries ...RetryStrategy) (
+	CreateTemplate(vmID VMID, name string, params OptionalTemplateCreateParameters, retries ...RetryStrategy) (
 		Template,
 		error,
 	)

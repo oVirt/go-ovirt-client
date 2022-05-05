@@ -6,20 +6,20 @@ import (
 	"time"
 )
 
-func (o *oVirtClient) StopVM(id string, force bool, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) StopVM(id VMID, force bool, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("stopping VM %s", id),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().VmsService().VmService(id).Stop().Force(force).Send()
+			_, err := o.conn.SystemService().VmsService().VmService(string(id)).Stop().Force(force).Send()
 			return err
 		})
 	return
 }
 
-func (m *mockClient) StopVM(id string, force bool, _ ...RetryStrategy) error {
+func (m *mockClient) StopVM(id VMID, force bool, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.vms[id]; ok {

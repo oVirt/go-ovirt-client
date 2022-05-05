@@ -26,8 +26,8 @@ type AffinityGroupClient interface {
 	// RemoveAffinityGroup removes the affinity group specified.
 	RemoveAffinityGroup(clusterID ClusterID, id AffinityGroupID, retries ...RetryStrategy) error
 
-	AddVMToAffinityGroup(clusterID ClusterID, vmID string, agID AffinityGroupID, retries ...RetryStrategy) error
-	RemoveVMFromAffinityGroup(clusterID ClusterID, vmID string, agID AffinityGroupID, retries ...RetryStrategy) error
+	AddVMToAffinityGroup(clusterID ClusterID, vmID VMID, agID AffinityGroupID, retries ...RetryStrategy) error
+	RemoveVMFromAffinityGroup(clusterID ClusterID, vmID VMID, agID AffinityGroupID, retries ...RetryStrategy) error
 }
 
 // CreateAffinityGroupOptionalParams is a list of optional parameters that can be passed for affinity group creation.
@@ -109,7 +109,7 @@ type AffinityGroupData interface {
 	// VMsRule contains the rule for the virtual machines.
 	VMsRule() AffinityVMsRule
 	// VMIDs returns the list of current virtual machine IDs assigned to this affinity group.
-	VMIDs() []string
+	VMIDs() []VMID
 }
 
 // AffinityGroup labels virtual machines, so they run / don't run on the same host.
@@ -122,9 +122,9 @@ type AffinityGroup interface {
 	Remove(retries ...RetryStrategy) error
 
 	// AddVM adds the specified VM to the current affinity group.
-	AddVM(id string, retries ...RetryStrategy) error
+	AddVM(id VMID, retries ...RetryStrategy) error
 	// RemoveVM removes the specified VM from the current affinity group.
-	RemoveVM(id string, retries ...RetryStrategy) error
+	RemoveVM(id VMID, retries ...RetryStrategy) error
 }
 
 // AffinityRule is a rule for either hosts or virtual machines.
@@ -172,10 +172,10 @@ type affinityGroup struct {
 
 	hostsRule AffinityRule
 	vmsRule   AffinityRule
-	vmids     []string
+	vmids     []VMID
 }
 
-func (a affinityGroup) hasVM(id string) bool {
+func (a affinityGroup) hasVM(id VMID) bool {
 	for _, vmid := range a.vmids {
 		if vmid == id {
 			return true
@@ -184,11 +184,11 @@ func (a affinityGroup) hasVM(id string) bool {
 	return false
 }
 
-func (a affinityGroup) AddVM(id string, retries ...RetryStrategy) error {
+func (a affinityGroup) AddVM(id VMID, retries ...RetryStrategy) error {
 	return a.client.AddVMToAffinityGroup(a.clusterID, id, a.id, retries...)
 }
 
-func (a affinityGroup) RemoveVM(id string, retries ...RetryStrategy) error {
+func (a affinityGroup) RemoveVM(id VMID, retries ...RetryStrategy) error {
 	return a.client.RemoveVMFromAffinityGroup(a.clusterID, id, a.id, retries...)
 }
 
@@ -228,7 +228,7 @@ func (a affinityGroup) Enforcing() bool {
 	return a.enforcing
 }
 
-func (a affinityGroup) VMIDs() []string {
+func (a affinityGroup) VMIDs() []VMID {
 	return a.vmids
 }
 
@@ -308,13 +308,13 @@ func convertSDKAffinityGroupVMsList(sdkObject *ovirtsdk.AffinityGroup, result *a
 	if !ok {
 		return newFieldNotFound("affinity group", "VMs list")
 	}
-	convertedVMIDs := make([]string, len(vmsList.Slice()))
+	convertedVMIDs := make([]VMID, len(vmsList.Slice()))
 	for i, vm := range vmsList.Slice() {
 		vmid, ok := vm.Id()
 		if !ok {
 			return newFieldNotFound("VM on affinity group", "id")
 		}
-		convertedVMIDs[i] = vmid
+		convertedVMIDs[i] = VMID(vmid)
 	}
 	result.vmids = convertedVMIDs
 	return nil

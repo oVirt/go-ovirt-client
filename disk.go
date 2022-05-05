@@ -503,7 +503,7 @@ type Disk interface {
 
 	// AttachToVM attaches a disk to this VM.
 	AttachToVM(
-		vmID string,
+		vmID VMID,
 		diskInterface DiskInterface,
 		params CreateDiskAttachmentOptionalParams,
 		retries ...RetryStrategy,
@@ -738,7 +738,7 @@ func (d *disk) Sparse() bool {
 }
 
 func (d *disk) AttachToVM(
-	vmID string,
+	vmID VMID,
 	diskInterface DiskInterface,
 	params CreateDiskAttachmentOptionalParams,
 	retries ...RetryStrategy,

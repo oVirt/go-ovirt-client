@@ -5,7 +5,7 @@ import (
 )
 
 func (o *oVirtClient) ListDiskAttachments(
-	vmid string,
+	vmid VMID,
 	retries ...RetryStrategy,
 ) (result []DiskAttachment, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
@@ -15,7 +15,7 @@ func (o *oVirtClient) ListDiskAttachments(
 		o.logger,
 		retries,
 		func() error {
-			response, e := o.conn.SystemService().VmsService().VmService(vmid).DiskAttachmentsService().List().Send()
+			response, e := o.conn.SystemService().VmsService().VmService(string(vmid)).DiskAttachmentsService().List().Send()
 			if e != nil {
 				return e
 			}
@@ -35,7 +35,7 @@ func (o *oVirtClient) ListDiskAttachments(
 	return
 }
 
-func (m *mockClient) ListDiskAttachments(vmID string, _ ...RetryStrategy) ([]DiskAttachment, error) {
+func (m *mockClient) ListDiskAttachments(vmID VMID, _ ...RetryStrategy) ([]DiskAttachment, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

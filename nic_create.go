@@ -8,7 +8,7 @@ import (
 )
 
 func (o *oVirtClient) CreateNIC(
-	vmid string,
+	vmid VMID,
 	vnicProfileID string,
 	name string,
 	_ OptionalNICParameters,
@@ -29,7 +29,7 @@ func (o *oVirtClient) CreateNIC(
 			nicBuilder.VnicProfile(ovirtsdk.NewVnicProfileBuilder().Id(vnicProfileID).MustBuild())
 			nic := nicBuilder.MustBuild()
 
-			response, err := o.conn.SystemService().VmsService().VmService(vmid).NicsService().Add().Nic(nic).Send()
+			response, err := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().Add().Nic(nic).Send()
 			if err != nil {
 				return err
 			}
@@ -57,7 +57,7 @@ func (o *oVirtClient) CreateNIC(
 }
 
 func (m *mockClient) CreateNIC(
-	vmid string,
+	vmid VMID,
 	vnicProfileID string,
 	name string,
 	_ OptionalNICParameters,
@@ -92,7 +92,7 @@ func (m *mockClient) CreateNIC(
 	return nic, nil
 }
 
-func validateNICCreationParameters(vmid string, name string) error {
+func validateNICCreationParameters(vmid VMID, name string) error {
 	if vmid == "" {
 		return newError(EBadArgument, "VM ID cannot be empty")
 	}

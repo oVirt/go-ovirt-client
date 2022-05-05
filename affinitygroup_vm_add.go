@@ -9,12 +9,12 @@ import (
 
 func (o *oVirtClient) AddVMToAffinityGroup(
 	clusterID ClusterID,
-	vmID string,
+	vmID VMID,
 	agID AffinityGroupID,
 	retries ...RetryStrategy,
 ) error {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
-	vm, err := ovirtsdk4.NewVmBuilder().Id(vmID).Build()
+	vm, err := ovirtsdk4.NewVmBuilder().Id(string(vmID)).Build()
 	if err != nil {
 		return wrap(err, EBug, "Failed to build SDK VM object")
 	}
@@ -44,7 +44,7 @@ func (o *oVirtClient) AddVMToAffinityGroup(
 
 func (m *mockClient) AddVMToAffinityGroup(
 	clusterID ClusterID,
-	vmID string,
+	vmID VMID,
 	agID AffinityGroupID,
 	_ ...RetryStrategy,
 ) error {

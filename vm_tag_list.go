@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) ListVMTags(id string, retries ...RetryStrategy) (result []Tag, err error) {
+func (o *oVirtClient) ListVMTags(id VMID, retries ...RetryStrategy) (result []Tag, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("listing tags for vm %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VmsService().VmService(id).TagsService().List().Send()
+			response, err := o.conn.SystemService().VmsService().VmService(string(id)).TagsService().List().Send()
 			if err != nil {
 				return err
 			}
@@ -35,7 +35,7 @@ func (o *oVirtClient) ListVMTags(id string, retries ...RetryStrategy) (result []
 	return
 }
 
-func (m *mockClient) ListVMTags(id string, retries ...RetryStrategy) (result []Tag, err error) {
+func (m *mockClient) ListVMTags(id VMID, _ ...RetryStrategy) (result []Tag, err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if _, ok := m.vms[id]; !ok {

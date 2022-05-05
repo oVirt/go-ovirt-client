@@ -5,16 +5,16 @@ import (
 	"net"
 )
 
-func (m *mockClient) WaitForVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (result map[string][]net.IP, err error) {
+func (m *mockClient) WaitForVMIPAddresses(id VMID, params VMIPSearchParams, retries ...RetryStrategy) (result map[string][]net.IP, err error) {
 	return waitForIPAddresses(id, params, retries, m.logger, m)
 }
 
-func (o *oVirtClient) WaitForVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
+func (o *oVirtClient) WaitForVMIPAddresses(id VMID, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
 	return waitForIPAddresses(id, params, retries, o.logger, o)
 }
 
 func waitForIPAddresses(
-	id string,
+	id VMID,
 	params VMIPSearchParams,
 	retries []RetryStrategy,
 	logger Logger,

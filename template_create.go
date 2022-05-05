@@ -8,7 +8,7 @@ import (
 )
 
 func (o *oVirtClient) CreateTemplate(
-	vmID string,
+	vmID VMID,
 	name string,
 	params OptionalTemplateCreateParameters,
 	retries ...RetryStrategy,
@@ -23,7 +23,7 @@ func (o *oVirtClient) CreateTemplate(
 		retries,
 		func() error {
 			tpl := ovirtsdk.NewTemplateBuilder()
-			tpl.VmBuilder(ovirtsdk.NewVmBuilder().Id(vmID))
+			tpl.VmBuilder(ovirtsdk.NewVmBuilder().Id(string(vmID)))
 			tpl.Name(name)
 			if desc := params.Description(); desc != nil {
 				tpl.Description(*desc)
@@ -55,7 +55,7 @@ func (o *oVirtClient) CreateTemplate(
 }
 
 func (m *mockClient) CreateTemplate(
-	vmID string,
+	vmID VMID,
 	name string,
 	params OptionalTemplateCreateParameters,
 	_ ...RetryStrategy,
@@ -117,7 +117,7 @@ func (m *mockClient) handlePostTemplateCreation(tpl *template) {
 	}()
 }
 
-func (m *mockClient) attachTemplateDisks(vmID string, tpl *template) {
+func (m *mockClient) attachTemplateDisks(vmID VMID, tpl *template) {
 	i := 0
 	for _, attachment := range m.vmDiskAttachmentsByVM[vmID] {
 		disk := m.disks[attachment.diskID]
