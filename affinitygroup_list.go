@@ -2,6 +2,7 @@ package ovirtclient
 
 import "fmt"
 
+// nolint:dupl
 func (o *oVirtClient) ListAffinityGroups(
 	clusterID ClusterID,
 	retries ...RetryStrategy,
