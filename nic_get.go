@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetNIC(vmid VMID, id string, retries ...RetryStrategy) (result NIC, err error) {
+func (o *oVirtClient) GetNIC(vmid VMID, id NICID, retries ...RetryStrategy) (result NIC, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting NIC %s for VM %s", id, vmid),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().NicService(id).Get().Send()
+			response, err := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().NicService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -40,7 +40,7 @@ func (o *oVirtClient) GetNIC(vmid VMID, id string, retries ...RetryStrategy) (re
 	return result, err
 }
 
-func (m *mockClient) GetNIC(vmid VMID, id string, _ ...RetryStrategy) (NIC, error) {
+func (m *mockClient) GetNIC(vmid VMID, id NICID, _ ...RetryStrategy) (NIC, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if nic, ok := m.nics[id]; ok {

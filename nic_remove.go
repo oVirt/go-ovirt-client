@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveNIC(vmid VMID, id string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) RemoveNIC(vmid VMID, id NICID, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing NIC %s from VM %s", id, vmid),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().NicService(id).Remove().Send()
+			_, err := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().NicService(string(id)).Remove().Send()
 			if err != nil {
 				return err
 			}
@@ -20,7 +20,7 @@ func (o *oVirtClient) RemoveNIC(vmid VMID, id string, retries ...RetryStrategy) 
 	return
 }
 
-func (m *mockClient) RemoveNIC(vmid VMID, id string, _ ...RetryStrategy) error {
+func (m *mockClient) RemoveNIC(vmid VMID, id NICID, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if _, ok := m.vms[vmid]; !ok {

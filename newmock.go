@@ -98,7 +98,7 @@ func getClient(
 		templates: map[TemplateID]*template{
 			blankTemplate.ID(): blankTemplate,
 		},
-		nics: map[string]*nic{},
+		nics: map[NICID]*nic{},
 		vnicProfiles: map[string]*vnicProfile{
 			testVNICProfile.ID(): testVNICProfile,
 		},

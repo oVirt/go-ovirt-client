@@ -459,7 +459,7 @@ type VM interface {
 	// CreateNIC creates a network interface on the current VM. This involves an API call and may be slow.
 	CreateNIC(name string, vnicProfileID string, params OptionalNICParameters, retries ...RetryStrategy) (NIC, error)
 	// GetNIC fetches a NIC with a specific ID on the current VM. This involves an API call and may be slow.
-	GetNIC(id string, retries ...RetryStrategy) (NIC, error)
+	GetNIC(id NICID, retries ...RetryStrategy) (NIC, error)
 	// ListNICs fetches a list of network interfaces attached to this VM. This involves an API call and may be slow.
 	ListNICs(retries ...RetryStrategy) ([]NIC, error)
 
@@ -1920,7 +1920,7 @@ func (v *vm) CreateNIC(name string, vnicProfileID string, params OptionalNICPara
 	return v.client.CreateNIC(v.id, vnicProfileID, name, params, retries...)
 }
 
-func (v *vm) GetNIC(id string, retries ...RetryStrategy) (NIC, error) {
+func (v *vm) GetNIC(id NICID, retries ...RetryStrategy) (NIC, error) {
 	return v.client.GetNIC(v.id, id, retries...)
 }
 
