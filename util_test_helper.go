@@ -35,7 +35,7 @@ type TestHelper interface {
 	GenerateRandomID(length uint) string
 
 	// GetVNICProfileID returns a VNIC profile ID for testing.
-	GetVNICProfileID() string
+	GetVNICProfileID() VNICProfileID
 
 	// GetTLS returns the TLS provider used for this test helper.
 	GetTLS() TLSProvider
@@ -165,7 +165,7 @@ type TestHelperParameters interface {
 
 	// VNICProfileID returns an ID to a VNIC profile designated for testing. It may return
 	// an empty string, in which case an arbitrary VNIC profile is selected.
-	VNICProfileID() string
+	VNICProfileID() VNICProfileID
 }
 
 // BuildableTestHelperParameters is a buildable version of the TestHelperParameters.
@@ -182,7 +182,7 @@ type BuildableTestHelperParameters interface {
 	// WithBlankTemplateID sets the blank template that can be used for testing.
 	WithBlankTemplateID(TemplateID) BuildableTestHelperParameters
 	// WithVNICProfileID sets the ID of the VNIC profile that can be used for testing.
-	WithVNICProfileID(string) BuildableTestHelperParameters
+	WithVNICProfileID(VNICProfileID) BuildableTestHelperParameters
 }
 
 type testHelperParameters struct {
@@ -190,7 +190,7 @@ type testHelperParameters struct {
 	storageDomainID          StorageDomainID
 	secondaryStorageDomainID StorageDomainID
 	blankTemplateID          TemplateID
-	vnicProfileID            string
+	vnicProfileID            VNICProfileID
 }
 
 func (t *testHelperParameters) WithSecondaryStorageDomainID(s StorageDomainID) BuildableTestHelperParameters {
@@ -214,7 +214,7 @@ func (t *testHelperParameters) BlankTemplateID() TemplateID {
 	return t.blankTemplateID
 }
 
-func (t *testHelperParameters) VNICProfileID() string {
+func (t *testHelperParameters) VNICProfileID() VNICProfileID {
 	return t.vnicProfileID
 }
 
@@ -233,12 +233,12 @@ func (t *testHelperParameters) WithBlankTemplateID(s TemplateID) BuildableTestHe
 	return t
 }
 
-func (t *testHelperParameters) WithVNICProfileID(s string) BuildableTestHelperParameters {
+func (t *testHelperParameters) WithVNICProfileID(s VNICProfileID) BuildableTestHelperParameters {
 	t.vnicProfileID = s
 	return t
 }
 
-func setupVNICProfileID(vnicProfileID string, clusterID ClusterID, client Client) (string, error) {
+func setupVNICProfileID(vnicProfileID VNICProfileID, clusterID ClusterID, client Client) (VNICProfileID, error) {
 	if vnicProfileID != "" {
 		_, err := client.GetVNICProfile(vnicProfileID)
 		if err != nil {
@@ -430,7 +430,7 @@ type testHelper struct {
 	clusterID                ClusterID
 	storageDomainID          StorageDomainID
 	blankTemplateID          TemplateID
-	vnicProfileID            string
+	vnicProfileID            VNICProfileID
 	secondaryStorageDomainID StorageDomainID
 	password                 string
 	username                 string
@@ -459,7 +459,7 @@ func (t *testHelper) GetTLS() TLSProvider {
 	return t.tls
 }
 
-func (t *testHelper) GetVNICProfileID() string {
+func (t *testHelper) GetVNICProfileID() VNICProfileID {
 	return t.vnicProfileID
 }
 
@@ -609,7 +609,7 @@ func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) 
 	params.WithBlankTemplateID(TemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID")))
 	params.WithStorageDomainID(StorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID")))
 	params.WithSecondaryStorageDomainID(StorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID")))
-	params.WithVNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID"))
+	params.WithVNICProfileID(VNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID")))
 
 	helper, err := NewTestHelper(
 		url,

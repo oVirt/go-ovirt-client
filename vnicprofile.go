@@ -4,18 +4,21 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "VnicProfile" -n "VNIC profile" -o "VNICProfile" -s "Profile"
+//go:generate go run scripts/rest/rest.go -i "VnicProfile" -n "VNIC profile" -o "VNICProfile" -s "Profile" -T VNICProfileID
+
+// VNICProfileID is the ID of the VNIC profile.
+type VNICProfileID string
 
 // VNICProfileClient defines the methods related to dealing with virtual NIC profiles.
 type VNICProfileClient interface {
 	// CreateVNICProfile creates a new VNIC profile with the specified name and network ID.
 	CreateVNICProfile(name string, networkID string, params OptionalVNICProfileParameters, retries ...RetryStrategy) (VNICProfile, error)
 	// GetVNICProfile returns a single VNIC Profile based on the ID
-	GetVNICProfile(id string, retries ...RetryStrategy) (VNICProfile, error)
+	GetVNICProfile(id VNICProfileID, retries ...RetryStrategy) (VNICProfile, error)
 	// ListVNICProfiles lists all VNIC Profiles.
 	ListVNICProfiles(retries ...RetryStrategy) ([]VNICProfile, error)
 	// RemoveVNICProfile removes a VNIC profile
-	RemoveVNICProfile(id string, retries ...RetryStrategy) error
+	RemoveVNICProfile(id VNICProfileID, retries ...RetryStrategy) error
 }
 
 // OptionalVNICProfileParameters is a set of parameters for creating VNICProfiles that are optional.
@@ -36,7 +39,7 @@ type vnicProfileParams struct{}
 // VNICProfileData is the core of VNICProfile, providing only data access functions.
 type VNICProfileData interface {
 	// ID returns the identifier of the VNICProfile.
-	ID() string
+	ID() VNICProfileID
 	// Name returns the human-readable name of the VNIC profile.
 	Name() string
 	// NetworkID returns the network ID the VNICProfile is attached to.
@@ -75,7 +78,7 @@ func convertSDKVNICProfile(sdkObject *ovirtsdk.VnicProfile, client Client) (VNIC
 	return &vnicProfile{
 		client: client,
 
-		id:        id,
+		id:        VNICProfileID(id),
 		name:      name,
 		networkID: networkID,
 	}, nil
@@ -84,7 +87,7 @@ func convertSDKVNICProfile(sdkObject *ovirtsdk.VnicProfile, client Client) (VNIC
 type vnicProfile struct {
 	client Client
 
-	id        string
+	id        VNICProfileID
 	networkID string
 	name      string
 }
@@ -105,6 +108,6 @@ func (v vnicProfile) NetworkID() string {
 	return v.networkID
 }
 
-func (v vnicProfile) ID() string {
+func (v vnicProfile) ID() VNICProfileID {
 	return v.id
 }

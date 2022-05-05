@@ -99,7 +99,7 @@ func getClient(
 			blankTemplate.ID(): blankTemplate,
 		},
 		nics: map[NICID]*nic{},
-		vnicProfiles: map[string]*vnicProfile{
+		vnicProfiles: map[VNICProfileID]*vnicProfile{
 			testVNICProfile.ID(): testVNICProfile,
 		},
 		networks: map[string]*network{
@@ -157,7 +157,7 @@ func getInstanceTypes(client *mockClient) map[InstanceTypeID]*instanceType {
 
 func generateTestVNICProfile(testNetwork *network) *vnicProfile {
 	return &vnicProfile{
-		id:        uuid.NewString(),
+		id:        VNICProfileID(uuid.NewString()),
 		name:      "test",
 		networkID: testNetwork.ID(),
 	}

@@ -12,7 +12,7 @@ type NICClient interface {
 	// CreateNIC adds a new NIC to a VM specified in vmid.
 	CreateNIC(
 		vmid VMID,
-		vnicProfileID string,
+		vnicProfileID VNICProfileID,
 		name string,
 		optional OptionalNICParameters,
 		retries ...RetryStrategy,
@@ -55,7 +55,7 @@ type UpdateNICParameters interface {
 	Name() *string
 
 	// VNICProfileID potentially returns a change VNIC profile for a NIC.
-	VNICProfileID() *string
+	VNICProfileID() *VNICProfileID
 }
 
 // BuildableUpdateNICParameters is a buildable version of UpdateNICParameters.
@@ -68,9 +68,9 @@ type BuildableUpdateNICParameters interface {
 	MustWithName(name string) BuildableUpdateNICParameters
 
 	// WithVNICProfileID sets the VNIC profile ID of a NIC for the UpdateNIC method.
-	WithVNICProfileID(id string) (BuildableUpdateNICParameters, error)
+	WithVNICProfileID(id VNICProfileID) (BuildableUpdateNICParameters, error)
 	// MustWithVNICProfileID is identical to WithVNICProfileID, but panics instead of returning an error.
-	MustWithVNICProfileID(id string) BuildableUpdateNICParameters
+	MustWithVNICProfileID(id VNICProfileID) BuildableUpdateNICParameters
 }
 
 // UpdateNICParams creates a buildable UpdateNICParameters.
@@ -80,14 +80,14 @@ func UpdateNICParams() BuildableUpdateNICParameters {
 
 type updateNICParams struct {
 	name          *string
-	vnicProfileID *string
+	vnicProfileID *VNICProfileID
 }
 
 func (u *updateNICParams) Name() *string {
 	return u.name
 }
 
-func (u *updateNICParams) VNICProfileID() *string {
+func (u *updateNICParams) VNICProfileID() *VNICProfileID {
 	return u.vnicProfileID
 }
 
@@ -104,12 +104,12 @@ func (u *updateNICParams) MustWithName(name string) BuildableUpdateNICParameters
 	return b
 }
 
-func (u *updateNICParams) WithVNICProfileID(id string) (BuildableUpdateNICParameters, error) {
+func (u *updateNICParams) WithVNICProfileID(id VNICProfileID) (BuildableUpdateNICParameters, error) {
 	u.vnicProfileID = &id
 	return u, nil
 }
 
-func (u *updateNICParams) MustWithVNICProfileID(id string) BuildableUpdateNICParameters {
+func (u *updateNICParams) MustWithVNICProfileID(id VNICProfileID) BuildableUpdateNICParameters {
 	b, err := u.WithVNICProfileID(id)
 	if err != nil {
 		panic(err)
@@ -126,7 +126,7 @@ type NICData interface {
 	// VMID is the identified of the VM this NIC is attached to. May be nil if the NIC is not attached.
 	VMID() VMID
 	// VNICProfileID returns the ID of the VNIC profile in use by the NIC.
-	VNICProfileID() string
+	VNICProfileID() VNICProfileID
 }
 
 // NIC represents a network interface.
@@ -175,7 +175,7 @@ func convertSDKNIC(sdkObject *ovirtsdk.Nic, cli Client) (NIC, error) {
 		NICID(id),
 		name,
 		VMID(vmid),
-		vnicProfileID,
+		VNICProfileID(vnicProfileID),
 	}, nil
 }
 
@@ -185,7 +185,7 @@ type nic struct {
 	id            NICID
 	name          string
 	vmid          VMID
-	vnicProfileID string
+	vnicProfileID VNICProfileID
 }
 
 func (n nic) Update(params UpdateNICParameters, retries ...RetryStrategy) (NIC, error) {
@@ -200,7 +200,7 @@ func (n nic) GetVNICProfile(retries ...RetryStrategy) (VNICProfile, error) {
 	return n.client.GetVNICProfile(n.vnicProfileID, retries...)
 }
 
-func (n nic) VNICProfileID() string {
+func (n nic) VNICProfileID() VNICProfileID {
 	return n.vnicProfileID
 }
 
@@ -230,7 +230,7 @@ func (n nic) withName(name string) *nic {
 	}
 }
 
-func (n nic) withVNICProfileID(vnicProfileID string) *nic {
+func (n nic) withVNICProfileID(vnicProfileID VNICProfileID) *nic {
 	return &nic{
 		client:        n.client,
 		id:            n.id,
