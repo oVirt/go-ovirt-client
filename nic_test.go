@@ -63,7 +63,7 @@ func assertNICCount(t *testing.T, vm ovirtclient.VM, n int) {
 	}
 }
 
-func assertCanUpdateNICVNICProfile(t *testing.T, nic ovirtclient.NIC, vnicProfileID string) ovirtclient.NIC {
+func assertCanUpdateNICVNICProfile(t *testing.T, nic ovirtclient.NIC, vnicProfileID ovirtclient.VNICProfileID) ovirtclient.NIC {
 	newNIC, err := nic.Update(ovirtclient.UpdateNICParams().MustWithVNICProfileID(vnicProfileID))
 	if err != nil {
 		t.Fatalf("failed to update NIC with new VNIC profile ID (%v)", err)

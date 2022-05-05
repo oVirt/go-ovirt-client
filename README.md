@@ -137,7 +137,7 @@ func TestSomething(t *testing.T) {
 		WithBlankTemplateID(ovirtclient.TemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID"))).
 		WithStorageDomainID(ovirtclient.StorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID"))).
 		WithSecondaryStorageDomainID(ovirtclient.StorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID"))).
-		WithVNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID"))
+		WithVNICProfileID(ovirtclient.VNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID")))
 
 	// Create the test helper
 	helper, err := ovirtclient.NewTestHelper(

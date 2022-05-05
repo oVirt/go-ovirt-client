@@ -19,7 +19,7 @@ func (o *oVirtClient) UpdateNIC(
 		nicBuilder.Name(*name)
 	}
 	if vnicProfileID := params.VNICProfileID(); vnicProfileID != nil {
-		nicBuilder.VnicProfile(ovirtsdk.NewVnicProfileBuilder().Id(*vnicProfileID).MustBuild())
+		nicBuilder.VnicProfile(ovirtsdk.NewVnicProfileBuilder().Id(string(*vnicProfileID)).MustBuild())
 	}
 
 	req.Nic(nicBuilder.MustBuild())

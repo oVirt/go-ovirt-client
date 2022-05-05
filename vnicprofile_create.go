@@ -65,7 +65,7 @@ func (m *mockClient) CreateVNICProfile(
 		}
 	}
 
-	id := m.GenerateUUID()
+	id := VNICProfileID(m.GenerateUUID())
 	m.vnicProfiles[id] = &vnicProfile{
 		client: m,
 

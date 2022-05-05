@@ -9,7 +9,7 @@ import (
 
 func (o *oVirtClient) CreateNIC(
 	vmid VMID,
-	vnicProfileID string,
+	vnicProfileID VNICProfileID,
 	name string,
 	_ OptionalNICParameters,
 	retries ...RetryStrategy,
@@ -26,7 +26,7 @@ func (o *oVirtClient) CreateNIC(
 		func() error {
 			nicBuilder := ovirtsdk.NewNicBuilder()
 			nicBuilder.Name(name)
-			nicBuilder.VnicProfile(ovirtsdk.NewVnicProfileBuilder().Id(vnicProfileID).MustBuild())
+			nicBuilder.VnicProfile(ovirtsdk.NewVnicProfileBuilder().Id(string(vnicProfileID)).MustBuild())
 			nic := nicBuilder.MustBuild()
 
 			response, err := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().Add().Nic(nic).Send()
@@ -58,7 +58,7 @@ func (o *oVirtClient) CreateNIC(
 
 func (m *mockClient) CreateNIC(
 	vmid VMID,
-	vnicProfileID string,
+	vnicProfileID VNICProfileID,
 	name string,
 	_ OptionalNICParameters,
 	_ ...RetryStrategy,

@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetVNICProfile(id string, retries ...RetryStrategy) (result VNICProfile, err error) {
+func (o *oVirtClient) GetVNICProfile(id VNICProfileID, retries ...RetryStrategy) (result VNICProfile, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting VNIC profile %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VnicProfilesService().ProfileService(id).Get().Send()
+			response, err := o.conn.SystemService().VnicProfilesService().ProfileService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetVNICProfile(id string, retries ...RetryStrategy) (resul
 	return
 }
 
-func (m *mockClient) GetVNICProfile(id string, _ ...RetryStrategy) (VNICProfile, error) {
+func (m *mockClient) GetVNICProfile(id VNICProfileID, _ ...RetryStrategy) (VNICProfile, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.vnicProfiles[id]; ok {
