@@ -73,7 +73,7 @@ func TestAddTagToVM(t *testing.T) {
 func assertCanGetTag(
 	t *testing.T,
 	helper ovirtclient.TestHelper,
-	tagID string,
+	tagID ovirtclient.TagID,
 ) ovirtclient.Tag {
 	client := helper.GetClient()
 	tag, err := client.GetTag(tagID)

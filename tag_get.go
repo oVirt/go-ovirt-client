@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetTag(id string, retries ...RetryStrategy) (result Tag, err error) {
+func (o *oVirtClient) GetTag(id TagID, retries ...RetryStrategy) (result Tag, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting tag %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().TagsService().TagService(id).Get().Send()
+			response, err := o.conn.SystemService().TagsService().TagService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetTag(id string, retries ...RetryStrategy) (result Tag, e
 	return
 }
 
-func (m *mockClient) GetTag(id string, _ ...RetryStrategy) (Tag, error) {
+func (m *mockClient) GetTag(id TagID, _ ...RetryStrategy) (Tag, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.tags[id]; ok {

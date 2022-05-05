@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveTagFromVM(id VMID, tagID string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) RemoveTagFromVM(id VMID, tagID TagID, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing tag from VM %s", id),
@@ -16,7 +16,7 @@ func (o *oVirtClient) RemoveTagFromVM(id VMID, tagID string, retries ...RetryStr
 				VmsService().
 				VmService(string(id)).
 				TagsService().
-				TagService(tagID).
+				TagService(string(tagID)).
 				Remove().
 				Send()
 			return err
@@ -24,7 +24,7 @@ func (o *oVirtClient) RemoveTagFromVM(id VMID, tagID string, retries ...RetryStr
 	return
 }
 
-func (m *mockClient) RemoveTagFromVM(id VMID, tagID string, retries ...RetryStrategy) error {
+func (m *mockClient) RemoveTagFromVM(id VMID, tagID TagID, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if _, ok := m.vms[id]; !ok {

@@ -82,7 +82,7 @@ func getClient(
 		url:             "https://localhost/ovirt-engine/api",
 		lock:            &sync.Mutex{},
 		vms:             map[VMID]*vm{},
-		tags:            map[string]*tag{},
+		tags:            map[TagID]*tag{},
 		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		storageDomains: map[StorageDomainID]*storageDomain{
 			testStorageDomain.ID():      testStorageDomain,

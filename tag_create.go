@@ -45,7 +45,7 @@ func (o *oVirtClient) CreateTag(name string, params CreateTagParams, retries ...
 func (m *mockClient) CreateTag(name string, params CreateTagParams, _ ...RetryStrategy) (result Tag, err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	id := m.GenerateUUID()
+	id := TagID(m.GenerateUUID())
 	if params == nil {
 		params = NewCreateTagParams()
 	}
