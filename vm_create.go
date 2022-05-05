@@ -440,7 +440,7 @@ func (m *mockClient) createPlacementPolicy(params OptionalVMParameters) *vmPlace
 
 func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm, params OptionalVMParameters) {
 	m.vmDiskAttachmentsByVM[vm.id] = make(
-		map[string]*diskAttachment,
+		map[DiskAttachmentID]*diskAttachment,
 		len(m.templateDiskAttachmentsByTemplate[tpl.id]),
 	)
 	for _, attachment := range m.templateDiskAttachmentsByTemplate[tpl.id] {
@@ -464,7 +464,7 @@ func (m *mockClient) attachVMDisksFromTemplate(tpl *template, vm *vm, params Opt
 
 		diskAttachment := &diskAttachment{
 			client:        m,
-			id:            m.GenerateUUID(),
+			id:            DiskAttachmentID(m.GenerateUUID()),
 			vmid:          vm.id,
 			diskID:        newDisk.ID(),
 			diskInterface: attachment.diskInterface,

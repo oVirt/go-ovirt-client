@@ -6,7 +6,7 @@ import (
 
 func (o *oVirtClient) GetDiskAttachment(
 	vmid VMID,
-	id string,
+	id DiskAttachmentID,
 	retries ...RetryStrategy,
 ) (result DiskAttachment, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
@@ -20,7 +20,7 @@ func (o *oVirtClient) GetDiskAttachment(
 				VmsService().
 				VmService(string(vmid)).
 				DiskAttachmentsService().
-				AttachmentService(id).
+				AttachmentService(string(id)).
 				Get().
 				Send()
 			if err != nil {
@@ -44,7 +44,7 @@ func (o *oVirtClient) GetDiskAttachment(
 	return result, err
 }
 
-func (m *mockClient) GetDiskAttachment(vmID VMID, diskAttachmentID string, _ ...RetryStrategy) (DiskAttachment, error) {
+func (m *mockClient) GetDiskAttachment(vmID VMID, diskAttachmentID DiskAttachmentID, _ ...RetryStrategy) (DiskAttachment, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

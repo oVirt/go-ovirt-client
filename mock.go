@@ -34,7 +34,7 @@ type mockClient struct {
 	vnicProfiles                      map[VNICProfileID]*vnicProfile
 	networks                          map[NetworkID]*network
 	dataCenters                       map[DatacenterID]*datacenterWithClusters
-	vmDiskAttachmentsByVM             map[VMID]map[string]*diskAttachment
+	vmDiskAttachmentsByVM             map[VMID]map[DiskAttachmentID]*diskAttachment
 	vmDiskAttachmentsByDisk           map[DiskID]*diskAttachment
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment
 	templateDiskAttachmentsByDisk     map[DiskID]*templateDiskAttachment
