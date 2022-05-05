@@ -8,7 +8,7 @@ import (
 
 func (o *oVirtClient) CreateDiskAttachment(
 	vmID VMID,
-	diskID string,
+	diskID DiskID,
 	diskInterface DiskInterface,
 	params CreateDiskAttachmentOptionalParams,
 	retries ...RetryStrategy,
@@ -23,7 +23,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 		retries,
 		func() error {
 			attachmentBuilder := ovirtsdk.NewDiskAttachmentBuilder()
-			attachmentBuilder.Disk(ovirtsdk.NewDiskBuilder().Id(diskID).MustBuild())
+			attachmentBuilder.Disk(ovirtsdk.NewDiskBuilder().Id(string(diskID)).MustBuild())
 			attachmentBuilder.Interface(ovirtsdk.DiskInterface(diskInterface))
 			attachmentBuilder.Vm(ovirtsdk.NewVmBuilder().Id(string(vmID)).MustBuild())
 			attachmentBuilder.Active(true)
@@ -67,7 +67,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 
 func (m *mockClient) CreateDiskAttachment(
 	vmID VMID,
-	diskID string,
+	diskID DiskID,
 	diskInterface DiskInterface,
 	params CreateDiskAttachmentOptionalParams,
 	_ ...RetryStrategy,

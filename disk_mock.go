@@ -80,7 +80,7 @@ func (d *diskWithData) clone(sparse *bool) *diskWithData {
 	return &diskWithData{
 		disk{
 			d.client,
-			uuid.NewString(),
+			DiskID(uuid.NewString()),
 			d.alias,
 			d.provisionedSize,
 			d.format,

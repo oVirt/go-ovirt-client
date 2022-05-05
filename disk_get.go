@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetDisk(id string, retries ...RetryStrategy) (result Disk, err error) {
+func (o *oVirtClient) GetDisk(id DiskID, retries ...RetryStrategy) (result Disk, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting disk %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().DisksService().DiskService(id).Get().Send()
+			response, err := o.conn.SystemService().DisksService().DiskService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetDisk(id string, retries ...RetryStrategy) (result Disk,
 	return
 }
 
-func (m *mockClient) GetDisk(id string, _ ...RetryStrategy) (Disk, error) {
+func (m *mockClient) GetDisk(id DiskID, _ ...RetryStrategy) (Disk, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.disks[id]; ok {

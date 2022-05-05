@@ -14,12 +14,12 @@ import (
 )
 
 // Deprecated: use StartDownloadDisk instead.
-func (o *oVirtClient) StartImageDownload(diskID string, format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
+func (o *oVirtClient) StartImageDownload(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
 	o.logger.Debugf("Using StartImageDownload is deprecated, please use StartDownloadDisk instead.")
 	return o.StartDownloadDisk(diskID, format, retries...)
 }
 
-func (o *oVirtClient) StartDownloadDisk(diskID string, format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
+func (o *oVirtClient) StartDownloadDisk(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
 	retries = defaultRetries(retries, defaultLongTimeouts(o))
 
 	o.logger.Infof("Starting disk %s image download...", diskID)
@@ -54,7 +54,7 @@ func (o *oVirtClient) StartDownloadDisk(diskID string, format ImageFormat, retri
 }
 
 // Deprecated: use DownloadDisk instead.
-func (o *oVirtClient) DownloadImage(diskID string, format ImageFormat, retries ...RetryStrategy) (
+func (o *oVirtClient) DownloadImage(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (
 	ImageDownloadReader,
 	error,
 ) {
@@ -63,7 +63,7 @@ func (o *oVirtClient) DownloadImage(diskID string, format ImageFormat, retries .
 }
 
 func (o *oVirtClient) DownloadDisk(
-	diskID string,
+	diskID DiskID,
 	format ImageFormat,
 	retries ...RetryStrategy,
 ) (ImageDownloadReader, error) {
@@ -284,14 +284,14 @@ func (i *imageDownload) Size() uint64 {
 }
 
 // Deprecated: use StartDownloadDisk instead.
-func (m *mockClient) StartImageDownload(diskID string, format ImageFormat, retries ...RetryStrategy) (
+func (m *mockClient) StartImageDownload(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (
 	ImageDownload,
 	error,
 ) {
 	return m.StartDownloadDisk(diskID, format, retries...)
 }
 
-func (m *mockClient) StartDownloadDisk(diskID string, format ImageFormat, _ ...RetryStrategy) (ImageDownload, error) {
+func (m *mockClient) StartDownloadDisk(diskID DiskID, format ImageFormat, _ ...RetryStrategy) (ImageDownload, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -319,14 +319,14 @@ func (m *mockClient) StartDownloadDisk(diskID string, format ImageFormat, _ ...R
 }
 
 // Deprecated: use DownloadDisk instead.
-func (m *mockClient) DownloadImage(diskID string, format ImageFormat, retries ...RetryStrategy) (
+func (m *mockClient) DownloadImage(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (
 	ImageDownloadReader,
 	error,
 ) {
 	return m.DownloadDisk(diskID, format, retries...)
 }
 
-func (m *mockClient) DownloadDisk(diskID string, format ImageFormat, retries ...RetryStrategy) (
+func (m *mockClient) DownloadDisk(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (
 	ImageDownloadReader,
 	error,
 ) {

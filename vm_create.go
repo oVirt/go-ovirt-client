@@ -168,7 +168,7 @@ func createSDKVM(
 		for i, d := range params.Disks() {
 			diskAttachment := ovirtsdk.NewDiskAttachmentBuilder()
 			diskBuilder := ovirtsdk.NewDiskBuilder()
-			diskBuilder.Id(d.DiskID())
+			diskBuilder.Id(string(d.DiskID()))
 			if sparse := d.Sparse(); sparse != nil {
 				diskBuilder.Sparse(*sparse)
 			}
@@ -263,7 +263,7 @@ func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, na
 	}
 
 	disks := params.Disks()
-	diskIDs := map[string]int{}
+	diskIDs := map[DiskID]int{}
 	for i, d := range disks {
 		if previousID, ok := diskIDs[d.DiskID()]; ok {
 			return newError(

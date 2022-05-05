@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveDisk(diskID string, retries ...RetryStrategy) error {
+func (o *oVirtClient) RemoveDisk(diskID DiskID, retries ...RetryStrategy) error {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("removing disk %s", diskID),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().DisksService().DiskService(diskID).Remove().Send()
+			_, err := o.conn.SystemService().DisksService().DiskService(string(diskID)).Remove().Send()
 			return err
 		},
 	)

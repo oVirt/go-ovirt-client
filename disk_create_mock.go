@@ -46,7 +46,7 @@ func (m *mockClient) createDisk(
 	disk := &diskWithData{
 		disk: disk{
 			client:           m,
-			id:               m.GenerateUUID(),
+			id:               DiskID(m.GenerateUUID()),
 			format:           format,
 			provisionedSize:  size,
 			totalSize:        size,

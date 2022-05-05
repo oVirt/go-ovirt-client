@@ -465,7 +465,7 @@ type VM interface {
 
 	// AttachDisk attaches a disk to this VM.
 	AttachDisk(
-		diskID string,
+		diskID DiskID,
 		diskInterface DiskInterface,
 		params CreateDiskAttachmentOptionalParams,
 		retries ...RetryStrategy,
@@ -1170,7 +1170,7 @@ func (m memoryPolicy) Guaranteed() *int64 {
 // disks inherited from the template.
 type OptionalVMDiskParameters interface {
 	// DiskID returns the identifier of the disk that is being changed.
-	DiskID() string
+	DiskID() DiskID
 	// Sparse sets the sparse parameter if set. Note, that Sparse is only supported in oVirt on block devices with QCOW2
 	// images. On NFS you MUST use raw disks to use sparse.
 	Sparse() *bool
@@ -1203,7 +1203,7 @@ type BuildableVMDiskParameters interface {
 }
 
 // NewBuildableVMDiskParameters creates a new buildable OptionalVMDiskParameters.
-func NewBuildableVMDiskParameters(diskID string) (BuildableVMDiskParameters, error) {
+func NewBuildableVMDiskParameters(diskID DiskID) (BuildableVMDiskParameters, error) {
 	return &vmDiskParameters{
 		diskID,
 		nil,
@@ -1214,7 +1214,7 @@ func NewBuildableVMDiskParameters(diskID string) (BuildableVMDiskParameters, err
 
 // MustNewBuildableVMDiskParameters is identical to NewBuildableVMDiskParameters but panics instead of returning an
 // error.
-func MustNewBuildableVMDiskParameters(diskID string) BuildableVMDiskParameters {
+func MustNewBuildableVMDiskParameters(diskID DiskID) BuildableVMDiskParameters {
 	builder, err := NewBuildableVMDiskParameters(diskID)
 	if err != nil {
 		panic(err)
@@ -1223,7 +1223,7 @@ func MustNewBuildableVMDiskParameters(diskID string) BuildableVMDiskParameters {
 }
 
 type vmDiskParameters struct {
-	diskID          string
+	diskID          DiskID
 	sparse          *bool
 	format          *ImageFormat
 	storageDomainID *StorageDomainID
@@ -1266,7 +1266,7 @@ func (v *vmDiskParameters) MustWithFormat(format ImageFormat) BuildableVMDiskPar
 	return builder
 }
 
-func (v *vmDiskParameters) DiskID() string {
+func (v *vmDiskParameters) DiskID() DiskID {
 	return v.diskID
 }
 
@@ -1552,7 +1552,7 @@ func (v *vmParams) Disks() []OptionalVMDiskParameters {
 }
 
 func (v *vmParams) WithDisks(disks []OptionalVMDiskParameters) (BuildableVMParameters, error) {
-	diskIDs := map[string]int{}
+	diskIDs := map[DiskID]int{}
 	for i, d := range disks {
 		if previousID, ok := diskIDs[d.DiskID()]; ok {
 			return nil, newError(
@@ -1889,7 +1889,7 @@ func (v *vm) Status() VMStatus {
 }
 
 func (v *vm) AttachDisk(
-	diskID string,
+	diskID DiskID,
 	diskInterface DiskInterface,
 	params CreateDiskAttachmentOptionalParams,
 	retries ...RetryStrategy,

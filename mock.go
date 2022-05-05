@@ -26,7 +26,7 @@ type mockClient struct {
 	nonSecureRandom                   *rand.Rand
 	vms                               map[VMID]*vm
 	storageDomains                    map[StorageDomainID]*storageDomain
-	disks                             map[string]*diskWithData
+	disks                             map[DiskID]*diskWithData
 	clusters                          map[ClusterID]*cluster
 	hosts                             map[string]*host
 	templates                         map[TemplateID]*template
@@ -35,9 +35,9 @@ type mockClient struct {
 	networks                          map[string]*network
 	dataCenters                       map[string]*datacenterWithClusters
 	vmDiskAttachmentsByVM             map[VMID]map[string]*diskAttachment
-	vmDiskAttachmentsByDisk           map[string]*diskAttachment
+	vmDiskAttachmentsByDisk           map[DiskID]*diskAttachment
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment
-	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
+	templateDiskAttachmentsByDisk     map[DiskID]*templateDiskAttachment
 	tags                              map[string]*tag
 	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
 	vmIPs                             map[VMID]map[string][]net.IP
