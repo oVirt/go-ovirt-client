@@ -1,6 +1,6 @@
 package ovirtclient
 
-func (m *mockClient) RemoveDisk(diskID string, _ ...RetryStrategy) error {
+func (m *mockClient) RemoveDisk(diskID DiskID, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

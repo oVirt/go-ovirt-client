@@ -88,7 +88,7 @@ func getClient(
 			testStorageDomain.ID():      testStorageDomain,
 			secondaryStorageDomain.ID(): secondaryStorageDomain,
 		},
-		disks: map[string]*diskWithData{},
+		disks: map[DiskID]*diskWithData{},
 		clusters: map[ClusterID]*cluster{
 			testCluster.ID(): testCluster,
 		},
@@ -109,11 +109,11 @@ func getClient(
 			testDatacenter.ID(): testDatacenter,
 		},
 		vmDiskAttachmentsByVM:   map[VMID]map[string]*diskAttachment{},
-		vmDiskAttachmentsByDisk: map[string]*diskAttachment{},
+		vmDiskAttachmentsByDisk: map[DiskID]*diskAttachment{},
 		templateDiskAttachmentsByTemplate: map[TemplateID][]*templateDiskAttachment{
 			blankTemplate.ID(): {},
 		},
-		templateDiskAttachmentsByDisk: map[string]*templateDiskAttachment{},
+		templateDiskAttachmentsByDisk: map[DiskID]*templateDiskAttachment{},
 		affinityGroups: map[ClusterID]map[AffinityGroupID]*affinityGroup{
 			testCluster.ID(): {},
 		},
@@ -185,7 +185,7 @@ func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
 
 func generateTestStorageDomain() *storageDomain {
 	return &storageDomain{
-		id: StorageDomainID(uuid.NewString()),
+		id:             StorageDomainID(uuid.NewString()),
 		name:           "Test storage domain",
 		available:      10 * 1024 * 1024 * 1024,
 		status:         StorageDomainStatusActive,

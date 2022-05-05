@@ -76,7 +76,7 @@ func (o *oVirtClient) StartImageUpload(
 }
 
 func (o *oVirtClient) UploadToDisk(
-	diskID string,
+	diskID DiskID,
 	size uint64,
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
@@ -91,7 +91,7 @@ func (o *oVirtClient) UploadToDisk(
 }
 
 func (o *oVirtClient) StartUploadToDisk(
-	diskID string,
+	diskID DiskID,
 	size uint64,
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
@@ -434,7 +434,7 @@ func (m *mockClient) UploadImage(
 }
 
 func (m *mockClient) StartUploadToDisk(
-	diskID string,
+	diskID DiskID,
 	size uint64,
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
@@ -488,7 +488,7 @@ func (m *mockClient) StartUploadToDisk(
 	return progress, nil
 }
 
-func (m *mockClient) UploadToDisk(diskID string, size uint64, reader io.ReadSeekCloser, retries ...RetryStrategy) error {
+func (m *mockClient) UploadToDisk(diskID DiskID, size uint64, reader io.ReadSeekCloser, retries ...RetryStrategy) error {
 	progress, err := m.StartUploadToDisk(diskID, size, reader, retries...)
 	if err != nil {
 		return err

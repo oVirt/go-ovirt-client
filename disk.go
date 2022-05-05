@@ -8,7 +8,10 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "Disk" -n "disk"
+//go:generate go run scripts/rest/rest.go -i "Disk" -n "disk" -T DiskID
+
+// DiskID is the identifier for disks.
+type DiskID string
 
 // DiskClient is the client interface part that deals with disks.
 type DiskClient interface {
@@ -128,7 +131,7 @@ type DiskClient interface {
 	//         //...
 	//     }
 	StartUploadToDisk(
-		diskID string,
+		diskID DiskID,
 		size uint64,
 		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
@@ -145,7 +148,7 @@ type DiskClient interface {
 	//   uploaded. The reader must support seeking and close.
 	// - retries: a set of optional retry options.
 	UploadToDisk(
-		diskID string,
+		diskID DiskID,
 		size uint64,
 		reader io.ReadSeekCloser,
 		retries ...RetryStrategy,
@@ -163,7 +166,7 @@ type DiskClient interface {
 	//
 	// Deprecated: please use StartDownloadDisk instead.
 	StartImageDownload(
-		diskID string,
+		diskID DiskID,
 		format ImageFormat,
 		retries ...RetryStrategy,
 	) (ImageDownload, error)
@@ -178,7 +181,7 @@ type DiskClient interface {
 	//
 	// The caller MUST close the returned reader, otherwise the disk will remain locked in the oVirt engine.
 	StartDownloadDisk(
-		diskID string,
+		diskID DiskID,
 		format ImageFormat,
 		retries ...RetryStrategy,
 	) (ImageDownload, error)
@@ -188,7 +191,7 @@ type DiskClient interface {
 	//
 	// Deprecated: please use DownloadDisk instead.
 	DownloadImage(
-		diskID string,
+		diskID DiskID,
 		format ImageFormat,
 		retries ...RetryStrategy,
 	) (ImageDownloadReader, error)
@@ -196,7 +199,7 @@ type DiskClient interface {
 	// DownloadDisk runs StartDownloadDisk, then waits for the download to be ready before returning the reader.
 	// The caller MUST close the ImageDownloadReader in order to properly unlock the disk in the oVirt engine.
 	DownloadDisk(
-		diskID string,
+		diskID DiskID,
 		format ImageFormat,
 		retries ...RetryStrategy,
 	) (ImageDownloadReader, error)
@@ -229,7 +232,7 @@ type DiskClient interface {
 	// object, which can be used to wait for the update to complete. Use UpdateDiskParams to
 	// obtain a builder for the parameters structure.
 	StartUpdateDisk(
-		id string,
+		id DiskID,
 		params UpdateDiskParameters,
 		retries ...RetryStrategy,
 	) (DiskUpdate, error)
@@ -237,7 +240,7 @@ type DiskClient interface {
 	// UpdateDisk updates the specified disk with the specified parameters. Use UpdateDiskParams to
 	// obtain a builder for the parameters structure.
 	UpdateDisk(
-		id string,
+		id DiskID,
 		params UpdateDiskParameters,
 		retries ...RetryStrategy,
 	) (Disk, error)
@@ -245,13 +248,13 @@ type DiskClient interface {
 	// ListDisks lists all disks.
 	ListDisks(retries ...RetryStrategy) ([]Disk, error)
 	// GetDisk fetches a disk with a specific ID from the oVirt Engine.
-	GetDisk(diskID string, retries ...RetryStrategy) (Disk, error)
+	GetDisk(diskID DiskID, retries ...RetryStrategy) (Disk, error)
 	// ListDisksByAlias fetches a disks with a specific name from the oVirt Engine.
 	ListDisksByAlias(alias string, retries ...RetryStrategy) ([]Disk, error)
 	// RemoveDisk removes a disk with a specific ID.
-	RemoveDisk(diskID string, retries ...RetryStrategy) error
+	RemoveDisk(diskID DiskID, retries ...RetryStrategy) error
 	// WaitForDiskOK waits for a disk to be in OK status
-	WaitForDiskOK(diskID string, retries ...RetryStrategy) (Disk, error)
+	WaitForDiskOK(diskID DiskID, retries ...RetryStrategy) (Disk, error)
 }
 
 // UpdateDiskParams creates a builder for the params for updating a disk.
@@ -452,7 +455,7 @@ type UploadImageResult interface {
 // This can be used for cases where not a full Disk is required, but only the data functionality.
 type DiskData interface {
 	// ID is the unique ID for this disk.
-	ID() string
+	ID() DiskID
 	// Alias is the name for this disk set by the user.
 	Alias() string
 	// ProvisionedSize is the size visible to the virtual machine.
@@ -681,7 +684,7 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 	return &disk{
 		client: client,
 
-		id:               id,
+		id:               DiskID(id),
 		alias:            alias,
 		provisionedSize:  uint64(provisionedSize),
 		totalSize:        uint64(totalSize),
@@ -695,7 +698,7 @@ func convertSDKDisk(sdkDisk *ovirtsdk4.Disk, client Client) (Disk, error) {
 type disk struct {
 	client Client
 
-	id               string
+	id               DiskID
 	alias            string
 	provisionedSize  uint64
 	format           ImageFormat
@@ -758,7 +761,7 @@ func (d disk) Status() DiskStatus {
 	return d.status
 }
 
-func (d disk) ID() string {
+func (d disk) ID() DiskID {
 	return d.id
 }
 

@@ -11,7 +11,7 @@ type DiskAttachmentClient interface {
 	// CreateDiskAttachment attaches a disk to a VM.
 	CreateDiskAttachment(
 		vmID VMID,
-		diskID string,
+		diskID DiskID,
 		diskInterface DiskInterface,
 		params CreateDiskAttachmentOptionalParams,
 		retries ...RetryStrategy,
@@ -156,7 +156,7 @@ type DiskAttachment interface {
 	// VMID returns the ID of the virtual machine this attachment belongs to.
 	VMID() VMID
 	// DiskID returns the ID of the disk in this attachment.
-	DiskID() string
+	DiskID() DiskID
 	// DiskInterface describes the means by which a disk will appear to the VM.
 	DiskInterface() DiskInterface
 	// Bootable defines whether the disk is bootable
@@ -178,7 +178,7 @@ type diskAttachment struct {
 
 	id            string
 	vmid          VMID
-	diskID        string
+	diskID        DiskID
 	diskInterface DiskInterface
 	active        bool
 	bootable      bool
@@ -200,7 +200,7 @@ func (d *diskAttachment) VMID() VMID {
 	return d.vmid
 }
 
-func (d *diskAttachment) DiskID() string {
+func (d *diskAttachment) DiskID() DiskID {
 	return d.diskID
 }
 
@@ -258,7 +258,7 @@ func convertSDKDiskAttachment(object *ovirtsdk4.DiskAttachment, o *oVirtClient) 
 
 		id:            id,
 		vmid:          VMID(vmID),
-		diskID:        diskID,
+		diskID:        DiskID(diskID),
 		diskInterface: DiskInterface(diskInterface),
 		bootable:      bootable,
 		active:        active,

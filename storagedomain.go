@@ -19,10 +19,10 @@ type StorageDomainClient interface {
 	// GetStorageDomain returns a single storage domain, or an error if the storage domain could not be found.
 	GetStorageDomain(id StorageDomainID, retries ...RetryStrategy) (StorageDomain, error)
 	// GetDiskFromStorageDomain returns a single disk from a specific storage domain, or an error if no disk can be found.
-	GetDiskFromStorageDomain(id StorageDomainID, diskID string, retries ...RetryStrategy) (result Disk, err error)
+	GetDiskFromStorageDomain(id StorageDomainID, diskID DiskID, retries ...RetryStrategy) (result Disk, err error)
 	// RemoveDiskFromStorageDomain removes a disk from a specific storage domain, but leaves the disk on other storage
 	// domains if any. If the disk is not present on any more storage domains, the entire disk will be removed.
-	RemoveDiskFromStorageDomain(id StorageDomainID, diskID string, retries ...RetryStrategy) error
+	RemoveDiskFromStorageDomain(id StorageDomainID, diskID DiskID, retries ...RetryStrategy) error
 }
 
 // StorageDomainData is the core of StorageDomain, providing only data access functions.

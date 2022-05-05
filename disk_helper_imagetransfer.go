@@ -41,7 +41,7 @@ func generateCorrelationID(prefix string) string {
 func newImageTransfer(
 	cli *oVirtClient,
 	logger Logger,
-	diskID string,
+	diskID DiskID,
 	correlationID string,
 	retries []RetryStrategy,
 	direction ovirtsdk4.ImageTransferDirection,
@@ -92,7 +92,7 @@ type imageTransferImpl struct {
 	// retries is the list of retry strategies to use for calls in this transfer.
 	retries []RetryStrategy
 	// diskID is the ID of the disk used for this transfer.
-	diskID string
+	diskID DiskID
 	// cli is the calling client library.
 	cli *oVirtClient
 	// logger is the go-ovirt-client-log logger
@@ -225,7 +225,7 @@ func (i *imageTransferImpl) buildImageTransferRequest() (
 	*ovirtsdk4.ImageTransfersService,
 ) {
 	imageTransfersService := i.conn.SystemService().ImageTransfersService()
-	image := ovirtsdk4.NewImageBuilder().Id(i.diskID).MustBuild()
+	image := ovirtsdk4.NewImageBuilder().Id(string(i.diskID)).MustBuild()
 	transfer := ovirtsdk4.
 		NewImageTransferBuilder().
 		Image(image).

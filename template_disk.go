@@ -17,7 +17,7 @@ type TemplateDiskAttachmentData interface {
 	// TemplateID returns the ID of the template the disk is attached to.
 	TemplateID() TemplateID
 	// DiskID returns the ID of the disk in this attachment.
-	DiskID() string
+	DiskID() DiskID
 	// DiskInterface describes the means by which a disk will appear to the VM.
 	DiskInterface() DiskInterface
 	// Bootable defines whether the disk is bootable
@@ -45,7 +45,7 @@ type templateDiskAttachment struct {
 
 	id            TemplateDiskAttachmentID
 	templateID    TemplateID
-	diskID        string
+	diskID        DiskID
 	diskInterface DiskInterface
 	bootable      bool
 	active        bool
@@ -59,7 +59,7 @@ func (t templateDiskAttachment) TemplateID() TemplateID {
 	return t.templateID
 }
 
-func (t templateDiskAttachment) DiskID() string {
+func (t templateDiskAttachment) DiskID() DiskID {
 	return t.diskID
 }
 
@@ -119,7 +119,7 @@ func convertSDKTemplateDiskAttachment(attachment *ovirtsdk.DiskAttachment, o *oV
 
 		TemplateDiskAttachmentID(id),
 		TemplateID(templateID),
-		diskID,
+		DiskID(diskID),
 		DiskInterface(diskInterface),
 		bootable,
 		active,

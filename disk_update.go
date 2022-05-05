@@ -8,7 +8,7 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-func (o *oVirtClient) UpdateDisk(id string, params UpdateDiskParameters, retries ...RetryStrategy) (
+func (o *oVirtClient) UpdateDisk(id DiskID, params UpdateDiskParameters, retries ...RetryStrategy) (
 	result Disk,
 	err error,
 ) {
@@ -19,13 +19,13 @@ func (o *oVirtClient) UpdateDisk(id string, params UpdateDiskParameters, retries
 	return progress.Wait(retries...)
 }
 
-func (o *oVirtClient) StartUpdateDisk(id string, params UpdateDiskParameters, retries ...RetryStrategy) (
+func (o *oVirtClient) StartUpdateDisk(id DiskID, params UpdateDiskParameters, retries ...RetryStrategy) (
 	DiskUpdate,
 	error,
 ) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 
-	sdkDisk := ovirtsdk.NewDiskBuilder().Id(id)
+	sdkDisk := ovirtsdk.NewDiskBuilder().Id(string(id))
 	if alias := params.Alias(); alias != nil {
 		sdkDisk.Alias(*alias)
 	}
@@ -44,7 +44,7 @@ func (o *oVirtClient) StartUpdateDisk(id string, params UpdateDiskParameters, re
 			response, err := o.conn.
 				SystemService().
 				DisksService().
-				DiskService(id).
+				DiskService(string(id)).
 				Update().
 				Disk(sdkDisk.MustBuild()).
 				Query("correlation_id", correlationID).
@@ -77,7 +77,7 @@ func (o *oVirtClient) StartUpdateDisk(id string, params UpdateDiskParameters, re
 	}, nil
 }
 
-func (m *mockClient) UpdateDisk(id string, params UpdateDiskParameters, retries ...RetryStrategy) (Disk, error) {
+func (m *mockClient) UpdateDisk(id DiskID, params UpdateDiskParameters, retries ...RetryStrategy) (Disk, error) {
 	progress, err := m.StartUpdateDisk(id, params, retries...)
 	if err != nil {
 		return progress.Disk(), err
@@ -85,7 +85,7 @@ func (m *mockClient) UpdateDisk(id string, params UpdateDiskParameters, retries 
 	return progress.Wait(retries...)
 }
 
-func (m *mockClient) StartUpdateDisk(id string, params UpdateDiskParameters, _ ...RetryStrategy) (
+func (m *mockClient) StartUpdateDisk(id DiskID, params UpdateDiskParameters, _ ...RetryStrategy) (
 	DiskUpdate,
 	error,
 ) {
