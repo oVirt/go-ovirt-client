@@ -6,7 +6,7 @@ import (
 )
 
 func (m *mockClient) StartCreateDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
@@ -30,7 +30,7 @@ func (m *mockClient) StartCreateDisk(
 }
 
 func (m *mockClient) createDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
@@ -50,7 +50,7 @@ func (m *mockClient) createDisk(
 			format:           format,
 			provisionedSize:  size,
 			totalSize:        size,
-			storageDomainIDs: []string{storageDomainID},
+			storageDomainIDs: []StorageDomainID{storageDomainID},
 			status:           DiskStatusLocked,
 		},
 		lock: &sync.Mutex{},
@@ -72,7 +72,7 @@ func (m *mockClient) createDisk(
 }
 
 func (m *mockClient) CreateDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,

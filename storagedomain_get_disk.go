@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetDiskFromStorageDomain(id string, diskID string, retries ...RetryStrategy) (result Disk, err error) {
+func (o *oVirtClient) GetDiskFromStorageDomain(id StorageDomainID, diskID string, retries ...RetryStrategy) (result Disk, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting disk %s from storage domain %s", diskID, id),
@@ -12,7 +12,7 @@ func (o *oVirtClient) GetDiskFromStorageDomain(id string, diskID string, retries
 		retries,
 		func() error {
 			response, err := o.conn.SystemService().StorageDomainsService().
-				StorageDomainService(id).DisksService().DiskService(diskID).Get().Send()
+				StorageDomainService(string(id)).DisksService().DiskService(diskID).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetDiskFromStorageDomain(id string, diskID string, retries
 	return result, err
 }
 
-func (m *mockClient) GetDiskFromStorageDomain(id string, diskID string, _ ...RetryStrategy) (Disk, error) {
+func (m *mockClient) GetDiskFromStorageDomain(id StorageDomainID, diskID string, _ ...RetryStrategy) (Disk, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if disk, ok := m.disks[diskID]; ok {

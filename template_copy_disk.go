@@ -10,7 +10,7 @@ import (
 
 func (o *oVirtClient) CopyTemplateDiskToStorageDomain(
 	diskID string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	retries ...RetryStrategy) (result Disk, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	progress, err := o.StartCopyTemplateDiskToStorageDomain(diskID, storageDomainID, retries...)
@@ -23,11 +23,11 @@ func (o *oVirtClient) CopyTemplateDiskToStorageDomain(
 
 func (o *oVirtClient) StartCopyTemplateDiskToStorageDomain(
 	diskID string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	retries ...RetryStrategy) (DiskUpdate, error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	correlationID := fmt.Sprintf("template_disk_copy_%s", generateRandomID(5, o.nonSecureRandom))
-	sdkStorageDomain := ovirtsdk.NewStorageDomainBuilder().Id(storageDomainID)
+	sdkStorageDomain := ovirtsdk.NewStorageDomainBuilder().Id(string(storageDomainID))
 	sdkDisk := ovirtsdk.NewDiskBuilder().Id(diskID)
 	storageDomain, _ := o.GetStorageDomain(storageDomainID)
 	disk, _ := o.GetDisk(diskID)
@@ -68,7 +68,7 @@ func (o *oVirtClient) StartCopyTemplateDiskToStorageDomain(
 
 func (m *mockClient) CopyTemplateDiskToStorageDomain(
 	diskID string,
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	retries ...RetryStrategy) (result Disk, err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -93,7 +93,7 @@ func (m *mockClient) CopyTemplateDiskToStorageDomain(
 type mockDiskCopy struct {
 	client          *mockClient
 	disk            *diskWithData
-	storageDomainID string
+	storageDomainID StorageDomainID
 	done            chan struct{}
 }
 

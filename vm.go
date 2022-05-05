@@ -1177,7 +1177,7 @@ type OptionalVMDiskParameters interface {
 	// Format returns the image format to be used for the specified disk.
 	Format() *ImageFormat
 	// StorageDomainID returns the optional storage domain ID to use for this disk.
-	StorageDomainID() *string
+	StorageDomainID() *StorageDomainID
 }
 
 // BuildableVMDiskParameters is a buildable version of OptionalVMDiskParameters.
@@ -1197,9 +1197,9 @@ type BuildableVMDiskParameters interface {
 	MustWithFormat(format ImageFormat) BuildableVMDiskParameters
 
 	// WithStorageDomainID adds a storage domain to use for the disk.
-	WithStorageDomainID(storageDomainID string) (BuildableVMDiskParameters, error)
+	WithStorageDomainID(storageDomainID StorageDomainID) (BuildableVMDiskParameters, error)
 	// MustWithStorageDomainID is identical to WithStorageDomainID but panics instead of returning an error.
-	MustWithStorageDomainID(storageDomainID string) BuildableVMDiskParameters
+	MustWithStorageDomainID(storageDomainID StorageDomainID) BuildableVMDiskParameters
 }
 
 // NewBuildableVMDiskParameters creates a new buildable OptionalVMDiskParameters.
@@ -1226,19 +1226,19 @@ type vmDiskParameters struct {
 	diskID          string
 	sparse          *bool
 	format          *ImageFormat
-	storageDomainID *string
+	storageDomainID *StorageDomainID
 }
 
-func (v *vmDiskParameters) StorageDomainID() *string {
+func (v *vmDiskParameters) StorageDomainID() *StorageDomainID {
 	return v.storageDomainID
 }
 
-func (v *vmDiskParameters) WithStorageDomainID(storageDomainID string) (BuildableVMDiskParameters, error) {
+func (v *vmDiskParameters) WithStorageDomainID(storageDomainID StorageDomainID) (BuildableVMDiskParameters, error) {
 	v.storageDomainID = &storageDomainID
 	return v, nil
 }
 
-func (v *vmDiskParameters) MustWithStorageDomainID(storageDomainID string) BuildableVMDiskParameters {
+func (v *vmDiskParameters) MustWithStorageDomainID(storageDomainID StorageDomainID) BuildableVMDiskParameters {
 	b, err := v.WithStorageDomainID(storageDomainID)
 	if err != nil {
 		panic(err)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveDiskFromStorageDomain(id string, diskID string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) RemoveDiskFromStorageDomain(id StorageDomainID, diskID string, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing disk %s from storage domain %s", diskID, id),
@@ -12,7 +12,7 @@ func (o *oVirtClient) RemoveDiskFromStorageDomain(id string, diskID string, retr
 		retries,
 		func() error {
 			_, err := o.conn.SystemService().StorageDomainsService().
-				StorageDomainService(id).DisksService().DiskService(diskID).Remove().Send()
+				StorageDomainService(string(id)).DisksService().DiskService(diskID).Remove().Send()
 			if err != nil {
 				o.logger.Infof("error removing disk..")
 				return err
@@ -23,7 +23,7 @@ func (o *oVirtClient) RemoveDiskFromStorageDomain(id string, diskID string, retr
 	return
 }
 
-func (m *mockClient) RemoveDiskFromStorageDomain(id string, diskID string, _ ...RetryStrategy) error {
+func (m *mockClient) RemoveDiskFromStorageDomain(id StorageDomainID, diskID string, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

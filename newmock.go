@@ -84,7 +84,7 @@ func getClient(
 		vms:             map[VMID]*vm{},
 		tags:            map[string]*tag{},
 		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
-		storageDomains: map[string]*storageDomain{
+		storageDomains: map[StorageDomainID]*storageDomain{
 			testStorageDomain.ID():      testStorageDomain,
 			secondaryStorageDomain.ID(): secondaryStorageDomain,
 		},
@@ -185,7 +185,7 @@ func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
 
 func generateTestStorageDomain() *storageDomain {
 	return &storageDomain{
-		id:             uuid.NewString(),
+		id: StorageDomainID(uuid.NewString()),
 		name:           "Test storage domain",
 		available:      10 * 1024 * 1024 * 1024,
 		status:         StorageDomainStatusActive,

@@ -8,7 +8,7 @@ import (
 )
 
 func (o *oVirtClient) StartCreateDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,
@@ -78,7 +78,7 @@ func validateDiskCreationParameters(format ImageFormat, size uint64) error {
 }
 
 func (o *oVirtClient) createDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	size uint64,
 	format ImageFormat,
 	correlationID string,
@@ -102,12 +102,12 @@ func (o *oVirtClient) createDisk(
 }
 
 func (o *oVirtClient) buildDiskObjectForCreation(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	size uint64,
 	format ImageFormat,
 	params CreateDiskOptionalParameters,
 ) (*ovirtsdk4.Disk, error) {
-	storageDomain, err := ovirtsdk4.NewStorageDomainBuilder().Id(storageDomainID).Build()
+	storageDomain, err := ovirtsdk4.NewStorageDomainBuilder().Id(string(storageDomainID)).Build()
 	if err != nil {
 		return nil, wrap(
 			err,
@@ -133,7 +133,7 @@ func (o *oVirtClient) buildDiskObjectForCreation(
 }
 
 func (o *oVirtClient) CreateDisk(
-	storageDomainID string,
+	storageDomainID StorageDomainID,
 	format ImageFormat,
 	size uint64,
 	params CreateDiskOptionalParameters,

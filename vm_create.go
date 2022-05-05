@@ -176,7 +176,7 @@ func createSDKVM(
 				diskBuilder.Format(ovirtsdk.DiskFormat(*format))
 			}
 			if storageDomainID := d.StorageDomainID(); storageDomainID != nil {
-				diskBuilder.StorageDomainsBuilderOfAny(*ovirtsdk.NewStorageDomainBuilder().Id(*storageDomainID))
+				diskBuilder.StorageDomainsBuilderOfAny(*ovirtsdk.NewStorageDomainBuilder().Id(string(*storageDomainID)))
 			}
 			diskAttachment.DiskBuilder(diskBuilder)
 			sdkDisk, err := diskAttachment.Build()
@@ -494,11 +494,11 @@ func (m *mockClient) updateDiskParams(
 	}
 	if sd := diskParam.StorageDomainID(); sd != nil {
 		if params.Clone() != nil && *params.Clone() {
-			disk.storageDomainIDs = []string{*sd}
+			disk.storageDomainIDs = []StorageDomainID{*sd}
 		} else {
 			for _, diskSD := range disk.storageDomainIDs {
 				if diskSD == *sd {
-					disk.storageDomainIDs = []string{*sd}
+					disk.storageDomainIDs = []StorageDomainID{*sd}
 					break
 				}
 			}

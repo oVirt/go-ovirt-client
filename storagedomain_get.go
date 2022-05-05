@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetStorageDomain(id string, retries ...RetryStrategy) (result StorageDomain, err error) {
+func (o *oVirtClient) GetStorageDomain(id StorageDomainID, retries ...RetryStrategy) (result StorageDomain, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting storage domain %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().StorageDomainsService().StorageDomainService(id).Get().Send()
+			response, err := o.conn.SystemService().StorageDomainsService().StorageDomainService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetStorageDomain(id string, retries ...RetryStrategy) (res
 	return
 }
 
-func (m *mockClient) GetStorageDomain(id string, _ ...RetryStrategy) (StorageDomain, error) {
+func (m *mockClient) GetStorageDomain(id StorageDomainID, _ ...RetryStrategy) (StorageDomain, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.storageDomains[id]; ok {

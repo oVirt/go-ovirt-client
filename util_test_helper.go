@@ -25,11 +25,11 @@ type TestHelper interface {
 	GetBlankTemplateID() TemplateID
 
 	// GetStorageDomainID returns the ID of the storage domain to create the images on.
-	GetStorageDomainID() string
+	GetStorageDomainID() StorageDomainID
 
 	// GetSecondaryStorageDomainID returns a second ID of a storage domain to create images on. If no secondary
 	// storage domain is available, the test will be skipped.
-	GetSecondaryStorageDomainID(t *testing.T) string
+	GetSecondaryStorageDomainID(t *testing.T) StorageDomainID
 
 	// GenerateRandomID generates a random ID for testing.
 	GenerateRandomID(length uint) string
@@ -108,7 +108,7 @@ func NewTestHelper(
 		return nil, err
 	}
 
-	secondaryStorageDomainID, err := setupSecondaryStorageDomainID(params.StorageDomainID(), storageDomainID, client)
+	secondaryStorageDomainID, err := setupSecondaryStorageDomainID(params.SecondaryStorageDomainID(), storageDomainID, client)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,11 @@ type TestHelperParameters interface {
 	// StorageDomainID returns the storage domain ID usable for testing. It can return an empty
 	// string if no test storage domain is designated for testing, in which case a working
 	// storage domain is selected.
-	StorageDomainID() string
+	StorageDomainID() StorageDomainID
+
+	// SecondaryStorageDomainID returns a second ID for a storage domain to test features that require
+	// two storage domains. This may be empty, in which case such tests should be skipped.
+	SecondaryStorageDomainID() StorageDomainID
 
 	// BlankTemplateID returns an ID to a template that is blank and can be used as a basis
 	// for testing. It may return an empty string if no template is provided.
@@ -171,10 +175,10 @@ type BuildableTestHelperParameters interface {
 	// WithClusterID sets the cluster ID usable for testing.
 	WithClusterID(ClusterID) BuildableTestHelperParameters
 	// WithStorageDomainID sets the storage domain that can be used for testing.
-	WithStorageDomainID(string) BuildableTestHelperParameters
+	WithStorageDomainID(StorageDomainID) BuildableTestHelperParameters
 	// WithSecondaryStorageDomainID sets the storage domain that can be used for testing, which is not identical to
 	// the primary storage domain ID.
-	WithSecondaryStorageDomainID(string) BuildableTestHelperParameters
+	WithSecondaryStorageDomainID(StorageDomainID) BuildableTestHelperParameters
 	// WithBlankTemplateID sets the blank template that can be used for testing.
 	WithBlankTemplateID(TemplateID) BuildableTestHelperParameters
 	// WithVNICProfileID sets the ID of the VNIC profile that can be used for testing.
@@ -183,13 +187,13 @@ type BuildableTestHelperParameters interface {
 
 type testHelperParameters struct {
 	clusterID                ClusterID
-	storageDomainID          string
-	secondaryStorageDomainID string
+	storageDomainID          StorageDomainID
+	secondaryStorageDomainID StorageDomainID
 	blankTemplateID          TemplateID
 	vnicProfileID            string
 }
 
-func (t *testHelperParameters) WithSecondaryStorageDomainID(s string) BuildableTestHelperParameters {
+func (t *testHelperParameters) WithSecondaryStorageDomainID(s StorageDomainID) BuildableTestHelperParameters {
 	t.secondaryStorageDomainID = s
 	return t
 }
@@ -198,8 +202,12 @@ func (t *testHelperParameters) ClusterID() ClusterID {
 	return t.clusterID
 }
 
-func (t *testHelperParameters) StorageDomainID() string {
+func (t *testHelperParameters) StorageDomainID() StorageDomainID {
 	return t.storageDomainID
+}
+
+func (t *testHelperParameters) SecondaryStorageDomainID() StorageDomainID {
+	return t.secondaryStorageDomainID
 }
 
 func (t *testHelperParameters) BlankTemplateID() TemplateID {
@@ -215,7 +223,7 @@ func (t *testHelperParameters) WithClusterID(s ClusterID) BuildableTestHelperPar
 	return t
 }
 
-func (t *testHelperParameters) WithStorageDomainID(s string) BuildableTestHelperParameters {
+func (t *testHelperParameters) WithStorageDomainID(s StorageDomainID) BuildableTestHelperParameters {
 	t.storageDomainID = s
 	return t
 }
@@ -274,7 +282,7 @@ func setupBlankTemplateID(blankTemplateID TemplateID, client Client) (id Templat
 	return blankTemplateID, nil
 }
 
-func setupTestStorageDomainID(storageDomainID string, client Client) (id string, err error) {
+func setupTestStorageDomainID(storageDomainID StorageDomainID, client Client) (id StorageDomainID, err error) {
 	if storageDomainID == "" {
 		storageDomainID, err = findTestStorageDomainID("", client)
 		if err != nil {
@@ -287,10 +295,10 @@ func setupTestStorageDomainID(storageDomainID string, client Client) (id string,
 }
 
 func setupSecondaryStorageDomainID(
-	storageDomainID string,
-	skipStorageDomainID string,
+	storageDomainID StorageDomainID,
+	skipStorageDomainID StorageDomainID,
 	client Client,
-) (id string, err error) {
+) (id StorageDomainID, err error) {
 	if storageDomainID == "" {
 		storageDomainID, err = findTestStorageDomainID(skipStorageDomainID, client)
 		if err != nil && !errors.Is(err, errNoTestStorageDomainFound) {
@@ -381,7 +389,7 @@ func verifyTestClusterID(client Client, clusterID ClusterID) error {
 
 var errNoTestStorageDomainFound = fmt.Errorf("failed to find a working storage domain for testing")
 
-func findTestStorageDomainID(skipID string, client Client) (string, error) {
+func findTestStorageDomainID(skipID StorageDomainID, client Client) (StorageDomainID, error) {
 	storageDomains, err := client.ListStorageDomains()
 	if err != nil {
 		return "", err
@@ -394,20 +402,22 @@ func findTestStorageDomainID(skipID string, client Client) (string, error) {
 		if storageDomain.Available() < 2*1024*1024*1024 {
 			continue
 		}
-		if storageDomain.Status() == StorageDomainStatusActive {
-			return storageDomain.ID(), nil
+		if storageDomain.Status() != StorageDomainStatusActive &&
+			(storageDomain.Status() != StorageDomainStatusNA || storageDomain.ExternalStatus() != StorageDomainExternalStatusOk) {
+			continue
 		}
-		continue
+		return storageDomain.ID(), nil
 	}
 	return "", errNoTestStorageDomainFound
 }
 
-func verifyTestStorageDomainID(client Client, storageDomainID string) error {
+func verifyTestStorageDomainID(client Client, storageDomainID StorageDomainID) error {
 	storageDomain, err := client.GetStorageDomain(storageDomainID)
 	if err != nil {
 		return err
 	}
-	if storageDomain.Status() == StorageDomainStatusActive {
+	if storageDomain.Status() == StorageDomainStatusActive ||
+		(storageDomain.Status() == StorageDomainStatusNA && storageDomain.ExternalStatus() == StorageDomainExternalStatusOk) {
 		return nil
 	}
 	return fmt.Errorf("storage domain %s is %s, not active, external status is %s, not ok", storageDomain.ID(), storageDomain.Status(), storageDomain.ExternalStatus())
@@ -418,10 +428,10 @@ type testHelper struct {
 	tls                      TLSProvider
 	rand                     *rand.Rand
 	clusterID                ClusterID
-	storageDomainID          string
+	storageDomainID          StorageDomainID
 	blankTemplateID          TemplateID
 	vnicProfileID            string
-	secondaryStorageDomainID string
+	secondaryStorageDomainID StorageDomainID
 	password                 string
 	username                 string
 }
@@ -438,7 +448,7 @@ func (t *testHelper) GetPassword() string {
 	return t.password
 }
 
-func (t *testHelper) GetSecondaryStorageDomainID(te *testing.T) string {
+func (t *testHelper) GetSecondaryStorageDomainID(te *testing.T) StorageDomainID {
 	if t.secondaryStorageDomainID == "" {
 		te.Skipf("No secondary storage domain available, skipping test.")
 	}
@@ -465,7 +475,7 @@ func (t *testHelper) GetBlankTemplateID() TemplateID {
 	return t.blankTemplateID
 }
 
-func (t *testHelper) GetStorageDomainID() string {
+func (t *testHelper) GetStorageDomainID() StorageDomainID {
 	return t.storageDomainID
 }
 
@@ -597,8 +607,8 @@ func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) 
 	params := TestHelperParams()
 	params.WithClusterID(ClusterID(os.Getenv("OVIRT_CLUSTER_ID")))
 	params.WithBlankTemplateID(TemplateID(os.Getenv("OVIRT_BLANK_TEMPLATE_ID")))
-	params.WithStorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID"))
-	params.WithSecondaryStorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID"))
+	params.WithStorageDomainID(StorageDomainID(os.Getenv("OVIRT_STORAGE_DOMAIN_ID")))
+	params.WithSecondaryStorageDomainID(StorageDomainID(os.Getenv("OVIRT_SECONDARY_STORAGE_DOMAIN_ID")))
 	params.WithVNICProfileID(os.Getenv("OVIRT_VNIC_PROFILE_ID"))
 
 	helper, err := NewTestHelper(
