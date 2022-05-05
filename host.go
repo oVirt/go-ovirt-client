@@ -4,18 +4,21 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "Host" -n "host"
+//go:generate go run scripts/rest/rest.go -i "Host" -n "host" -T HostID
+
+// HostID is the identifier for hosts.
+type HostID string
 
 // HostClient contains the API portion that deals with hosts.
 type HostClient interface {
 	ListHosts(retries ...RetryStrategy) ([]Host, error)
-	GetHost(id string, retries ...RetryStrategy) (Host, error)
+	GetHost(id HostID, retries ...RetryStrategy) (Host, error)
 }
 
 // HostData is the core of Host, providing only data access functions.
 type HostData interface {
 	// ID returns the identifier of the host in question.
-	ID() string
+	ID() HostID
 	// ClusterID returns the ID of the cluster this host belongs to.
 	ClusterID() ClusterID
 	// Status returns the status of this host.
@@ -129,7 +132,7 @@ func convertSDKHost(sdkHost *ovirtsdk4.Host, client Client) (Host, error) {
 	}
 	return &host{
 		client:    client,
-		id:        id,
+		id:        HostID(id),
 		status:    HostStatus(status),
 		clusterID: ClusterID(clusterID),
 	}, nil
@@ -138,12 +141,12 @@ func convertSDKHost(sdkHost *ovirtsdk4.Host, client Client) (Host, error) {
 type host struct {
 	client Client
 
-	id        string
+	id        HostID
 	clusterID ClusterID
 	status    HostStatus
 }
 
-func (h host) ID() string {
+func (h host) ID() HostID {
 	return h.id
 }
 

@@ -92,7 +92,7 @@ func getClient(
 		clusters: map[ClusterID]*cluster{
 			testCluster.ID(): testCluster,
 		},
-		hosts: map[string]*host{
+		hosts: map[HostID]*host{
 			testHost.ID(): testHost,
 		},
 		templates: map[TemplateID]*template{
@@ -202,7 +202,7 @@ func generateTestCluster() *cluster {
 
 func generateTestHost(c *cluster) *host {
 	return &host{
-		id:        uuid.NewString(),
+		id:        HostID(uuid.NewString()),
 		clusterID: c.ID(),
 		status:    HostStatusUp,
 	}

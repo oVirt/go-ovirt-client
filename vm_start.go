@@ -79,7 +79,7 @@ func (m *mockClient) StartVM(id VMID, _ ...RetryStrategy) error {
 	return nil
 }
 
-func (m *mockClient) findSuitableHost(vmID VMID) (string, error) {
+func (m *mockClient) findSuitableHost(vmID VMID) (HostID, error) {
 	var affectedAffinityGroups []*affinityGroup
 	for _, clusterAffinityGroups := range m.affinityGroups {
 		for _, affinityGroup := range clusterAffinityGroups {

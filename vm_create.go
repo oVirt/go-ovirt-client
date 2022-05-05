@@ -80,7 +80,7 @@ func vmPlacementPolicyParameterConverter(params OptionalVMParameters, builder *o
 		}
 		hosts := make([]ovirtsdk.HostBuilder, len((*pp).HostIDs()))
 		for i, hostID := range (*pp).HostIDs() {
-			hostBuilder := ovirtsdk.NewHostBuilder().Id(hostID)
+			hostBuilder := ovirtsdk.NewHostBuilder().Id(string(hostID))
 			hosts[i] = *hostBuilder
 		}
 		placementPolicyBuilder.HostsBuilderOfAny(hosts...)

@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetHost(id string, retries ...RetryStrategy) (result Host, err error) {
+func (o *oVirtClient) GetHost(id HostID, retries ...RetryStrategy) (result Host, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting host %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().HostsService().HostService(id).Get().Send()
+			response, err := o.conn.SystemService().HostsService().HostService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetHost(id string, retries ...RetryStrategy) (result Host,
 	return
 }
 
-func (m *mockClient) GetHost(id string, _ ...RetryStrategy) (Host, error) {
+func (m *mockClient) GetHost(id HostID, _ ...RetryStrategy) (Host, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.hosts[id]; ok {
