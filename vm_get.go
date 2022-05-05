@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetVM(id string, retries ...RetryStrategy) (result VM, err error) {
+func (o *oVirtClient) GetVM(id VMID, retries ...RetryStrategy) (result VM, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting vm %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VmsService().VmService(id).Get().Send()
+			response, err := o.conn.SystemService().VmsService().VmService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetVM(id string, retries ...RetryStrategy) (result VM, err
 	return
 }
 
-func (m *mockClient) GetVM(id string, _ ...RetryStrategy) (VM, error) {
+func (m *mockClient) GetVM(id VMID, _ ...RetryStrategy) (VM, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.vms[id]; ok {

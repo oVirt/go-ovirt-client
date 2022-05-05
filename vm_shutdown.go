@@ -5,20 +5,20 @@ import (
 	"time"
 )
 
-func (o *oVirtClient) ShutdownVM(id string, force bool, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) ShutdownVM(id VMID, force bool, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("shutting down VM %s", id),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().VmsService().VmService(id).Shutdown().Force(force).Send()
+			_, err := o.conn.SystemService().VmsService().VmService(string(id)).Shutdown().Force(force).Send()
 			return err
 		})
 	return
 }
 
-func (m *mockClient) ShutdownVM(id string, force bool, _ ...RetryStrategy) error {
+func (m *mockClient) ShutdownVM(id VMID, force bool, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.vms[id]; ok {

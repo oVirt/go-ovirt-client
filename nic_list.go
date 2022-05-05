@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) ListNICs(vmid string, retries ...RetryStrategy) (result []NIC, err error) {
+func (o *oVirtClient) ListNICs(vmid VMID, retries ...RetryStrategy) (result []NIC, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("listing NICs for VM %s", vmid),
 		o.logger,
 		retries,
 		func() error {
-			response, e := o.conn.SystemService().VmsService().VmService(vmid).NicsService().List().Send()
+			response, e := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().List().Send()
 			if e != nil {
 				return e
 			}
@@ -32,7 +32,7 @@ func (o *oVirtClient) ListNICs(vmid string, retries ...RetryStrategy) (result []
 	return
 }
 
-func (m *mockClient) ListNICs(vmid string, _ ...RetryStrategy) ([]NIC, error) {
+func (m *mockClient) ListNICs(vmid VMID, _ ...RetryStrategy) ([]NIC, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	var result []NIC

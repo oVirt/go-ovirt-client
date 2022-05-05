@@ -24,7 +24,7 @@ type mockClient struct {
 	url                               string
 	lock                              *sync.Mutex
 	nonSecureRandom                   *rand.Rand
-	vms                               map[string]*vm
+	vms                               map[VMID]*vm
 	storageDomains                    map[string]*storageDomain
 	disks                             map[string]*diskWithData
 	clusters                          map[ClusterID]*cluster
@@ -34,13 +34,13 @@ type mockClient struct {
 	vnicProfiles                      map[string]*vnicProfile
 	networks                          map[string]*network
 	dataCenters                       map[string]*datacenterWithClusters
-	vmDiskAttachmentsByVM             map[string]map[string]*diskAttachment
+	vmDiskAttachmentsByVM             map[VMID]map[string]*diskAttachment
 	vmDiskAttachmentsByDisk           map[string]*diskAttachment
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment
 	templateDiskAttachmentsByDisk     map[string]*templateDiskAttachment
 	tags                              map[string]*tag
 	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
-	vmIPs                             map[string]map[string][]net.IP
+	vmIPs                             map[VMID]map[string][]net.IP
 	instanceTypes                     map[InstanceTypeID]*instanceType
 }
 

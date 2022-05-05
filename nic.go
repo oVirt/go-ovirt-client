@@ -8,7 +8,7 @@ import (
 type NICClient interface {
 	// CreateNIC adds a new NIC to a VM specified in vmid.
 	CreateNIC(
-		vmid string,
+		vmid VMID,
 		vnicProfileID string,
 		name string,
 		optional OptionalNICParameters,
@@ -16,17 +16,17 @@ type NICClient interface {
 	) (NIC, error)
 	// UpdateNIC allows updating the NIC.
 	UpdateNIC(
-		vmid string,
+		vmid VMID,
 		nicID string,
 		params UpdateNICParameters,
 		retries ...RetryStrategy,
 	) (NIC, error)
 	// GetNIC returns one specific NIC with the ID specified in id, attached to a VM with the ID specified in vmid.
-	GetNIC(vmid string, id string, retries ...RetryStrategy) (NIC, error)
+	GetNIC(vmid VMID, id string, retries ...RetryStrategy) (NIC, error)
 	// ListNICs lists all NICs attached to the VM specified in vmid.
-	ListNICs(vmid string, retries ...RetryStrategy) ([]NIC, error)
+	ListNICs(vmid VMID, retries ...RetryStrategy) ([]NIC, error)
 	// RemoveNIC removes the network interface specified.
-	RemoveNIC(vmid string, id string, retries ...RetryStrategy) error
+	RemoveNIC(vmid VMID, id string, retries ...RetryStrategy) error
 }
 
 // OptionalNICParameters is an interface that declares the source of optional parameters for NIC creation.
@@ -121,7 +121,7 @@ type NICData interface {
 	// Name is the user-given name of the network interface.
 	Name() string
 	// VMID is the identified of the VM this NIC is attached to. May be nil if the NIC is not attached.
-	VMID() string
+	VMID() VMID
 	// VNICProfileID returns the ID of the VNIC profile in use by the NIC.
 	VNICProfileID() string
 }
@@ -171,7 +171,7 @@ func convertSDKNIC(sdkObject *ovirtsdk.Nic, cli Client) (NIC, error) {
 		cli,
 		id,
 		name,
-		vmid,
+		VMID(vmid),
 		vnicProfileID,
 	}, nil
 }
@@ -181,7 +181,7 @@ type nic struct {
 
 	id            string
 	name          string
-	vmid          string
+	vmid          VMID
 	vnicProfileID string
 }
 
@@ -209,7 +209,7 @@ func (n nic) Name() string {
 	return n.name
 }
 
-func (n nic) VMID() string {
+func (n nic) VMID() VMID {
 	return n.vmid
 }
 

@@ -11,7 +11,10 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "Vm" -n "vm" -o "VM"
+//go:generate go run scripts/rest/rest.go -i "Vm" -n "vm" -o "VM" -T VMID
+
+// VMID is a specific type for virtual machine IDs.
+type VMID string
 
 // VMClient includes the methods required to deal with virtual machines.
 type VMClient interface {
@@ -24,52 +27,52 @@ type VMClient interface {
 		retries ...RetryStrategy,
 	) (VM, error)
 	// GetVM returns a single virtual machine based on an ID.
-	GetVM(id string, retries ...RetryStrategy) (VM, error)
+	GetVM(id VMID, retries ...RetryStrategy) (VM, error)
 	// GetVMByName returns a single virtual machine based on a Name.
 	GetVMByName(name string, retries ...RetryStrategy) (VM, error)
 	// UpdateVM updates the virtual machine with the given parameters.
 	// Use UpdateVMParams to obtain a builder for the params.
-	UpdateVM(id string, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
+	UpdateVM(id VMID, params UpdateVMParameters, retries ...RetryStrategy) (VM, error)
 	// AutoOptimizeVMCPUPinningSettings sets the CPU settings to optimized.
-	AutoOptimizeVMCPUPinningSettings(id string, optimize bool, retries ...RetryStrategy) error
+	AutoOptimizeVMCPUPinningSettings(id VMID, optimize bool, retries ...RetryStrategy) error
 	// StartVM triggers a VM start. The actual VM startup will take time and should be waited for via the
 	// WaitForVMStatus call.
-	StartVM(id string, retries ...RetryStrategy) error
+	StartVM(id VMID, retries ...RetryStrategy) error
 	// StopVM triggers a VM power-off. The actual VM stop will take time and should be waited for via the
 	// WaitForVMStatus call. The force parameter will cause the shutdown to proceed even if a backup is currently
 	// running.
-	StopVM(id string, force bool, retries ...RetryStrategy) error
+	StopVM(id VMID, force bool, retries ...RetryStrategy) error
 	// ShutdownVM triggers a VM shutdown. The actual VM shutdown will take time and should be waited for via the
 	// WaitForVMStatus call. The force parameter will cause the shutdown to proceed even if a backup is currently
 	// running.
-	ShutdownVM(id string, force bool, retries ...RetryStrategy) error
+	ShutdownVM(id VMID, force bool, retries ...RetryStrategy) error
 	// WaitForVMStatus waits for the VM to reach the desired status.
-	WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (VM, error)
+	WaitForVMStatus(id VMID, status VMStatus, retries ...RetryStrategy) (VM, error)
 	// ListVMs returns a list of all virtual machines.
 	ListVMs(retries ...RetryStrategy) ([]VM, error)
 	// SearchVMs lists all virtual machines matching a certain criteria specified in params.
 	SearchVMs(params VMSearchParameters, retries ...RetryStrategy) ([]VM, error)
 	// RemoveVM removes a virtual machine specified by id.
-	RemoveVM(id string, retries ...RetryStrategy) error
+	RemoveVM(id VMID, retries ...RetryStrategy) error
 	// AddTagToVM Add tag specified by id to a VM.
-	AddTagToVM(id string, tagID string, retries ...RetryStrategy) error
+	AddTagToVM(id VMID, tagID string, retries ...RetryStrategy) error
 	// AddTagToVMByName Add tag specified by Name to a VM.
-	AddTagToVMByName(id string, tagName string, retries ...RetryStrategy) error
+	AddTagToVMByName(id VMID, tagName string, retries ...RetryStrategy) error
 	// RemoveTagFromVM removes the specified tag from the specified VM.
-	RemoveTagFromVM(id string, tagID string, retries ...RetryStrategy) error
+	RemoveTagFromVM(id VMID, tagID string, retries ...RetryStrategy) error
 	// ListVMTags lists the tags attached to a VM.
-	ListVMTags(id string, retries ...RetryStrategy) (result []Tag, err error)
+	ListVMTags(id VMID, retries ...RetryStrategy) (result []Tag, err error)
 	// GetVMIPAddresses fetches the IP addresses reported by the guest agent in the VM.
 	// Optional parameters can be passed to filter the result list.
 	//
 	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
 	// excluding any IP addresses in the specified parameters.
-	GetVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	GetVMIPAddresses(id VMID, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
 	// WaitForVMIPAddresses waits for at least one IP address to be reported that is not in specified ranges.
 	//
 	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
 	// excluding any IP addresses in the specified parameters.
-	WaitForVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	WaitForVMIPAddresses(id VMID, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
 	// WaitForNonLocalVMIPAddress waits for at least one IP address to be reported that is not in the following ranges:
 	//
 	// - 0.0.0.0/32
@@ -89,7 +92,7 @@ type VMClient interface {
 	//
 	// The returned result will be a map of network interface names and the list of non-local IP addresses assigned to
 	// them.
-	WaitForNonLocalVMIPAddress(id string, retries ...RetryStrategy) (map[string][]net.IP, error)
+	WaitForNonLocalVMIPAddress(id VMID, retries ...RetryStrategy) (map[string][]net.IP, error)
 }
 
 // VMIPSearchParams contains the parameters for searching or waiting for IP addresses on a VM.
@@ -195,7 +198,7 @@ func (v *vmIPSearchParams) WithExcludedInterfacePattern(interfaceNamePattern *re
 // VMData is the core of VM providing only data access functions.
 type VMData interface {
 	// ID returns the unique identifier (UUID) of the current virtual machine.
-	ID() string
+	ID() VMID
 	// Name is the user-defined name of the virtual machine.
 	Name() string
 	// Comment is the comment added to the VM.
@@ -1720,7 +1723,7 @@ func (v vmParams) Comment() string {
 type vm struct {
 	client Client
 
-	id              string
+	id              VMID
 	name            string
 	comment         string
 	clusterID       ClusterID
@@ -1937,7 +1940,7 @@ func (v *vm) TemplateID() TemplateID {
 	return v.templateID
 }
 
-func (v *vm) ID() string {
+func (v *vm) ID() VMID {
 	return v.id
 }
 
@@ -2094,7 +2097,7 @@ func vmIDConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 	if !ok {
 		return newError(EFieldMissing, "id field missing from VM object")
 	}
-	v.id = id
+	v.id = VMID(id)
 	return nil
 }
 

@@ -362,7 +362,7 @@ func (m *mockClient) createVM(
 
 	vm := &vm{
 		m,
-		id,
+		VMID(id),
 		name,
 		params.Comment(),
 		clusterID,
@@ -380,7 +380,7 @@ func (m *mockClient) createVM(
 		m.createVMType(params),
 		m.createVMOS(params),
 	}
-	m.vms[id] = vm
+	m.vms[VMID(id)] = vm
 	return vm
 }
 

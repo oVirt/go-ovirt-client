@@ -7,12 +7,12 @@ import (
 )
 
 func (o *oVirtClient) UpdateNIC(
-	vmid string,
+	vmid VMID,
 	nicID string,
 	params UpdateNICParameters,
 	retries ...RetryStrategy,
 ) (result NIC, err error) {
-	req := o.conn.SystemService().VmsService().VmService(vmid).NicsService().NicService(nicID).Update()
+	req := o.conn.SystemService().VmsService().VmService(string(vmid)).NicsService().NicService(nicID).Update()
 
 	nicBuilder := ovirtsdk.NewNicBuilder().Id(nicID)
 	if name := params.Name(); name != nil {
@@ -48,7 +48,7 @@ func (o *oVirtClient) UpdateNIC(
 	return result, err
 }
 
-func (m *mockClient) UpdateNIC(vmid string, nicID string, params UpdateNICParameters, retries ...RetryStrategy) (
+func (m *mockClient) UpdateNIC(vmid VMID, nicID string, params UpdateNICParameters, retries ...RetryStrategy) (
 	NIC,
 	error,
 ) {

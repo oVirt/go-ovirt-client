@@ -6,20 +6,20 @@ import (
 	"time"
 )
 
-func (o *oVirtClient) StartVM(id string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) StartVM(id VMID, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("starting VM %s", id),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().VmsService().VmService(id).Start().Send()
+			_, err := o.conn.SystemService().VmsService().VmService(string(id)).Start().Send()
 			return err
 		})
 	return
 }
 
-func (m *mockClient) StartVM(id string, _ ...RetryStrategy) error {
+func (m *mockClient) StartVM(id VMID, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	item, ok := m.vms[id]
@@ -79,7 +79,7 @@ func (m *mockClient) StartVM(id string, _ ...RetryStrategy) error {
 	return nil
 }
 
-func (m *mockClient) findSuitableHost(vmID string) (string, error) {
+func (m *mockClient) findSuitableHost(vmID VMID) (string, error) {
 	var affectedAffinityGroups []*affinityGroup
 	for _, clusterAffinityGroups := range m.affinityGroups {
 		for _, affinityGroup := range clusterAffinityGroups {

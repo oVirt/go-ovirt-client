@@ -7,7 +7,7 @@ import (
 )
 
 func (o *oVirtClient) CreateDiskAttachment(
-	vmID string,
+	vmID VMID,
 	diskID string,
 	diskInterface DiskInterface,
 	params CreateDiskAttachmentOptionalParams,
@@ -25,7 +25,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 			attachmentBuilder := ovirtsdk.NewDiskAttachmentBuilder()
 			attachmentBuilder.Disk(ovirtsdk.NewDiskBuilder().Id(diskID).MustBuild())
 			attachmentBuilder.Interface(ovirtsdk.DiskInterface(diskInterface))
-			attachmentBuilder.Vm(ovirtsdk.NewVmBuilder().Id(vmID).MustBuild())
+			attachmentBuilder.Vm(ovirtsdk.NewVmBuilder().Id(string(vmID)).MustBuild())
 			attachmentBuilder.Active(true)
 			if params != nil {
 				if active := params.Active(); active != nil {
@@ -37,7 +37,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 			}
 			attachment := attachmentBuilder.MustBuild()
 
-			addRequest := o.conn.SystemService().VmsService().VmService(vmID).DiskAttachmentsService().Add()
+			addRequest := o.conn.SystemService().VmsService().VmService(string(vmID)).DiskAttachmentsService().Add()
 			addRequest.Attachment(attachment)
 			response, err := addRequest.Send()
 			if err != nil {
@@ -66,7 +66,7 @@ func (o *oVirtClient) CreateDiskAttachment(
 }
 
 func (m *mockClient) CreateDiskAttachment(
-	vmID string,
+	vmID VMID,
 	diskID string,
 	diskInterface DiskInterface,
 	params CreateDiskAttachmentOptionalParams,

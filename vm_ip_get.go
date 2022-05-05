@@ -8,7 +8,7 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-func (m *mockClient) GetVMIPAddresses(id string, params VMIPSearchParams, _ ...RetryStrategy) (map[string][]net.IP, error) {
+func (m *mockClient) GetVMIPAddresses(id VMID, params VMIPSearchParams, _ ...RetryStrategy) (map[string][]net.IP, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -21,7 +21,7 @@ func (m *mockClient) GetVMIPAddresses(id string, params VMIPSearchParams, _ ...R
 	return filterReportedIPList(source, params), nil
 }
 
-func (o *oVirtClient) GetVMIPAddresses(id string, params VMIPSearchParams, retries ...RetryStrategy) (result map[string][]net.IP, err error) {
+func (o *oVirtClient) GetVMIPAddresses(id VMID, params VMIPSearchParams, retries ...RetryStrategy) (result map[string][]net.IP, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	result = map[string][]net.IP{}
 	err = retry(
@@ -29,7 +29,7 @@ func (o *oVirtClient) GetVMIPAddresses(id string, params VMIPSearchParams, retri
 		o.logger,
 		retries,
 		func() error {
-			reportedDevicesResponse, err := o.conn.SystemService().VmsService().VmService(id).ReportedDevicesService().List().Send()
+			reportedDevicesResponse, err := o.conn.SystemService().VmsService().VmService(string(id)).ReportedDevicesService().List().Send()
 
 			reportedDevices, ok := reportedDevicesResponse.ReportedDevice()
 			if !ok {

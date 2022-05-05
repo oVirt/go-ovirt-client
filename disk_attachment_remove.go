@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveDiskAttachment(vmID string, diskAttachmentID string, retries ...RetryStrategy) error {
+func (o *oVirtClient) RemoveDiskAttachment(vmID VMID, diskAttachmentID string, retries ...RetryStrategy) error {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("removing disk attachment %s on VM %s", diskAttachmentID, vmID),
@@ -14,7 +14,7 @@ func (o *oVirtClient) RemoveDiskAttachment(vmID string, diskAttachmentID string,
 			_, err := o.conn.
 				SystemService().
 				VmsService().
-				VmService(vmID).
+				VmService(string(vmID)).
 				DiskAttachmentsService().
 				AttachmentService(diskAttachmentID).
 				Remove().
@@ -24,7 +24,7 @@ func (o *oVirtClient) RemoveDiskAttachment(vmID string, diskAttachmentID string,
 	)
 }
 
-func (m *mockClient) RemoveDiskAttachment(vmID string, diskAttachmentID string, _ ...RetryStrategy) error {
+func (m *mockClient) RemoveDiskAttachment(vmID VMID, diskAttachmentID string, _ ...RetryStrategy) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

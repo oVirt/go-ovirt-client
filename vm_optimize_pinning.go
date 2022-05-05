@@ -2,7 +2,7 @@ package ovirtclient
 
 import "fmt"
 
-func (o *oVirtClient) AutoOptimizeVMCPUPinningSettings(id string, optimize bool, retries ...RetryStrategy) error {
+func (o *oVirtClient) AutoOptimizeVMCPUPinningSettings(id VMID, optimize bool, retries ...RetryStrategy) error {
 	return retry(
 		fmt.Sprintf("optimizing CPU pinning settings for VM %s", id),
 		o.logger,
@@ -10,7 +10,7 @@ func (o *oVirtClient) AutoOptimizeVMCPUPinningSettings(id string, optimize bool,
 		func() error {
 			_, err := o.conn.SystemService().
 				VmsService().
-				VmService(id).
+				VmService(string(id)).
 				AutoPinCpuAndNumaNodes().
 				OptimizeCpuSettings(optimize).
 				Send()
@@ -18,7 +18,7 @@ func (o *oVirtClient) AutoOptimizeVMCPUPinningSettings(id string, optimize bool,
 		})
 }
 
-func (m *mockClient) AutoOptimizeVMCPUPinningSettings(_ string, _ bool, _ ...RetryStrategy) error {
+func (m *mockClient) AutoOptimizeVMCPUPinningSettings(_ VMID, _ bool, _ ...RetryStrategy) error {
 	// This function cannot be simulated as the VM object does not contain any observable return values apart from the
 	// NUMA nodes being moved around. If you know of a way please add a mock and add a test for it.
 	return nil

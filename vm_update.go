@@ -7,14 +7,14 @@ import (
 )
 
 func (o *oVirtClient) UpdateVM(
-	id string,
+	id VMID,
 	params UpdateVMParameters,
 	retries ...RetryStrategy,
 ) (result VM, err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 
 	vm := &ovirtsdk.Vm{}
-	vm.SetId(id)
+	vm.SetId(string(id))
 	if name := params.Name(); name != nil {
 		if *name == "" {
 			return nil, newError(EBadArgument, "name must not be empty for VM update")
@@ -30,7 +30,7 @@ func (o *oVirtClient) UpdateVM(
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VmsService().VmService(id).Update().Vm(vm).Send()
+			response, err := o.conn.SystemService().VmsService().VmService(string(id)).Update().Vm(vm).Send()
 			if err != nil {
 				return wrap(err, EUnidentified, "failed to update VM")
 			}
@@ -51,7 +51,7 @@ func (o *oVirtClient) UpdateVM(
 	return result, err
 }
 
-func (m *mockClient) UpdateVM(id string, params UpdateVMParameters, _ ...RetryStrategy) (VM, error) {
+func (m *mockClient) UpdateVM(id VMID, params UpdateVMParameters, _ ...RetryStrategy) (VM, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

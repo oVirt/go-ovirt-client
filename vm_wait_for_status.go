@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (vm VM, err error) {
+func (o *oVirtClient) WaitForVMStatus(id VMID, status VMStatus, retries ...RetryStrategy) (vm VM, err error) {
 	retries = defaultRetries(retries, defaultLongTimeouts(o))
 	err = retry(
 		fmt.Sprintf("waiting for VM %s status %s", id, status),
@@ -23,7 +23,7 @@ func (o *oVirtClient) WaitForVMStatus(id string, status VMStatus, retries ...Ret
 	return
 }
 
-func (m *mockClient) WaitForVMStatus(id string, status VMStatus, retries ...RetryStrategy) (vm VM, err error) {
+func (m *mockClient) WaitForVMStatus(id VMID, status VMStatus, retries ...RetryStrategy) (vm VM, err error) {
 	retries = defaultRetries(retries, defaultLongTimeouts(m))
 	err = retry(
 		fmt.Sprintf("waiting for VM %s status %s", id, status),

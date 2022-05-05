@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveVM(id string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) RemoveVM(id VMID, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing VM %s", id),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().VmsService().VmService(id).Remove().Send()
+			_, err := o.conn.SystemService().VmsService().VmService(string(id)).Remove().Send()
 			if err != nil {
 				return err
 			}
@@ -20,7 +20,7 @@ func (o *oVirtClient) RemoveVM(id string, retries ...RetryStrategy) (err error) 
 	return
 }
 
-func (m *mockClient) RemoveVM(id string, retries ...RetryStrategy) error {
+func (m *mockClient) RemoveVM(id VMID, retries ...RetryStrategy) error {
 
 	retries = defaultRetries(retries, defaultWriteTimeouts(m))
 

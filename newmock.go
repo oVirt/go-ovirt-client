@@ -81,7 +81,7 @@ func getClient(
 		logger:          logger,
 		url:             "https://localhost/ovirt-engine/api",
 		lock:            &sync.Mutex{},
-		vms:             map[string]*vm{},
+		vms:             map[VMID]*vm{},
 		tags:            map[string]*tag{},
 		nonSecureRandom: rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		storageDomains: map[string]*storageDomain{
@@ -108,7 +108,7 @@ func getClient(
 		dataCenters: map[string]*datacenterWithClusters{
 			testDatacenter.ID(): testDatacenter,
 		},
-		vmDiskAttachmentsByVM:   map[string]map[string]*diskAttachment{},
+		vmDiskAttachmentsByVM:   map[VMID]map[string]*diskAttachment{},
 		vmDiskAttachmentsByDisk: map[string]*diskAttachment{},
 		templateDiskAttachmentsByTemplate: map[TemplateID][]*templateDiskAttachment{
 			blankTemplate.ID(): {},
@@ -117,7 +117,7 @@ func getClient(
 		affinityGroups: map[ClusterID]map[AffinityGroupID]*affinityGroup{
 			testCluster.ID(): {},
 		},
-		vmIPs:         map[string]map[string][]net.IP{},
+		vmIPs:         map[VMID]map[string][]net.IP{},
 		instanceTypes: nil,
 	}
 	client.instanceTypes = getInstanceTypes(client)
