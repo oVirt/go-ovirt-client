@@ -108,7 +108,7 @@ func getClient(
 		dataCenters: map[DatacenterID]*datacenterWithClusters{
 			testDatacenter.ID(): testDatacenter,
 		},
-		vmDiskAttachmentsByVM:   map[VMID]map[string]*diskAttachment{},
+		vmDiskAttachmentsByVM:   map[VMID]map[DiskAttachmentID]*diskAttachment{},
 		vmDiskAttachmentsByDisk: map[DiskID]*diskAttachment{},
 		templateDiskAttachmentsByTemplate: map[TemplateID][]*templateDiskAttachment{
 			blankTemplate.ID(): {},

@@ -6,6 +6,9 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
+// DiskAttachmentID is the identifier for the disk attachment.
+type DiskAttachmentID string
+
 // DiskAttachmentClient contains the methods required for handling disk attachments.
 type DiskAttachmentClient interface {
 	// CreateDiskAttachment attaches a disk to a VM.
@@ -17,11 +20,11 @@ type DiskAttachmentClient interface {
 		retries ...RetryStrategy,
 	) (DiskAttachment, error)
 	// GetDiskAttachment returns a single disk attachment in a virtual machine.
-	GetDiskAttachment(vmID VMID, id string, retries ...RetryStrategy) (DiskAttachment, error)
+	GetDiskAttachment(vmID VMID, id DiskAttachmentID, retries ...RetryStrategy) (DiskAttachment, error)
 	// ListDiskAttachments lists all disk attachments for a virtual machine.
 	ListDiskAttachments(vmID VMID, retries ...RetryStrategy) ([]DiskAttachment, error)
 	// RemoveDiskAttachment removes the disk attachment in question.
-	RemoveDiskAttachment(vmID VMID, diskAttachmentID string, retries ...RetryStrategy) error
+	RemoveDiskAttachment(vmID VMID, diskAttachmentID DiskAttachmentID, retries ...RetryStrategy) error
 }
 
 // DiskInterface describes the means by which a disk will appear to the VM.
@@ -152,7 +155,7 @@ func (c createDiskAttachmentParams) MustWithActive(active bool) BuildableCreateD
 // DiskAttachment links together a Disk and a VM.
 type DiskAttachment interface {
 	// ID returns the identifier of the attachment.
-	ID() string
+	ID() DiskAttachmentID
 	// VMID returns the ID of the virtual machine this attachment belongs to.
 	VMID() VMID
 	// DiskID returns the ID of the disk in this attachment.
@@ -176,7 +179,7 @@ type DiskAttachment interface {
 type diskAttachment struct {
 	client Client
 
-	id            string
+	id            DiskAttachmentID
 	vmid          VMID
 	diskID        DiskID
 	diskInterface DiskInterface
@@ -192,7 +195,7 @@ func (d *diskAttachment) Remove(retries ...RetryStrategy) error {
 	return d.client.RemoveDiskAttachment(d.vmid, d.id, retries...)
 }
 
-func (d *diskAttachment) ID() string {
+func (d *diskAttachment) ID() DiskAttachmentID {
 	return d.id
 }
 
@@ -256,7 +259,7 @@ func convertSDKDiskAttachment(object *ovirtsdk4.DiskAttachment, o *oVirtClient) 
 	return &diskAttachment{
 		client: o,
 
-		id:            id,
+		id:            DiskAttachmentID(id),
 		vmid:          VMID(vmID),
 		diskID:        DiskID(diskID),
 		diskInterface: DiskInterface(diskInterface),
