@@ -394,18 +394,23 @@ func findTestStorageDomainID(skipID string, client Client) (string, error) {
 		if storageDomain.Available() < 2*1024*1024*1024 {
 			continue
 		}
-		if storageDomain.Status() != StorageDomainStatusActive &&
-			storageDomain.ExternalStatus() != StorageDomainExternalStatusOk {
-			continue
+		if storageDomain.Status() == StorageDomainStatusActive {
+			return storageDomain.ID(), nil
 		}
-		return storageDomain.ID(), nil
+		continue
 	}
 	return "", errNoTestStorageDomainFound
 }
 
 func verifyTestStorageDomainID(client Client, storageDomainID string) error {
-	_, err := client.GetStorageDomain(storageDomainID)
-	return err
+	storageDomain, err := client.GetStorageDomain(storageDomainID)
+	if err != nil {
+		return err
+	}
+	if storageDomain.Status() == StorageDomainStatusActive {
+		return nil
+	}
+	return fmt.Errorf("storage domain %s is %s, not active, external status is %s, not ok", storageDomain.ID(), storageDomain.Status(), storageDomain.ExternalStatus())
 }
 
 type testHelper struct {
