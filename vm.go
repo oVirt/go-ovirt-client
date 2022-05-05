@@ -55,11 +55,11 @@ type VMClient interface {
 	// RemoveVM removes a virtual machine specified by id.
 	RemoveVM(id VMID, retries ...RetryStrategy) error
 	// AddTagToVM Add tag specified by id to a VM.
-	AddTagToVM(id VMID, tagID string, retries ...RetryStrategy) error
+	AddTagToVM(id VMID, tagID TagID, retries ...RetryStrategy) error
 	// AddTagToVMByName Add tag specified by Name to a VM.
 	AddTagToVMByName(id VMID, tagName string, retries ...RetryStrategy) error
 	// RemoveTagFromVM removes the specified tag from the specified VM.
-	RemoveTagFromVM(id VMID, tagID string, retries ...RetryStrategy) error
+	RemoveTagFromVM(id VMID, tagID TagID, retries ...RetryStrategy) error
 	// ListVMTags lists the tags attached to a VM.
 	ListVMTags(id VMID, retries ...RetryStrategy) (result []Tag, err error)
 	// GetVMIPAddresses fetches the IP addresses reported by the guest agent in the VM.
@@ -217,7 +217,7 @@ type VMData interface {
 	// memory policy is set.
 	MemoryPolicy() (MemoryPolicy, bool)
 	// TagIDs returns a list of tags for this VM.
-	TagIDs() []string
+	TagIDs() []TagID
 	// HugePages returns the hugepage settings for the VM, if any.
 	HugePages() *VMHugePages
 	// Initialization returns the virtual machine’s initialization configuration.
@@ -516,9 +516,9 @@ type VM interface {
 	WaitForNonLocalIPAddress(retries ...RetryStrategy) (map[string][]net.IP, error)
 
 	// AddTag adds the specified tag to the current VM.
-	AddTag(tagID string, retries ...RetryStrategy) (err error)
+	AddTag(tagID TagID, retries ...RetryStrategy) (err error)
 	// RemoveTag removes the tag from the current VM.
-	RemoveTag(tagID string, retries ...RetryStrategy) (err error)
+	RemoveTag(tagID TagID, retries ...RetryStrategy) (err error)
 	// ListTags lists the tags attached to the current VM.
 	ListTags(retries ...RetryStrategy) (result []Tag, err error)
 }
@@ -1731,7 +1731,7 @@ type vm struct {
 	status          VMStatus
 	cpu             *vmCPU
 	memory          int64
-	tagIDs          []string
+	tagIDs          []TagID
 	hugePages       *VMHugePages
 	initialization  Initialization
 	hostID          *HostID
@@ -1754,11 +1754,11 @@ func (v *vm) InstanceTypeID() *InstanceTypeID {
 	return v.instanceTypeID
 }
 
-func (v *vm) AddTag(tagID string, retries ...RetryStrategy) (err error) {
+func (v *vm) AddTag(tagID TagID, retries ...RetryStrategy) (err error) {
 	return v.client.AddTagToVM(v.id, tagID, retries...)
 }
 
-func (v *vm) RemoveTag(tagID string, retries ...RetryStrategy) (err error) {
+func (v *vm) RemoveTag(tagID TagID, retries ...RetryStrategy) (err error) {
 	return v.client.RemoveTagFromVM(v.id, tagID, retries...)
 }
 
@@ -1948,7 +1948,7 @@ func (v *vm) Name() string {
 	return v.name
 }
 
-func (v *vm) TagIDs() []string {
+func (v *vm) TagIDs() []TagID {
 	return v.tagIDs
 }
 
@@ -1964,7 +1964,7 @@ func (v *vm) Tags(retries ...RetryStrategy) ([]Tag, error) {
 	return tags, nil
 }
 
-func (v *vm) AddTagToVM(tagID string, retries ...RetryStrategy) error {
+func (v *vm) AddTagToVM(tagID TagID, retries ...RetryStrategy) error {
 	return v.client.AddTagToVM(v.id, tagID, retries...)
 }
 func (v *vm) AddTagToVMByName(tagName string, retries ...RetryStrategy) error {
@@ -2192,10 +2192,10 @@ func vmInitializationConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 }
 
 func vmTagsConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
-	var tagIDs []string
+	var tagIDs []TagID
 	if sdkTags, ok := sdkObject.Tags(); ok {
 		for _, tag := range sdkTags.Slice() {
-			tagID, _ := tag.Id()
+			tagID := TagID(tag.MustId())
 			tagIDs = append(tagIDs, tagID)
 		}
 	}

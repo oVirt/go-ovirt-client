@@ -6,7 +6,7 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-func (o *oVirtClient) AddTagToVM(id VMID, tagID string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) AddTagToVM(id VMID, tagID TagID, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("adding tag %s to VM %s", tagID, id),
@@ -14,7 +14,7 @@ func (o *oVirtClient) AddTagToVM(id VMID, tagID string, retries ...RetryStrategy
 		retries,
 		func() error {
 			_, err := o.conn.SystemService().VmsService().VmService(string(id)).TagsService().Add().
-				Tag(ovirtsdk.NewTagBuilder().Id(tagID).MustBuild()).Send()
+				Tag(ovirtsdk.NewTagBuilder().Id(string(tagID)).MustBuild()).Send()
 
 			if err != nil {
 				return err
@@ -24,7 +24,7 @@ func (o *oVirtClient) AddTagToVM(id VMID, tagID string, retries ...RetryStrategy
 	return
 }
 
-func (m *mockClient) AddTagToVM(id VMID, tagID string, retries ...RetryStrategy) (err error) {
+func (m *mockClient) AddTagToVM(id VMID, tagID TagID, _ ...RetryStrategy) (err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

@@ -38,7 +38,7 @@ type mockClient struct {
 	vmDiskAttachmentsByDisk           map[DiskID]*diskAttachment
 	templateDiskAttachmentsByTemplate map[TemplateID][]*templateDiskAttachment
 	templateDiskAttachmentsByDisk     map[DiskID]*templateDiskAttachment
-	tags                              map[string]*tag
+	tags                              map[TagID]*tag
 	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
 	vmIPs                             map[VMID]map[string][]net.IP
 	instanceTypes                     map[InstanceTypeID]*instanceType

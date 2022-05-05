@@ -4,20 +4,20 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) RemoveTag(tagID string, retries ...RetryStrategy) (err error) {
+func (o *oVirtClient) RemoveTag(tagID TagID, retries ...RetryStrategy) (err error) {
 	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	err = retry(
 		fmt.Sprintf("removing tag %s", tagID),
 		o.logger,
 		retries,
 		func() error {
-			_, err := o.conn.SystemService().TagsService().TagService(tagID).Remove().Send()
+			_, err := o.conn.SystemService().TagsService().TagService(string(tagID)).Remove().Send()
 			return err
 		})
 	return
 }
 
-func (m *mockClient) RemoveTag(id string, _ ...RetryStrategy) (err error) {
+func (m *mockClient) RemoveTag(id TagID, _ ...RetryStrategy) (err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
