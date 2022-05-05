@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func (o *oVirtClient) GetDatacenter(id string, retries ...RetryStrategy) (result Datacenter, err error) {
+func (o *oVirtClient) GetDatacenter(id DatacenterID, retries ...RetryStrategy) (result Datacenter, err error) {
 	retries = defaultRetries(retries, defaultReadTimeouts(o))
 	err = retry(
 		fmt.Sprintf("getting datacenter %s", id),
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().DataCentersService().DataCenterService(id).Get().Send()
+			response, err := o.conn.SystemService().DataCentersService().DataCenterService(string(id)).Get().Send()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (o *oVirtClient) GetDatacenter(id string, retries ...RetryStrategy) (result
 	return
 }
 
-func (m *mockClient) GetDatacenter(id string, _ ...RetryStrategy) (Datacenter, error) {
+func (m *mockClient) GetDatacenter(id DatacenterID, _ ...RetryStrategy) (Datacenter, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if item, ok := m.dataCenters[id]; ok {

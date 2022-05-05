@@ -4,23 +4,26 @@ import (
 	ovirtsdk4 "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "DataCenter" -n "datacenter" -o "Datacenter"
+//go:generate go run scripts/rest/rest.go -i "DataCenter" -n "datacenter" -o "Datacenter" -T DatacenterID
+
+// DatacenterID is the UUID of a datacenter.
+type DatacenterID string
 
 // DatacenterClient contains the functions related to handling datacenter objects in oVirt. Datacenters bind together
 // resources of an environment (clusters, storage domains).
 // See https://www.ovirt.org/documentation/administration_guide/#chap-Data_Centers for details.
 type DatacenterClient interface {
 	// GetDatacenter returns a single datacenter by its ID.
-	GetDatacenter(id string, retries ...RetryStrategy) (Datacenter, error)
+	GetDatacenter(id DatacenterID, retries ...RetryStrategy) (Datacenter, error)
 	// ListDatacenters lists all datacenters in the oVirt engine.
 	ListDatacenters(retries ...RetryStrategy) ([]Datacenter, error)
 	// ListDatacenterClusters lists all clusters in the specified datacenter.
-	ListDatacenterClusters(id string, retries ...RetryStrategy) ([]Cluster, error)
+	ListDatacenterClusters(id DatacenterID, retries ...RetryStrategy) ([]Cluster, error)
 }
 
 // DatacenterData is the core of a Datacenter when client functions are not required.
 type DatacenterData interface {
-	ID() string
+	ID() DatacenterID
 	Name() string
 }
 
@@ -47,7 +50,7 @@ func convertSDKDatacenter(sdkObject *ovirtsdk4.DataCenter, client *oVirtClient) 
 
 	return &datacenter{
 		client: client,
-		id:     id,
+		id:     DatacenterID(id),
 		name:   name,
 	}, nil
 }
@@ -55,7 +58,7 @@ func convertSDKDatacenter(sdkObject *ovirtsdk4.DataCenter, client *oVirtClient) 
 type datacenter struct {
 	client Client
 
-	id   string
+	id   DatacenterID
 	name string
 }
 
@@ -76,7 +79,7 @@ func (d datacenter) HasCluster(clusterID ClusterID, retries ...RetryStrategy) (b
 	return false, nil
 }
 
-func (d datacenter) ID() string {
+func (d datacenter) ID() DatacenterID {
 	return d.id
 }
 

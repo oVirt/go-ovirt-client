@@ -105,7 +105,7 @@ func getClient(
 		networks: map[NetworkID]*network{
 			testNetwork.ID(): testNetwork,
 		},
-		dataCenters: map[string]*datacenterWithClusters{
+		dataCenters: map[DatacenterID]*datacenterWithClusters{
 			testDatacenter.ID(): testDatacenter,
 		},
 		vmDiskAttachmentsByVM:   map[VMID]map[string]*diskAttachment{},
@@ -174,7 +174,7 @@ func generateTestNetwork(testDatacenter *datacenterWithClusters) *network {
 func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
 	return &datacenterWithClusters{
 		datacenter: datacenter{
-			id:   uuid.NewString(),
+			id:   DatacenterID(uuid.NewString()),
 			name: "test",
 		},
 		clusters: []ClusterID{
