@@ -338,6 +338,7 @@ func (m *mockClient) CreateVM(
 			}
 
 			m.vmIPs[vm.id] = map[string][]net.IP{}
+			m.addGraphicsConsoles(vm)
 
 			result = vm
 			return nil
@@ -345,6 +346,21 @@ func (m *mockClient) CreateVM(
 	)
 
 	return result, err
+}
+
+func (m *mockClient) addGraphicsConsoles(vm *vm) {
+	m.graphicsConsolesByVM[vm.id] = []*vmGraphicsConsole{
+		{
+			client: m,
+			id:     VMGraphicsConsoleID(m.GenerateUUID()),
+			vmID:   vm.id,
+		},
+		{
+			client: m,
+			id:     VMGraphicsConsoleID(m.GenerateUUID()),
+			vmID:   vm.id,
+		},
+	}
 }
 
 func (m *mockClient) createVM(

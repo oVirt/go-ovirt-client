@@ -40,6 +40,7 @@ type Client interface {
 	TagClient
 	FeatureClient
 	InstanceTypeClient
+	GraphicsConsoleClient
 }
 
 // ClientWithLegacySupport is an extension of Client that also offers the ability to retrieve the underlying

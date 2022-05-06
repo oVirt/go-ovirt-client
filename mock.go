@@ -42,6 +42,7 @@ type mockClient struct {
 	affinityGroups                    map[ClusterID]map[AffinityGroupID]*affinityGroup
 	vmIPs                             map[VMID]map[string][]net.IP
 	instanceTypes                     map[InstanceTypeID]*instanceType
+	graphicsConsolesByVM              map[VMID][]*vmGraphicsConsole
 }
 
 func (m *mockClient) WithContext(ctx context.Context) Client {
@@ -69,6 +70,7 @@ func (m *mockClient) WithContext(ctx context.Context) Client {
 		m.affinityGroups,
 		m.vmIPs,
 		m.instanceTypes,
+		m.graphicsConsolesByVM,
 	}
 }
 
