@@ -555,15 +555,15 @@ func getMockHelper(logger ovirtclientlog.Logger) TestHelper {
 //
 //   OVIRT_URL
 //
-// URL of the oVirt engine.
+// URL of the oVirt engine. Mandatory.
 //
 //   OVIRT_USERNAME
 //
-// The username for the oVirt engine.
+// The username for the oVirt engine. Mandatory.
 //
 //   OVIRT_PASSWORD
 //
-// The password for the oVirt engine
+// The password for the oVirt engine. Mandatory.
 //
 //   OVIRT_CAFILE
 //
@@ -603,6 +603,9 @@ func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) 
 		return nil, fmt.Errorf("the OVIRT_USER environment variable must not be empty")
 	}
 	password := os.Getenv("OVIRT_PASSWORD")
+	if password == "" {
+		return nil, fmt.Errorf("the OVIRT_PASSWORD environment variable must not be empty")
+	}
 
 	params := TestHelperParams()
 	params.WithClusterID(ClusterID(os.Getenv("OVIRT_CLUSTER_ID")))
