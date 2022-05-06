@@ -117,8 +117,9 @@ func getClient(
 		affinityGroups: map[ClusterID]map[AffinityGroupID]*affinityGroup{
 			testCluster.ID(): {},
 		},
-		vmIPs:         map[VMID]map[string][]net.IP{},
-		instanceTypes: nil,
+		vmIPs:                map[VMID]map[string][]net.IP{},
+		instanceTypes:        nil,
+		graphicsConsolesByVM: map[VMID][]*vmGraphicsConsole{},
 	}
 	client.instanceTypes = getInstanceTypes(client)
 	return client

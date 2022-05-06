@@ -521,6 +521,9 @@ type VM interface {
 	RemoveTag(tagID TagID, retries ...RetryStrategy) (err error)
 	// ListTags lists the tags attached to the current VM.
 	ListTags(retries ...RetryStrategy) (result []Tag, err error)
+
+	// ListGraphicsConsoles lists the graphics consoles on the VM.
+	ListGraphicsConsoles(retries ...RetryStrategy) ([]VMGraphicsConsole, error)
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -1740,6 +1743,10 @@ type vm struct {
 	instanceTypeID  *InstanceTypeID
 	vmType          VMType
 	os              *vmOS
+}
+
+func (v *vm) ListGraphicsConsoles(retries ...RetryStrategy) ([]VMGraphicsConsole, error) {
+	return v.client.ListVMGraphicsConsoles(v.id, retries...)
 }
 
 func (v *vm) OS() VMOS {
