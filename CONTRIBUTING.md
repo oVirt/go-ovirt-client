@@ -51,8 +51,10 @@ You can run the tests against the mock backend simply by running:
 
 ```
 go generate
-go test -v ./...
+go test -v -client=mock ./...
 ```
+
+If you don't specify `-client`, it will default to `all` and run each test against the mock backend as well as the live oVirt engine.  
 
 Before you submit, we would like to ask you to run your tests against the live oVirt engine as we do not have one integrated with the CI at the moment. You can do so by running tests as follows:
 
@@ -73,11 +75,10 @@ OVIRT_SYSTEM=1
 # OVIRT_INSECURE=1
 
 # Run the tests
-go test -v ./...
+go test -v -client=live ./...
 ```
 
 If you want to connect to a live oVirt engine you need to define these environment variables.
-If the variables are not defined, the test will run against the internal mock backend.
 To get a PR merged please run your tests against both the mock and the live backend.
 
 In the test code you can then obtain the test helper using the `getHelper(t)` function:
@@ -86,7 +87,7 @@ In the test code you can then obtain the test helper using the `getHelper(t)` fu
 helper := getHelper(t)
 ```
 
-The client is then available using the `helper.GetClient()` function.
+The client is then available using the `helper.GetClient()` function. 
 
 ## Submitting a PR
 

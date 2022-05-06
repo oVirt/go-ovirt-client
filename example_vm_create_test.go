@@ -11,7 +11,10 @@ import (
 // using the test helper, but can be easily modified to use the client directly.
 func ExampleVMClient_create() {
 	// Create the helper for testing. Alternatively, you could create a production client with ovirtclient.New()
-	helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+	helper, err := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+	if err != nil {
+		panic(fmt.Errorf("failed to create live test helper (%w)", err))
+	}
 	// Get the oVirt client
 	client := helper.GetClient()
 

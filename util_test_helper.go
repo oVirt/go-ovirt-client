@@ -483,58 +483,8 @@ func (t *testHelper) GenerateRandomID(length uint) string {
 	return generateRandomID(length, t.rand)
 }
 
-// NewTestHelperFromEnv attempts to create a live test helper from environment variables and falls back
-// to the internal mock implementation if it fails.
-//
-//   OVIRT_URL
-//
-// URL of the oVirt engine.
-//
-//   OVIRT_USERNAME
-//
-// The username for the oVirt engine.
-//
-//   OVIRT_PASSWORD
-//
-// The password for the oVirt engine
-//
-//   OVIRT_CAFILE
-//
-// A file containing the CA certificate in PEM format.
-//
-//   OVIRT_CA_BUNDLE
-//
-// Provide the CA certificate in PEM format directly.
-//
-//   OVIRT_INSECURE
-//
-// Disable certificate verification if set. Not recommended.
-//
-//   OVIRT_CLUSTER_ID
-//
-// The cluster to use for testing. Will be automatically chosen if not provided.
-//
-//   OVIRT_BLANK_TEMPLATE_ID
-//
-// ID of the blank template. Will be automatically chosen if not provided.
-//
-//   OVIRT_STORAGE_DOMAIN_ID
-//
-// Storage domain to use for testing. Will be automatically chosen if not provided.
-//
-//   OVIRT_VNIC_PROFILE_ID
-//
-// VNIC profile to use for testing. Will be automatically chosen if not provided.
-func NewTestHelperFromEnv(logger ovirtclientlog.Logger) TestHelper {
-	liveHelper, err := NewLiveTestHelperFromEnv(logger)
-	if err == nil {
-		return liveHelper
-	}
-	logger.Warningf("🚧 Warning: failed to create live helper for tests, falling back to mock backend. (%v)", err)
-	return getMockHelper(logger)
-}
-
-func getMockHelper(logger ovirtclientlog.Logger) TestHelper {
+// NewMockTestHelper creates a test helper with a mocked oVirt engine in the backend.
+func NewMockTestHelper(logger ovirtclientlog.Logger) (TestHelper, error) {
 	helper, err := NewTestHelper(
 		"https://localhost/ovirt-engine/api",
 		"admin@internal",
@@ -545,9 +495,9 @@ func getMockHelper(logger ovirtclientlog.Logger) TestHelper {
 		logger,
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return helper
+	return helper, nil
 }
 
 // NewLiveTestHelperFromEnv is a function that creates a test helper working against a live (not mock)
@@ -593,7 +543,7 @@ func getMockHelper(logger ovirtclientlog.Logger) TestHelper {
 //
 // VNIC profile to use for testing. Will be automatically chosen if not provided.
 func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) {
-	// Note: if this function changes please update the documentation above, NewTestHelperFromEnv, and also doc.go.
+	// Note: if this function changes please update the documentation above and also doc.go.
 	url, tls, err := getConnectionParametersForLiveTesting()
 	if err != nil {
 		return nil, err
@@ -630,7 +580,7 @@ func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) 
 }
 
 func getConnectionParametersForLiveTesting() (string, TLSProvider, error) {
-	// Note: if this function changes please update the documentation above, NewTestHelperFromEnv, and also doc.go.
+	// Note: if this function changes please update the documentation above and also doc.go.
 	url := os.Getenv("OVIRT_URL")
 	if url == "" {
 		return "", nil, fmt.Errorf("the OVIRT_URL environment variable must not be empty")

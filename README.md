@@ -92,11 +92,17 @@ The test helper can work in two ways:
 Either it sets up test fixtures in the mock client, or it sets up a live connection and identifies a usable storage
 domain, cluster, etc. for testing purposes.
 
-The easiest way to set up the test helper is using environment variables. To do that, you can use the
-`ovirtclient.NewTestHelperFromEnv()` function:
+The ovirtclient.NewMockTestHelper() function can be used to create a test helper with a mock client in the backend:
 
 ```go
-helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+helper := ovirtclient.NewMockTestHelper(ovirtclientlog.NewNOOPLogger())
+```
+
+The easiest way to set up the test helper for a live connection is by using environment variables. To do that, you 
+can use the `ovirtclient.NewLiveTestHelperFromEnv()` function:
+
+```go
+helper := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
 ```
 
 This function will inspect environment variables to determine if a connection to a live oVirt engine can be estabilshed.
@@ -144,7 +150,7 @@ func TestSomething(t *testing.T) {
 		"https://localhost/ovirt-engine/api",
 		"admin@internal",
 		"super-secret",
-		// Leave these empty for auto-detection /fixture setup
+		// Leave these empty for auto-detection / fixture setup
 		params,
 		ovirtclient.TLS().CACertsFromSystem(),
 		isMock,

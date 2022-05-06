@@ -31,7 +31,10 @@ func ExampleDiskClient_uploadImage() {
 	}
 
 	// Obtain oVirt client. Alternatively, you can call ovirtclient.New() to do this directly.
-	helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+	helper, err := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+	if err != nil {
+		panic(fmt.Errorf("failed to create live test helper (%w)", err))
+	}
 	client := helper.GetClient()
 
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
@@ -70,7 +73,10 @@ func ExampleDiskClient_uploadImageWithCancel() {
 	}
 
 	// Obtain oVirt client. Alternatively, you can call ovirtclient.New() to do this directly.
-	helper := ovirtclient.NewTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+	helper, err := ovirtclient.NewLiveTestHelperFromEnv(ovirtclientlog.NewNOOPLogger())
+	if err != nil {
+		panic(fmt.Errorf("failed to create live test helper (%w)", err))
+	}
 	client := helper.GetClient()
 
 	imageName := fmt.Sprintf("client_test_%s", helper.GenerateRandomID(5))
