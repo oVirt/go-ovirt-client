@@ -14,7 +14,10 @@ func ExampleDiskClient_CreateDisk() {
 	// Create a logger. This can be adapter to use your own logger.
 	logger := ovirtclientlog.NewNOOPLogger()
 	// Create the test helper. This will give us our test storage domain.
-	helper := ovirtclient.NewTestHelperFromEnv(logger)
+	helper, err := ovirtclient.NewMockTestHelper(logger)
+	if err != nil {
+		panic(fmt.Errorf("failed to create mock test helper (%w)", err))
+	}
 	// Create the client. Replace with ovirtclient.New() for production use.
 	client := helper.GetClient()
 
