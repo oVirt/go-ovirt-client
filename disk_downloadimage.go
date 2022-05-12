@@ -240,6 +240,9 @@ func (i *imageDownload) Read(p []byte) (n int, err error) {
 	if i.lastError != nil {
 		return 0, i.lastError
 	}
+	if i.reader == nil {
+		return 0, newError(EBug, "reader is not available")
+	}
 	n, err = i.reader.Read(p)
 	i.lock.Lock()
 	defer i.lock.Unlock()

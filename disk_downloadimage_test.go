@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
@@ -43,6 +44,8 @@ func TestImageDownload(t *testing.T) {
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to upload image (%w)", err))
 	}
+
+	time.Sleep(5 * time.Second)
 
 	data := downloadImage(t, client, uploadResult)
 
