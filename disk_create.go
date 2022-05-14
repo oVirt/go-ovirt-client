@@ -25,10 +25,8 @@ func (o *oVirtClient) StartCreateDisk(
 	correlationID := ""
 	if params != nil && params.Alias() != "" {
 		processName = fmt.Sprintf("creating disk %s", params.Alias())
-		correlationID = fmt.Sprintf("disk_create_%s", params.Alias())
-	} else {
-		correlationID = fmt.Sprintf("disk_create_%s", generateRandomID(5, o.nonSecureRandom))
 	}
+	correlationID = fmt.Sprintf("disk_create_%s", generateRandomID(5, o.nonSecureRandom))
 	err := retry(
 		processName,
 		o.logger,
