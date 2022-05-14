@@ -88,6 +88,9 @@ const EHotPlugFailed ErrorCode = "hot_plug_failed"
 // and retry the API call.
 const EInvalidGrant ErrorCode = "invalid_grant"
 
+// ECannotRunVM indicates an error with the VM configuration which prevents it from being run.
+const ECannotRunVM ErrorCode = "cannot_run_vm"
+
 // CanRecover returns true if there is a way to automatically recoverFailure from this error. For the actual recovery an
 // appropriate recovery strategy must be passed to the retry function.
 func (e ErrorCode) CanRecover() bool {
@@ -123,6 +126,8 @@ func (e ErrorCode) CanAutoRetry() bool {
 	case EPermanentHTTPError:
 		return false
 	case EUnexpectedDiskStatus:
+		return false
+	case ECannotRunVM:
 		return false
 	default:
 		return true
@@ -257,6 +262,12 @@ func realIdentify(err error) EngineError {
 	var authErr *ovirtsdk.AuthError
 	var notFoundErr *ovirtsdk.NotFoundError
 	switch {
+	case strings.Contains(err.Error(), "Cannot run VM without at least one bootable disk."):
+		return wrap(
+			err,
+			ECannotRunVM,
+			"cannot run VM due to a missing bootable disk",
+		)
 	case strings.Contains(err.Error(), "Physical Memory Guaranteed cannot exceed Memory Size"):
 		return wrap(
 			err,
