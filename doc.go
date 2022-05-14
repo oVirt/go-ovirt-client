@@ -23,7 +23,7 @@ There are several ways to create a client instance. The most basic way is to use
         // Password
         "super-secret",
         // Pull CA certificates from the operating system.
-        // This won't work on Windows. See below for an extended example.
+        // This won't work on Windows before Go 1.18. See below for an extended example.
         ovirtclient.TLS().CACertsFromSystem(),
         // Don't log.
         ovirtclientlog.NewNOOPLogger(),

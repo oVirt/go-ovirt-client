@@ -47,7 +47,7 @@ func main() {
 		regexp.MustCompile(`\.pem`),
 	)
 
-	// Add system certificates. This doesn't work on Windows.
+	// Add system certificates. This doesn't work on Windows before Go 1.18.
 	tls.CACertsFromSystem()
 
 	// Add a custom cert pool as a source of certificates. This option is

@@ -276,7 +276,7 @@ func (s *standardTLSProvider) createCertPool() (*x509.CertPool, error) {
 
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
-		// This is the case on Windows where the system certificate pool is not available.
+		// This is the case on Windows before go 1.18 where the system certificate pool is not available.
 		// See https://github.com/golang/go/issues/16736
 		return nil, wrap(err, ETLSError, "system cert pool not available")
 	}

@@ -38,7 +38,7 @@ var testImageDownloadHTTPClient = &http.Client{
 func getTestImageDownloadCertPool() *x509.CertPool {
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
-		// This will happen on Windows where system pools are not supported.
+		// This will happen on Windows where system pools are not supported before Go 1.18.
 		certPool = x509.NewCertPool()
 		certPool.AppendCertsFromPEM(gitHubCerts)
 	}
