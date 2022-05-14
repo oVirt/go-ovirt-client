@@ -22,7 +22,7 @@ func ExampleTLS() {
 	// names.
 	tls.CACertsFromDir("/path/to/certs", regexp.MustCompile(`\.pem`))
 
-	// Add system certificates. This does not work on Windows.
+	// Add system certificates. This does not work on Windows before Go 1.18.
 	tls.CACertsFromSystem()
 
 	// Disable certificate verification. This is a bad idea.
