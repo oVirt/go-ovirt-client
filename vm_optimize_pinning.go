@@ -3,6 +3,7 @@ package ovirtclient
 import "fmt"
 
 func (o *oVirtClient) AutoOptimizeVMCPUPinningSettings(id VMID, optimize bool, retries ...RetryStrategy) error {
+	retries = defaultRetries(retries, defaultWriteTimeouts(o))
 	return retry(
 		fmt.Sprintf("optimizing CPU pinning settings for VM %s", id),
 		o.logger,
