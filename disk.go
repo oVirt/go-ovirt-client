@@ -315,6 +315,11 @@ func (u *updateDiskParams) ProvisionedSize() *uint64 {
 }
 
 func (u *updateDiskParams) WithProvisionedSize(size uint64) (BuildableUpdateDiskParameters, error) {
+	err := validateDiskSize(size)
+	if err != nil {
+		return u, err
+	}
+
 	u.provisionedSize = &size
 	return u, nil
 }
