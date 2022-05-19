@@ -15,7 +15,7 @@ import (
 
 // Deprecated: use StartDownloadDisk instead.
 func (o *oVirtClient) StartImageDownload(diskID DiskID, format ImageFormat, retries ...RetryStrategy) (ImageDownload, error) {
-	o.logger.Debugf("Using StartImageDownload is deprecated, please use StartDownloadDisk instead.")
+	o.logger.Warningf("Using StartImageDownload is deprecated, please use StartDownloadDisk instead.")
 	return o.StartDownloadDisk(diskID, format, retries...)
 }
 
@@ -58,7 +58,7 @@ func (o *oVirtClient) DownloadImage(diskID DiskID, format ImageFormat, retries .
 	ImageDownloadReader,
 	error,
 ) {
-	o.logger.Debugf("Using DownloadImage is deprecated, please use DownloadDisk instead.")
+	o.logger.Warningf("Using DownloadImage is deprecated, please use DownloadDisk instead.")
 	return o.DownloadDisk(diskID, format, retries...)
 }
 

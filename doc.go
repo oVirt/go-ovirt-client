@@ -152,14 +152,7 @@ Logging
 
 This library provides extensive logging. Each API interaction is logged on the debug level, and other messages are
 added on other levels. In order to provide logging this library uses the go-ovirt-client-log
-(https://github.com/oVirt/go-ovirt-client-log) interface definition:
-
-    type Logger interface {
-        Debugf(format string, args ...interface{})
-        Infof(format string, args ...interface{})
-        Warningf(format string, args ...interface{})
-        Errorf(format string, args ...interface{})
-    }
+(https://github.com/oVirt/go-ovirt-client-log) interface definition.
 
 As long as your logger implements this interface, you will be able to receive log messages. The logging
 library also provides a few built-in loggers. For example, you can log via the default Go log interface:

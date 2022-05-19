@@ -33,16 +33,16 @@ func retry(
 	if logger == nil {
 		logger = &noopLogger{}
 	}
-	logger.Debugf("%s%s...", strings.ToUpper(action[:1]), action[1:])
+	logger.Infof("%s%s...", strings.ToUpper(action[:1]), action[1:])
 	for {
 		err := what()
 		if err == nil {
-			logger.Debugf("Completed %s.", action)
+			logger.Infof("Completed %s.", action)
 			return nil
 		}
 		for _, r := range retries {
 			if err := r.Continue(err, action); err != nil {
-				logger.Debugf("Giving up %s (%v)", action, err)
+				logger.Infof("Giving up %s (%v)", action, err)
 				return err
 			}
 		}
@@ -76,7 +76,7 @@ func retry(
 		}
 		chosen, _, _ := reflect.Select(chans)
 		if err := retries[chosen].OnWaitExpired(err, action); err != nil {
-			logger.Debugf("Giving up %s (%v)", action, err)
+			logger.Infof("Giving up %s (%v)", action, err)
 			return err
 		}
 	}
@@ -101,7 +101,7 @@ func recoverFailure(action string, retries []RetryInstance, err error, logger ov
 		// the errors don't match. If the errors match the retry strategy couldn't do anything with the error.
 		// Do not change this to errors.Is!
 		case recoveredErr != err: //nolint:errorlint
-			logger.Debugf("Error encountered during automatic recovery of %s (%v).", action, recoveredErr)
+			logger.Errorf("Error encountered during automatic recovery of %s (%v).", action, recoveredErr)
 			return false
 		}
 	}
