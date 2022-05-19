@@ -67,10 +67,12 @@ func validateDiskCreationParameters(format ImageFormat, size uint64) error {
 	if err := format.Validate(); err != nil {
 		return err
 	}
-	if size < 1048576 {
-		// 1M is the minimum size for disks in oVirt. Smaller disks can be created, but they lead to bugs in oVirt
-		// when creating disks from templates and changing the format.
-		return newError(EBadArgument, "Disk size must be at least 1048576 bytes (1 MB)")
+	return validateDiskSize(size)
+}
+
+func validateDiskSize(size uint64) error {
+	if size < MinDiskSizeOVirt {
+		return newError(EBadArgument, "Disk size must be at least %d bytes (1 MB)", MinDiskSizeOVirt)
 	}
 	return nil
 }
