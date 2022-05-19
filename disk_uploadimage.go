@@ -24,7 +24,7 @@ func (o *oVirtClient) UploadImage(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageResult, error) {
-	o.logger.Debugf("Using UploadImage is deprecated. Please use UploadToNewDisk instead.")
+	o.logger.Warningf("Using UploadImage is deprecated. Please use UploadToNewDisk instead.")
 	return o.UploadToNewDisk(
 		storageDomainID,
 		"",
@@ -64,7 +64,7 @@ func (o *oVirtClient) StartImageUpload(
 	reader io.ReadSeekCloser,
 	retries ...RetryStrategy,
 ) (UploadImageProgress, error) {
-	o.logger.Debugf("Using StartImageUpload is deprecated. Please use StartUploadToNewDisk instead.")
+	o.logger.Warningf("Using StartImageUpload is deprecated. Please use StartUploadToNewDisk instead.")
 	return o.StartUploadToNewDisk(
 		storageDomainID,
 		"",
@@ -386,8 +386,8 @@ func (u *uploadToNewDiskProgress) Do() {
 	u.lock.Unlock()
 
 	if err != nil {
-		u.client.logger.Debugf("Image upload to new disk failed, removing created disk (%v)", err)
-		if err := disk.Remove(u.retries...); err != nil {
+		u.client.logger.Infof("Image upload to new disk failed, removing created disk (%v)", err)
+		if err := disk.Remove(u.retries...); err != nil && !HasErrorCode(err, ENotFound) {
 			u.client.logger.Warningf(
 				"Failed to remove newly created disk %s after failed image upload, please remove manually. (%v)",
 				disk.ID(),
