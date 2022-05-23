@@ -503,7 +503,7 @@ func (m *mockClient) updateDiskParams(
 			m.logger.Warningf(
 				"the VM creation client requested a conversion from from %s to %s; the mock library does not support this and the source image data will be used unmodified which may lead to errors",
 				disk.format,
-				format,
+				*format,
 			)
 			disk.format = *format
 		}
