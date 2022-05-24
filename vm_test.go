@@ -499,6 +499,34 @@ func TestGuaranteedMemory(t *testing.T) {
 	}
 }
 
+func TestMaxMemory(t *testing.T) {
+	helper := getHelper(t)
+	expectedMax := int64(2 * 1024 * 1024 * 1024)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.
+			NewCreateVMParams().
+			WithMemoryPolicy(
+				ovirtclient.
+					NewMemoryPolicyParameters().
+					MustWithMax(expectedMax),
+			).MustWithMemory(expectedMax),
+	)
+	memoryPolicy, ok := vm.MemoryPolicy()
+	if !ok {
+		t.Fatalf("Memory policy is not set on VM.")
+	}
+	max := memoryPolicy.Max()
+	if max == nil {
+		t.Fatalf("Guaranteed memory is not set on VM.")
+	}
+	if *max != expectedMax {
+		t.Fatalf("Incorrect max memory value (expected: %d, got: %d)", expectedMax, *max)
+	}
+}
+
 func checkVMDiskSparseness(t *testing.T, checkVM ovirtclient.VM, sparse bool, message string) {
 	t.Helper()
 	diskAttachments, err := checkVM.ListDiskAttachments()

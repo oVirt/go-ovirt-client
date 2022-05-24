@@ -223,6 +223,9 @@ func vmBuilderMemoryPolicy(params OptionalVMParameters, builder *ovirtsdk.VmBuil
 		if guaranteed := (*memPolicyParams).Guaranteed(); guaranteed != nil {
 			memoryPolicyBuilder.Guaranteed(*guaranteed)
 		}
+		if max := (*memPolicyParams).Max(); max != nil {
+			memoryPolicyBuilder.Max(*max)
+		}
 		builder.MemoryPolicyBuilder(memoryPolicyBuilder)
 	}
 }
@@ -415,8 +418,13 @@ func (m *mockClient) createVMMemoryPolicy(params OptionalVMParameters) *memoryPo
 		if guaranteedMemory := (*memoryPolicyParams).Guaranteed(); guaranteedMemory != nil {
 			guaranteed = guaranteedMemory
 		}
+		var max *int64
+		if maxMemory := (*memoryPolicyParams).Max(); maxMemory != nil {
+			max = maxMemory
+		}
 		memPolicy = &memoryPolicy{
 			guaranteed,
+			max,
 		}
 	}
 	return memPolicy
