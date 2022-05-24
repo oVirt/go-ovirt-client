@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
+	"regexp"
 	"testing"
 	"time"
 
@@ -436,8 +436,10 @@ type testHelper struct {
 	username                 string
 }
 
+var resourceNameRe = regexp.MustCompile(`[^a-zA-Z\d_.-]`)
+
 func (t *testHelper) GenerateTestResourceName(test *testing.T) string {
-	return strings.ReplaceAll(fmt.Sprintf("%s-%s", test.Name(), t.GenerateRandomID(5)), "/", "_")
+	return resourceNameRe.ReplaceAllString(fmt.Sprintf("%s-%s", test.Name(), t.GenerateRandomID(5)), "_")
 }
 
 func (t *testHelper) GetUsername() string {

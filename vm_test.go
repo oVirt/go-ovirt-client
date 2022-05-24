@@ -471,6 +471,22 @@ func TestVMCreationWithSparseDisks(t *testing.T) {
 	)
 }
 
+func TestMemoryPolicyDefaults(t *testing.T) {
+	helper := getHelper(t)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		nil,
+	)
+	// Test if memory policy is correctly set
+	memoryPolicy := vm.MemoryPolicy()
+	if memoryPolicy == nil {
+		t.Fatalf("Memory policy was not set.")
+	}
+
+}
+
 func TestGuaranteedMemory(t *testing.T) {
 	helper := getHelper(t)
 	expectedGuaranteed := int64(2 * 1024 * 1024 * 1024)
@@ -486,10 +502,7 @@ func TestGuaranteedMemory(t *testing.T) {
 					MustWithGuaranteed(expectedGuaranteed),
 			).MustWithMemory(expectedGuaranteed),
 	)
-	memoryPolicy, ok := vm.MemoryPolicy()
-	if !ok {
-		t.Fatalf("Memory policy is not set on VM.")
-	}
+	memoryPolicy := vm.MemoryPolicy()
 	guaranteed := memoryPolicy.Guaranteed()
 	if guaranteed == nil {
 		t.Fatalf("Guaranteed memory is not set on VM.")
@@ -514,10 +527,7 @@ func TestMaxMemory(t *testing.T) {
 					MustWithMax(expectedMax),
 			).MustWithMemory(expectedMax),
 	)
-	memoryPolicy, ok := vm.MemoryPolicy()
-	if !ok {
-		t.Fatalf("Memory policy is not set on VM.")
-	}
+	memoryPolicy := vm.MemoryPolicy()
 	max := memoryPolicy.Max()
 	if max == nil {
 		t.Fatalf("Guaranteed memory is not set on VM.")
@@ -525,6 +535,58 @@ func TestMaxMemory(t *testing.T) {
 	if *max != expectedMax {
 		t.Fatalf("Incorrect max memory value (expected: %d, got: %d)", expectedMax, *max)
 	}
+}
+
+func TestBallooning(t *testing.T) {
+	truePointer := true
+	falsePointer := false
+	testCases := []struct {
+		name     string
+		set      *bool
+		expected bool
+	}{
+		{
+			"empty",
+			nil,
+			true,
+		},
+		{
+			"true",
+			&truePointer,
+			true,
+		},
+		{
+			"false",
+			&falsePointer,
+			false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("ballooning=%s", testCase.name), func(t *testing.T) {
+			helper := getHelper(t)
+			params := ovirtclient.NewCreateVMParams()
+			if testCase.set != nil {
+				params = params.WithMemoryPolicy(
+					ovirtclient.
+						NewMemoryPolicyParameters().
+						MustWithBallooning(*testCase.set),
+				)
+			}
+			vm := assertCanCreateVM(
+				t,
+				helper,
+				helper.GenerateTestResourceName(t),
+				params,
+			)
+			memoryPolicy := vm.MemoryPolicy()
+			ballooning := memoryPolicy.Ballooning()
+			if ballooning != testCase.expected {
+				t.Fatalf("Incorrect ballooning value")
+			}
+		})
+	}
+
 }
 
 func checkVMDiskSparseness(t *testing.T, checkVM ovirtclient.VM, sparse bool, message string) {
