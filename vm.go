@@ -1119,6 +1119,7 @@ func (v vmPlacementPolicyParameters) MustWithHostIDs(hostIDs []HostID) Buildable
 // MemoryPolicyParameters contain the parameters for the memory policy setting on the VM.
 type MemoryPolicyParameters interface {
 	Guaranteed() *int64
+	Max() *int64
 }
 
 // BuildableMemoryPolicyParameters is a buildable version of MemoryPolicyParameters.
@@ -1127,6 +1128,9 @@ type BuildableMemoryPolicyParameters interface {
 
 	WithGuaranteed(guaranteed int64) (BuildableMemoryPolicyParameters, error)
 	MustWithGuaranteed(guaranteed int64) BuildableMemoryPolicyParameters
+
+	WithMax(max int64) (BuildableMemoryPolicyParameters, error)
+	MustWithMax(max int64) BuildableMemoryPolicyParameters
 }
 
 // NewMemoryPolicyParameters creates a new instance of BuildableMemoryPolicyParameters.
@@ -1136,6 +1140,7 @@ func NewMemoryPolicyParameters() BuildableMemoryPolicyParameters {
 
 type memoryPolicyParameters struct {
 	guaranteed *int64
+	max        *int64
 }
 
 func (m *memoryPolicyParameters) MustWithGuaranteed(guaranteed int64) BuildableMemoryPolicyParameters {
@@ -1155,14 +1160,38 @@ func (m *memoryPolicyParameters) WithGuaranteed(guaranteed int64) (BuildableMemo
 	return m, nil
 }
 
+func (m *memoryPolicyParameters) MustWithMax(max int64) BuildableMemoryPolicyParameters {
+	builder, err := m.WithMax(max)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (m *memoryPolicyParameters) Max() *int64 {
+	return m.max
+}
+
+func (m *memoryPolicyParameters) WithMax(max int64) (BuildableMemoryPolicyParameters, error) {
+	m.max = &max
+	return m, nil
+}
+
 // MemoryPolicy is the memory policy set on the VM.
 type MemoryPolicy interface {
 	// Guaranteed returns the number of guaranteed bytes to the VM.
 	Guaranteed() *int64
+	// Max returns the maximum amount of memory given to the VM.
+	Max() *int64
 }
 
 type memoryPolicy struct {
 	guaranteed *int64
+	max        *int64
+}
+
+func (m memoryPolicy) Max() *int64 {
+	return m.max
 }
 
 func (m memoryPolicy) Guaranteed() *int64 {
