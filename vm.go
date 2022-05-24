@@ -213,9 +213,8 @@ type VMData interface {
 	CPU() VMCPU
 	// Memory return the Memory of a VM in Bytes.
 	Memory() int64
-	// MemoryPolicy returns the memory policy set on the VM, if any. The second parameter returned is true if the
-	// memory policy is set.
-	MemoryPolicy() (MemoryPolicy, bool)
+	// MemoryPolicy returns the memory policy set on the VM.
+	MemoryPolicy() MemoryPolicy
 	// TagIDs returns a list of tags for this VM.
 	TagIDs() []TagID
 	// HugePages returns the hugepage settings for the VM, if any.
@@ -1120,6 +1119,7 @@ func (v vmPlacementPolicyParameters) MustWithHostIDs(hostIDs []HostID) Buildable
 type MemoryPolicyParameters interface {
 	Guaranteed() *int64
 	Max() *int64
+	Ballooning() *bool
 }
 
 // BuildableMemoryPolicyParameters is a buildable version of MemoryPolicyParameters.
@@ -1131,6 +1131,9 @@ type BuildableMemoryPolicyParameters interface {
 
 	WithMax(max int64) (BuildableMemoryPolicyParameters, error)
 	MustWithMax(max int64) BuildableMemoryPolicyParameters
+
+	WithBallooning(ballooning bool) (BuildableMemoryPolicyParameters, error)
+	MustWithBallooning(ballooning bool) BuildableMemoryPolicyParameters
 }
 
 // NewMemoryPolicyParameters creates a new instance of BuildableMemoryPolicyParameters.
@@ -1141,6 +1144,24 @@ func NewMemoryPolicyParameters() BuildableMemoryPolicyParameters {
 type memoryPolicyParameters struct {
 	guaranteed *int64
 	max        *int64
+	ballooning *bool
+}
+
+func (m *memoryPolicyParameters) Ballooning() *bool {
+	return m.ballooning
+}
+
+func (m *memoryPolicyParameters) WithBallooning(ballooning bool) (BuildableMemoryPolicyParameters, error) {
+	m.ballooning = &ballooning
+	return m, nil
+}
+
+func (m *memoryPolicyParameters) MustWithBallooning(ballooning bool) BuildableMemoryPolicyParameters {
+	builder, err := m.WithBallooning(ballooning)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (m *memoryPolicyParameters) MustWithGuaranteed(guaranteed int64) BuildableMemoryPolicyParameters {
@@ -1183,11 +1204,18 @@ type MemoryPolicy interface {
 	Guaranteed() *int64
 	// Max returns the maximum amount of memory given to the VM.
 	Max() *int64
+	// Ballooning returns true if the VM can give back the memory it is not using to the host OS.
+	Ballooning() bool
 }
 
 type memoryPolicy struct {
 	guaranteed *int64
 	max        *int64
+	ballooning bool
+}
+
+func (m memoryPolicy) Ballooning() bool {
+	return m.ballooning
 }
 
 func (m memoryPolicy) Max() *int64 {
@@ -1806,8 +1834,8 @@ func (v *vm) PlacementPolicy() (VMPlacementPolicy, bool) {
 	return v.placementPolicy, v.placementPolicy != nil
 }
 
-func (v *vm) MemoryPolicy() (MemoryPolicy, bool) {
-	return v.memoryPolicy, v.memoryPolicy != nil
+func (v *vm) MemoryPolicy() MemoryPolicy {
+	return v.memoryPolicy
 }
 
 func (v *vm) WaitForIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
@@ -2080,21 +2108,29 @@ func vmInstanceTypeIDConverter(object *ovirtsdk.Vm, v *vm) error {
 }
 
 func vmMemoryPolicyConverter(object *ovirtsdk.Vm, v *vm) error {
-	if memPolicy, ok := object.MemoryPolicy(); ok {
-		resultMemPolicy := &memoryPolicy{}
-		if guaranteed, ok := memPolicy.Guaranteed(); ok {
-			if guaranteed < -1 {
-				return newError(
-					EBug,
-					"the engine returned a negative guaranteed memory value for VM %s (%d)",
-					object.MustId(),
-					guaranteed,
-				)
-			}
-			resultMemPolicy.guaranteed = &guaranteed
-		}
-		v.memoryPolicy = resultMemPolicy
+	memPolicy, ok := object.MemoryPolicy()
+	if !ok {
+		return newFieldNotFound("vm", "memory policy")
 	}
+	resultMemPolicy := &memoryPolicy{}
+	if guaranteed, ok := memPolicy.Guaranteed(); ok {
+		if guaranteed < -1 {
+			return newError(
+				EBug,
+				"the engine returned a negative guaranteed memory value for VM %s (%d)",
+				object.MustId(),
+				guaranteed,
+			)
+		}
+		resultMemPolicy.guaranteed = &guaranteed
+	}
+	if max, ok := memPolicy.Max(); ok {
+		resultMemPolicy.max = &max
+	}
+	if ballooning, ok := memPolicy.Ballooning(); ok {
+		resultMemPolicy.ballooning = ballooning
+	}
+	v.memoryPolicy = resultMemPolicy
 	return nil
 }
 
