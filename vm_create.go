@@ -157,6 +157,7 @@ func createSDKVM(
 		vmInstanceTypeID,
 		vmTypeCreator,
 		vmOSCreator,
+		vmSerialConsoleCreator,
 	}
 
 	for _, part := range parts {
@@ -193,6 +194,14 @@ func createSDKVM(
 		return nil, wrap(err, EBug, "failed to build VM")
 	}
 	return vm, nil
+}
+
+func vmSerialConsoleCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	serial := params.SerialConsole()
+	if serial == nil {
+		return
+	}
+	builder.ConsoleBuilder(ovirtsdk.NewConsoleBuilder().Enabled(*serial))
 }
 
 func vmOSCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
@@ -382,6 +391,12 @@ func (m *mockClient) createVM(
 		init = &initialization{}
 	}
 
+	vmType := m.createVMType(params)
+	console := false
+	if serialConsole := params.SerialConsole(); serialConsole != nil {
+		console = *serialConsole
+	}
+
 	vm := &vm{
 		m,
 		VMID(id),
@@ -399,8 +414,9 @@ func (m *mockClient) createVM(
 		m.createPlacementPolicy(params),
 		m.createVMMemoryPolicy(params),
 		params.InstanceTypeID(),
-		m.createVMType(params),
+		vmType,
 		m.createVMOS(params),
+		console,
 	}
 	m.vms[VMID(id)] = vm
 	return vm

@@ -750,6 +750,91 @@ func TestVMDiskStorageDomain(t *testing.T) {
 	}
 }
 
+func TestVMSerialConsole(t *testing.T) {
+	testCases := getSerialConsoleTestCases()
+
+	for _, tc := range testCases {
+		vmType := "nil"
+		if tc.vmType != nil {
+			vmType = string(*tc.vmType)
+		}
+		set := "nil"
+		if tc.set != nil {
+			set = fmt.Sprintf("%t", *tc.set)
+		}
+		t.Run(
+			fmt.Sprintf("vmType=%s,console=%s", vmType, set),
+			func(t *testing.T) {
+				var err error
+				helper := getHelper(t)
+
+				t.Logf(
+					"Creating VM with vmType=%s and console=%s, expecting console to be %t...",
+					vmType,
+					set,
+					tc.expected,
+				)
+
+				params := ovirtclient.NewCreateVMParams()
+				if tc.vmType != nil {
+					params, err = params.WithVMType(*tc.vmType)
+					if err != nil {
+						t.Fatalf("Failed to set VM type (%v)", err)
+					}
+				}
+				if tc.set != nil {
+					params = params.WithSerialConsole(*tc.set)
+				}
+
+				vm := assertCanCreateVM(
+					t,
+					helper,
+					helper.GenerateTestResourceName(t),
+					params,
+				)
+				if vm.SerialConsole() != tc.expected {
+					t.Fatalf(
+						"Incorrect value for serial console (expected: %t, got: %t)",
+						tc.expected,
+						vm.SerialConsole(),
+					)
+				}
+				t.Logf("Found correct value for serial console: %t", tc.expected)
+			},
+		)
+	}
+}
+
+func getSerialConsoleTestCases() []struct {
+	vmType   *ovirtclient.VMType
+	set      *bool
+	expected bool
+} {
+	yes := true
+	no := false
+	desktop := ovirtclient.VMTypeDesktop
+	server := ovirtclient.VMTypeServer
+	hp := ovirtclient.VMTypeHighPerformance
+	testCases := []struct {
+		vmType   *ovirtclient.VMType
+		set      *bool
+		expected bool
+	}{
+		{nil, &yes, true},
+		{nil, &no, false},
+		{&desktop, nil, false},
+		{&server, nil, false},
+		{&hp, nil, false},
+		{&desktop, &yes, true},
+		{&server, &yes, true},
+		{&hp, &yes, true},
+		{&desktop, &no, false},
+		{&server, &no, false},
+		{&hp, &no, false},
+	}
+	return testCases
+}
+
 func assertCanCreateVMFromTemplate(
 	t *testing.T,
 	helper ovirtclient.TestHelper,

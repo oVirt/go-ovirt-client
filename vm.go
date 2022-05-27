@@ -523,6 +523,9 @@ type VM interface {
 
 	// ListGraphicsConsoles lists the graphics consoles on the VM.
 	ListGraphicsConsoles(retries ...RetryStrategy) ([]VMGraphicsConsole, error)
+
+	// SerialConsole returns true if the VM has a serial console.
+	SerialConsole() bool
 }
 
 // VMSearchParameters declares the parameters that can be passed to a VM search. Each parameter
@@ -682,6 +685,9 @@ type OptionalVMParameters interface {
 
 	// OS returns the operating system parameters, and true if the OS parameter has been set.
 	OS() (VMOSParameters, bool)
+
+	// SerialConsole returns if a serial console should be created or not.
+	SerialConsole() *bool
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -751,6 +757,9 @@ type BuildableVMParameters interface {
 
 	// WithOS adds the operating system parameters to the VM creation.
 	WithOS(parameters VMOSParameters) BuildableVMParameters
+
+	// WithSerialConsole adds or removes a serial console to the VM.
+	WithSerialConsole(serialConsole bool) BuildableVMParameters
 }
 
 // VMCPUParams contain the CPU parameters for a VM.
@@ -1005,7 +1014,6 @@ const (
 	// options:
 	//
 	// - Enable headless mode.
-	// - Enable serial console.
 	// - Enable pass-through host CPU.
 	// - Enable I/O threads.
 	// - Enable I/O threads pinning and set the pinning topology.
@@ -1523,6 +1531,17 @@ type vmParams struct {
 
 	os    VMOSParameters
 	osSet bool
+
+	serialConsole *bool
+}
+
+func (v *vmParams) SerialConsole() *bool {
+	return v.serialConsole
+}
+
+func (v *vmParams) WithSerialConsole(serialConsole bool) BuildableVMParameters {
+	v.serialConsole = &serialConsole
+	return v
 }
 
 func (v *vmParams) OS() (VMOSParameters, bool) {
@@ -1800,6 +1819,11 @@ type vm struct {
 	instanceTypeID  *InstanceTypeID
 	vmType          VMType
 	os              *vmOS
+	serialConsole   bool
+}
+
+func (v *vm) SerialConsole() bool {
+	return v.serialConsole
 }
 
 func (v *vm) ListGraphicsConsoles(retries ...RetryStrategy) ([]VMGraphicsConsole, error) {
@@ -1916,6 +1940,7 @@ func (v *vm) withName(name string) *vm {
 		v.instanceTypeID,
 		v.vmType,
 		v.os,
+		v.serialConsole,
 	}
 }
 
@@ -1941,6 +1966,7 @@ func (v *vm) withComment(comment string) *vm {
 		v.instanceTypeID,
 		v.vmType,
 		v.os,
+		v.serialConsole,
 	}
 }
 
@@ -2066,6 +2092,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmInstanceTypeIDConverter,
 		vmTypeConverter,
 		vmOSConverter,
+		vmSerialConsoleConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -2074,6 +2101,19 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmSerialConsoleConverter(object *ovirtsdk.Vm, v *vm) error {
+	console, ok := object.Console()
+	if !ok {
+		return newFieldNotFound("vm", "serial console")
+	}
+	enabled, ok := console.Enabled()
+	if !ok {
+		return newFieldNotFound("serial console", "enabled")
+	}
+	v.serialConsole = enabled
+	return nil
 }
 
 func vmOSConverter(object *ovirtsdk.Vm, v *vm) error {
