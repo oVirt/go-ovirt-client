@@ -10,13 +10,28 @@ func TestFeatureFlags(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
 
-	supported, err := helper.GetClient().SupportsFeature(ovirtclient.FeatureAutoPinning)
-	if err != nil {
-		t.Fatalf("Failed to check autopinning support (%v)", err)
+	testcases := map[string]struct {
+		input ovirtclient.Feature
+	}{
+		"Feature Autopinning": {
+			input: ovirtclient.FeatureAutoPinning,
+		},
+		"Feature Placement Policy": {
+			input: ovirtclient.FeatureAutoPinning,
+		},
 	}
-	if supported {
-		t.Logf("Autopinning is supported.")
-	} else {
-		t.Logf("Autopinning is not supported.")
+
+	for name, tc := range testcases {
+		t.Run(name, func(t *testing.T) {
+			supported, err := helper.GetClient().SupportsFeature(tc.input)
+			if err != nil {
+				t.Fatalf("Failed to check '%s' support (%v)", tc.input, err)
+			}
+			if supported {
+				t.Logf("'%s' is supported.", tc.input)
+			} else {
+				t.Logf("'%s' is not supported.", tc.input)
+			}
+		})
 	}
 }

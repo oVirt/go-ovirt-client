@@ -9,8 +9,11 @@ import (
 type Feature string
 
 const (
-	// FeatureAutoPinning is a feature flags for autopinning support in the oVirt Engine supported since 4.4.5.
+	// FeatureAutoPinning is a feature flag for autopinning support in the oVirt Engine supported since 4.4.5.
 	FeatureAutoPinning Feature = "autopinning"
+
+	// FeaturePlacementPolicy is a feature flag to indicate placement policy support in the oVirt Engine.
+	FeaturePlacementPolicy Feature = "placement_policy"
 )
 
 // FeatureClient provides the functions to determine the capabilities of the oVirt Engine.
@@ -23,6 +26,13 @@ func (o *oVirtClient) SupportsFeature(feature Feature, retries ...RetryStrategy)
 	var minimumVersion *ovirtsdk.Version
 	switch feature {
 	case FeatureAutoPinning:
+		minimumVersion = ovirtsdk.NewVersionBuilder().
+			Major(4).
+			Minor(4).
+			Build_(5).
+			Revision(0).
+			MustBuild()
+	case FeaturePlacementPolicy:
 		minimumVersion = ovirtsdk.NewVersionBuilder().
 			Major(4).
 			Minor(4).
