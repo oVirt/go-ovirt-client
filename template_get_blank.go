@@ -22,7 +22,7 @@ func (o *oVirtClient) GetBlankTemplate(retries ...RetryStrategy) (result Templat
 
 	return nil, newError(
 		ENotFound,
-		"No blank template found. Please re-created the deleted default blank template.",
+		"No blank template found. Please re-created the deleted default blank template. The template must be a pure blank template with no disks, network interfaces, or other customizations added.",
 	)
 }
 
