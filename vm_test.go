@@ -288,7 +288,7 @@ func TestCanRemoveTemplateIfVMIsCloned(t *testing.T) {
 		template.ID(),
 		ovirtclient.CreateVMParams().MustWithClone(true),
 	)
-	if vm.TemplateID() != "00000000-0000-0000-0000-000000000000" {
+	if vm.TemplateID() != ovirtclient.DefaultBlankTemplateID {
 		t.Fatalf("Template ID is not set correctly on cloned VM (%s vs %s)", vm.TemplateID(), template.ID())
 	}
 	assertCanRemoveTemplate(t, helper, template.ID())
