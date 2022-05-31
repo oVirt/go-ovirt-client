@@ -349,7 +349,7 @@ func (m *mockClient) CreateVM(
 			m.attachVMDisksFromTemplate(tpl, vm, params)
 
 			if clone := params.Clone(); clone != nil && *clone {
-				vm.templateID = "00000000-0000-0000-0000-000000000000"
+				vm.templateID = DefaultBlankTemplateID
 			}
 
 			m.vmIPs[vm.id] = map[string][]net.IP{}
