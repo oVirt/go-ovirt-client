@@ -11,8 +11,6 @@ import (
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
 
-//go:generate go run scripts/rest/rest.go -i "Vm" -n "vm" -o "VM" -T VMID
-
 // VMID is a specific type for virtual machine IDs.
 type VMID string
 
@@ -2070,7 +2068,7 @@ func validateVMName(name string) error {
 	return nil
 }
 
-func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
+func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client, logger Logger, action string) (VM, error) {
 	vmObject := &vm{
 		client: client,
 	}
@@ -2092,7 +2090,6 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmInstanceTypeIDConverter,
 		vmTypeConverter,
 		vmOSConverter,
-		vmSerialConsoleConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -2100,13 +2097,30 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		}
 	}
 
+	if err := vmSerialConsoleConverter(sdkObject, vmObject, logger, action); err != nil {
+		return nil, err
+	}
+
 	return vmObject, nil
 }
 
-func vmSerialConsoleConverter(object *ovirtsdk.Vm, v *vm) error {
+func vmSerialConsoleConverter(object *ovirtsdk.Vm, v *vm, logger Logger, action string) error {
 	console, ok := object.Console()
 	if !ok {
-		return newFieldNotFound("vm", "serial console")
+		// This sometimes (?) happens, and we don't know why. We will assume the serial console does not exist,
+		// otherwise we create a flaky behavior.
+		//
+		// See these issues:
+		// - https://github.com/oVirt/terraform-provider-ovirt/issues/411
+		// - https://github.com/oVirt/go-ovirt-client/issues/211
+		logger.Warningf(
+			"If you see this message, please open a Bugzilla entry with your oVirt version! The virtual machine object was returned from the oVirt Engine while %s without a console sub-object. VM: %s status: %s",
+			action,
+			object.MustId(),
+			object.MustStatus(),
+		)
+		v.serialConsole = false
+		return nil
 	}
 	enabled, ok := console.Enabled()
 	if !ok {

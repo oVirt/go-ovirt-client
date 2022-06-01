@@ -1,5 +1,3 @@
-// Code generated automatically using go:generate. DO NOT EDIT.
-
 package ovirtclient
 
 func (o *oVirtClient) ListVMs(retries ...RetryStrategy) (result []VM, err error) {
@@ -20,7 +18,7 @@ func (o *oVirtClient) ListVMs(retries ...RetryStrategy) (result []VM, err error)
 			}
 			result = make([]VM, len(sdkObjects.Slice()))
 			for i, sdkObject := range sdkObjects.Slice() {
-				result[i], e = convertSDKVM(sdkObject, o)
+				result[i], e = convertSDKVM(sdkObject, o, o.logger, "listing VMs")
 				if e != nil {
 					return wrap(e, EBug, "failed to convert vm during listing item #%d", i)
 				}

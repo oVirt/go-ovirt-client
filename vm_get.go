@@ -1,5 +1,3 @@
-// Code generated automatically using go:generate. DO NOT EDIT.
-
 package ovirtclient
 
 import (
@@ -25,7 +23,7 @@ func (o *oVirtClient) GetVM(id VMID, retries ...RetryStrategy) (result VM, err e
 					id,
 				)
 			}
-			result, err = convertSDKVM(sdkObject, o)
+			result, err = convertSDKVM(sdkObject, o, o.logger, "getting VM")
 			if err != nil {
 				return wrap(
 					err,
@@ -36,7 +34,7 @@ func (o *oVirtClient) GetVM(id VMID, retries ...RetryStrategy) (result VM, err e
 			}
 			return nil
 		})
-	return
+	return result, err
 }
 
 func (m *mockClient) GetVM(id VMID, _ ...RetryStrategy) (VM, error) {
