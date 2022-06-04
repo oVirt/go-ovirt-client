@@ -41,6 +41,8 @@ type CreateAffinityGroupOptionalParams interface {
 	VMsRule() AffinityVMsRule
 	// Enforcing returns if the affinity group should be enforced.
 	Enforcing() *bool
+	// Description returns the description for the affinity group.
+	Description() string
 }
 
 // BuildableCreateAffinityGroupOptionalParams is a buildable version of CreateAffinityGroupOptionalParams.
@@ -55,17 +57,35 @@ type BuildableCreateAffinityGroupOptionalParams interface {
 	WithHostsRule(rule AffinityHostsRule) (BuildableCreateAffinityGroupOptionalParams, error)
 	MustWithHostsRule(rule AffinityHostsRule) BuildableCreateAffinityGroupOptionalParams
 
-	WithHostsRuleParameters(enabled bool, affinity Affinity, enforcing bool) (BuildableCreateAffinityGroupOptionalParams, error)
-	MustWithHostsRuleParameters(enabled bool, affinity Affinity, enforcing bool) BuildableCreateAffinityGroupOptionalParams
+	WithHostsRuleParameters(
+		enabled bool,
+		affinity Affinity,
+		enforcing bool,
+	) (BuildableCreateAffinityGroupOptionalParams, error)
+	MustWithHostsRuleParameters(
+		enabled bool,
+		affinity Affinity,
+		enforcing bool,
+	) BuildableCreateAffinityGroupOptionalParams
 
 	WithVMsRule(rule AffinityVMsRule) (BuildableCreateAffinityGroupOptionalParams, error)
 	MustWithVMsRule(rule AffinityVMsRule) BuildableCreateAffinityGroupOptionalParams
 
-	WithVMsRuleParameters(enabled bool, affinity Affinity, enforcing bool) (BuildableCreateAffinityGroupOptionalParams, error)
-	MustWithVMsRuleParameters(enabled bool, affinity Affinity, enforcing bool) BuildableCreateAffinityGroupOptionalParams
+	WithVMsRuleParameters(enabled bool, affinity Affinity, enforcing bool) (
+		BuildableCreateAffinityGroupOptionalParams,
+		error,
+	)
+	MustWithVMsRuleParameters(
+		enabled bool,
+		affinity Affinity,
+		enforcing bool,
+	) BuildableCreateAffinityGroupOptionalParams
 
 	WithEnforcing(enforcing bool) (BuildableCreateAffinityGroupOptionalParams, error)
 	MustWithEnforcing(enforcing bool) BuildableCreateAffinityGroupOptionalParams
+
+	WithDescription(description string) (BuildableCreateAffinityGroupOptionalParams, error)
+	MustWithDescription(description string) BuildableCreateAffinityGroupOptionalParams
 }
 
 // CreateAffinityGroupParams creates a buildable set of parameters for creating an affinity group.
@@ -98,6 +118,8 @@ type AffinityGroupData interface {
 	ID() AffinityGroupID
 	// Name is the user-readable oVirt name of the affinity group.
 	Name() string
+	// Description returns the description of the affinity group.
+	Description() string
 	// ClusterID is the identifier of the cluster this affinity group belongs to.
 	ClusterID() ClusterID
 	// Priority indicates in which order the affinity groups should be evaluated.
@@ -164,15 +186,20 @@ func (a affinityRule) Enforcing() bool {
 type affinityGroup struct {
 	client Client
 
-	id        AffinityGroupID
-	name      string
-	clusterID ClusterID
-	priority  AffinityGroupPriority
-	enforcing bool
+	id          AffinityGroupID
+	name        string
+	description string
+	clusterID   ClusterID
+	priority    AffinityGroupPriority
+	enforcing   bool
 
 	hostsRule AffinityRule
 	vmsRule   AffinityRule
 	vmids     []VMID
+}
+
+func (a affinityGroup) Description() string {
+	return a.description
 }
 
 func (a affinityGroup) hasVM(id VMID) bool {
@@ -243,6 +270,15 @@ func convertSDKAffinityGroupName(sdkObject *ovirtsdk.AffinityGroup, result *affi
 		return newFieldNotFound("affinity group", "name")
 	}
 	result.name = name
+	return nil
+}
+
+func convertSDKAffinityGroupDescription(sdkObject *ovirtsdk.AffinityGroup, result *affinityGroup) error {
+	description, ok := sdkObject.Description()
+	if !ok {
+		return newFieldNotFound("affinity group", "description")
+	}
+	result.description = description
 	return nil
 }
 
@@ -327,6 +363,7 @@ func convertSDKAffinityGroup(sdkObject *ovirtsdk.AffinityGroup, o *oVirtClient) 
 	converters := []func(sdkObject *ovirtsdk.AffinityGroup, result *affinityGroup) error{
 		convertSDKAffinityGroupID,
 		convertSDKAffinityGroupName,
+		convertSDKAffinityGroupDescription,
 		convertSDKAffinityGroupCluster,
 		convertSDKAffinityGroupEnforcing,
 		convertSDKAffinityGroupPriority,
@@ -363,10 +400,31 @@ func convertSDKAffinityRule(sdk *ovirtsdk.AffinityRule) (*affinityRule, error) {
 }
 
 type createAffinityGroupParams struct {
-	priority  *AffinityGroupPriority
-	hostsRule AffinityHostsRule
-	vmsRule   AffinityVMsRule
-	enforcing *bool
+	priority    *AffinityGroupPriority
+	hostsRule   AffinityHostsRule
+	vmsRule     AffinityVMsRule
+	enforcing   *bool
+	description string
+}
+
+func (c *createAffinityGroupParams) Description() string {
+	return c.description
+}
+
+func (c *createAffinityGroupParams) WithDescription(description string) (
+	BuildableCreateAffinityGroupOptionalParams,
+	error,
+) {
+	c.description = description
+	return c, nil
+}
+
+func (c *createAffinityGroupParams) MustWithDescription(description string) BuildableCreateAffinityGroupOptionalParams {
+	builder, err := c.WithDescription(description)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (c *createAffinityGroupParams) Enforcing() *bool {

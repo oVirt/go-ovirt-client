@@ -120,6 +120,20 @@ func TestAffinityGroupCreation(t *testing.T) {
 	assertCanRemoveAffinityGroup(t, helper, ag.ClusterID(), ag.ID())
 }
 
+func TestAffinityGroupCreationWithDescription(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	params := ovirtclient.CreateAffinityGroupParams()
+	params = params.MustWithDescription("test")
+
+	ag := assertCanCreateAffinityGroup(t, helper, params)
+
+	if ag.Description() != "test" {
+		t.Fatalf("Incorrect affinity group description: %s", ag.Description())
+	}
+}
+
 func TestNegativeVMAffinityShouldResultInDifferentHosts(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
