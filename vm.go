@@ -66,6 +66,11 @@ type VMClient interface {
 	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
 	// excluding any IP addresses in the specified parameters.
 	GetVMIPAddresses(id VMID, params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	// GetVMNonLocalIPAddresses fetches the IP addresses and filters them to return only non-local IP addresses.
+	//
+	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
+	// excluding any IP addresses in the specified parameters.
+	GetVMNonLocalIPAddresses(id VMID, retries ...RetryStrategy) (map[string][]net.IP, error)
 	// WaitForVMIPAddresses waits for at least one IP address to be reported that is not in specified ranges.
 	//
 	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
@@ -486,6 +491,9 @@ type VM interface {
 	//
 	// The optional parameters let you filter the returned interfaces and IP addresses.
 	GetIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error)
+	// GetNonLocalIPAddresses fetches the IP addresses, filters them for non-local IP addresses, and returns a map of the
+	// interface name and list of IP addresses.
+	GetNonLocalIPAddresses(retries ...RetryStrategy) (map[string][]net.IP, error)
 	// WaitForIPAddresses waits for at least one IP address to be reported that is not in specified ranges.
 	//
 	// The returned result will be a map of network interface names and the list of IP addresses assigned to them,
@@ -1870,6 +1878,10 @@ func (v *vm) WaitForNonLocalIPAddress(retries ...RetryStrategy) (map[string][]ne
 
 func (v *vm) GetIPAddresses(params VMIPSearchParams, retries ...RetryStrategy) (map[string][]net.IP, error) {
 	return v.client.GetVMIPAddresses(v.id, params, retries...)
+}
+
+func (v *vm) GetNonLocalIPAddresses(retries ...RetryStrategy) (map[string][]net.IP, error) {
+	return v.client.GetVMNonLocalIPAddresses(v.id, retries...)
 }
 
 func (v *vm) HostID() *HostID {
