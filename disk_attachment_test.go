@@ -22,6 +22,14 @@ func TestDiskAttachmentCreation(t *testing.T) {
 	assertDiskAttachmentCount(t, vm, 0)
 	attachment := assertCanAttachDisk(t, vm, disk)
 	assertDiskAttachmentMatches(t, attachment, disk, vm)
+
+	if attachment.Active() {
+		t.Fatalf("Incorrect value for 'active' on newly created disk attachment.")
+	}
+	if attachment.Bootable() {
+		t.Fatalf("Incorrect value for 'bootable' on newly created disk attachment.")
+	}
+
 	assertDiskAttachmentCount(t, vm, 1)
 	assertCanDetachDisk(t, attachment)
 }
@@ -89,7 +97,16 @@ func assertCanDetachDisk(t *testing.T, attachment ovirtclient.DiskAttachment) {
 }
 
 func assertCanAttachDisk(t *testing.T, vm ovirtclient.VM, disk ovirtclient.Disk) ovirtclient.DiskAttachment {
-	attachment, err := vm.AttachDisk(disk.ID(), ovirtclient.DiskInterfaceVirtIO, nil)
+	return assertCanAttachDiskWithParams(t, vm, disk, nil)
+}
+
+func assertCanAttachDiskWithParams(
+	t *testing.T,
+	vm ovirtclient.VM,
+	disk ovirtclient.Disk,
+	params ovirtclient.CreateDiskAttachmentOptionalParams,
+) ovirtclient.DiskAttachment {
+	attachment, err := vm.AttachDisk(disk.ID(), ovirtclient.DiskInterfaceVirtIO, params)
 	if err != nil {
 		t.Fatalf("Failed to create disk attachment (%v)", err)
 	}

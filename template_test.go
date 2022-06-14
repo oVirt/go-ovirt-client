@@ -117,6 +117,32 @@ func TestTemplateDisk(t *testing.T) {
 	}
 }
 
+func TestTemplateDiskActiveBootable(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	disk := assertCanCreateDisk(t, helper)
+	vm := assertCanCreateVM(t, helper, helper.GenerateTestResourceName(t), nil)
+	assertCanAttachDiskWithParams(t, vm, disk, ovirtclient.CreateDiskAttachmentParams().MustWithActive(true).MustWithBootable(true))
+	template := assertCanCreateTemplate(t, helper, vm)
+
+	tplDiskAttachments := assertCanListTemplateDiskAttachments(t, template)
+	if !tplDiskAttachments[0].Active() {
+		t.Fatalf("Template disk attachment is not active.")
+	}
+	if !tplDiskAttachments[0].Bootable() {
+		t.Fatalf("Template disk attachment is not bootable.")
+	}
+
+	vm2 := assertCanCreateVMFromTemplate(t, helper, helper.GenerateTestResourceName(t), template.ID(), nil)
+	diskAttachments := assertCanListDiskAttachments(t, vm2)
+	if !diskAttachments[0].Active() {
+		t.Fatalf("VM disk attachment is not active.")
+	}
+	if !diskAttachments[0].Bootable() {
+		t.Fatalf("VM disk attachment is not bootable.")
+	}
+}
+
 // TestTemplateDiskCopy Copying template disks between storageDomains.
 func TestTemplateDiskCopy(t *testing.T) {
 	t.Parallel()
