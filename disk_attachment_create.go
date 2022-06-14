@@ -26,7 +26,6 @@ func (o *oVirtClient) CreateDiskAttachment(
 			attachmentBuilder.Disk(ovirtsdk.NewDiskBuilder().Id(string(diskID)).MustBuild())
 			attachmentBuilder.Interface(ovirtsdk.DiskInterface(diskInterface))
 			attachmentBuilder.Vm(ovirtsdk.NewVmBuilder().Id(string(vmID)).MustBuild())
-			attachmentBuilder.Active(true)
 			if params != nil {
 				if active := params.Active(); active != nil {
 					attachmentBuilder.Active(*active)
@@ -96,7 +95,6 @@ func (m *mockClient) CreateDiskAttachment(
 		diskID:        disk.ID(),
 		diskInterface: diskInterface,
 	}
-	attachment.active = true
 	if params != nil {
 		if bootable := params.Bootable(); bootable != nil {
 			attachment.bootable = *bootable
