@@ -36,8 +36,11 @@ func (o *oVirtClient) GetAffinityGroupByName(clusterID ClusterID, name string, r
 					results = append(results, item)
 				}
 			}
+			if len(results) == 0 {
+				return newError(ENotFound, "no affinity group named %s found in cluster %s", name, clusterID)
+			}
 			if len(results) > 1 {
-				return newError(EMultipleResults, "no affinity group named %s found in cluster %s", name, clusterID)
+				return newError(EMultipleResults, "multiple affinity groups with the name %s found in cluster %s", name, clusterID)
 			}
 			result, err = convertSDKAffinityGroup(results[0], o)
 			if err != nil {
