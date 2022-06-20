@@ -71,6 +71,9 @@ const EUnsupported ErrorCode = "unsupported"
 // EDiskLocked indicates that the disk in question is locked.
 const EDiskLocked ErrorCode = "disk_locked"
 
+// EVMLocked indicates that the virtual machine in question is locked.
+const EVMLocked ErrorCode = "vm_locked"
+
 // ERelatedOperationInProgress means that the engine is busy working on something else on the same resource.
 const ERelatedOperationInProgress ErrorCode = "related_operation_in_progress"
 
@@ -302,6 +305,8 @@ func realIdentify(err error) EngineError {
 		return wrap(err, ENotFound, "the requested resource was not found")
 	case strings.Contains(err.Error(), "Disk is locked"):
 		return wrap(err, EDiskLocked, "the disk is locked")
+	case strings.Contains(err.Error(), "VM is locked"):
+		return wrap(err, EVMLocked, "the VM is locked")
 	case strings.Contains(err.Error(), "Failed to hot-plug disk"):
 		return wrap(err, EHotPlugFailed, "failed to hot-plug disk")
 	case strings.Contains(err.Error(), "Related operation is currently in progress."):

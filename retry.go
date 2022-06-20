@@ -115,7 +115,7 @@ func logRetry(action string, logger ovirtclientlog.Logger, err error) {
 	isConflict := false
 	if errors.As(err, &e) {
 		isPending = e.HasCode(EPending)
-		isConflict = e.HasCode(EConflict)
+		isConflict = e.HasCode(EConflict) || e.HasCode(EDiskLocked) || e.HasCode(EVMLocked)
 	}
 	if isPending || isConflict {
 		logger.Debugf("Still %s, retrying... (%s)", action, err.Error())
