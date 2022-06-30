@@ -243,7 +243,7 @@ func TestVMStartStop(t *testing.T) {
 		nil,
 	)
 	disk := assertCanCreateDisk(t, helper)
-	assertCanAttachDisk(t, vm, disk)
+	assertCanAttachDiskWithParams(t, vm, disk, ovirtclient.CreateDiskAttachmentParams().MustWithBootable(true).MustWithActive(true))
 	assertCanUploadDiskImage(t, helper, disk)
 	assertCanStartVM(t, helper, vm)
 	assertVMWillStart(t, vm)
@@ -923,6 +923,6 @@ func assertCanCreateBootableVM(t *testing.T, helper ovirtclient.TestHelper) ovir
 	)
 	disk1 := assertCanCreateDisk(t, helper)
 	assertCanUploadDiskImage(t, helper, disk1)
-	assertCanAttachDisk(t, vm1, disk1)
+	assertCanAttachDiskWithParams(t, vm1, disk1, ovirtclient.CreateDiskAttachmentParams().MustWithBootable(true).MustWithActive(true))
 	return vm1
 }
