@@ -278,6 +278,7 @@ func startProxyServer(t *testing.T, counter *int) string {
 		t.Fatalf("failed to open listen socket for the proxy (%v)", err)
 	}
 	var serverError error
+	//nolint:gosec
 	srv := http.Server{
 		Addr: ln.Addr().String(),
 		// Disable HTTP/2.

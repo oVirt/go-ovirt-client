@@ -146,6 +146,7 @@ func newTestServer(t *testing.T, port int, serverCert []byte, serverPrivKey []by
 	if err != nil {
 		return nil, fmt.Errorf("failed to create key pair (%w)", err)
 	}
+	//nolint:gosec
 	srv := &http.Server{
 		Addr:     fmt.Sprintf("127.0.0.1:%d", port),
 		Handler:  handler,
