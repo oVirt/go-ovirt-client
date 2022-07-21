@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 func assertCanCreateAffinityGroup(t *testing.T, helper ovirtclient.TestHelper, params ovirtclient.CreateAffinityGroupOptionalParams) ovirtclient.AffinityGroup {

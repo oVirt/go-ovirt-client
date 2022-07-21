@@ -12,8 +12,8 @@ import (
 	"sync"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 func TestBadOVirtURL(t *testing.T) {

@@ -3,8 +3,8 @@ package ovirtclient_test
 import (
 	"fmt"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 // The following example demonstrates how to list virtual machines.

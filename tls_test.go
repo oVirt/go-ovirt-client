@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 // This example shows how to set up TLS verification in a variety of ways.
