@@ -285,7 +285,7 @@ func setupBlankTemplateID(blankTemplateID TemplateID, client Client) (id Templat
 func setupTestStorageDomainID(storageDomainID StorageDomainID, client Client) (id StorageDomainID, err error) {
 	if storageDomainID == "" {
 		storageDomainID, err = findTestStorageDomainID("", client)
-		if err != nil {
+		if err != nil && !errors.Is(err, errNoTestStorageDomainFound) {
 			return "", fmt.Errorf("failed to find storage domain to test on (%w)", err)
 		}
 	} else if err := verifyTestStorageDomainID(client, storageDomainID); err != nil {
@@ -394,19 +394,19 @@ func findTestStorageDomainID(skipID StorageDomainID, client Client) (StorageDoma
 	if err != nil {
 		return "", err
 	}
-	for _, storageDomain := range storageDomains {
-		if storageDomain.ID() == skipID {
-			continue
-		}
+	storageDomains = storageDomains.Filter(func(sd StorageDomain) bool {
+		return sd.ID() != skipID
+	}).Filter(func(sd StorageDomain) bool {
 		// Assume 2GB will be enough for testing
-		if storageDomain.Available() < 2*1024*1024*1024 {
-			continue
-		}
-		if storageDomain.Status() != StorageDomainStatusActive &&
-			(storageDomain.Status() != StorageDomainStatusNA || storageDomain.ExternalStatus() != StorageDomainExternalStatusOk) {
-			continue
-		}
-		return storageDomain.ID(), nil
+		return sd.Available() >= 2*1024*1024*1024
+	}).Filter(func(sd StorageDomain) bool {
+		return (sd.Status() == StorageDomainStatusActive) || (sd.Status() == StorageDomainStatusNA && sd.ExternalStatus() == StorageDomainExternalStatusOk)
+	}).Filter(func(sd StorageDomain) bool {
+		return sd.StorageType() == StorageDomainTypeNFS
+	})
+
+	if len(storageDomains) > 0 {
+		return storageDomains[0].ID(), nil
 	}
 	return "", errNoTestStorageDomainFound
 }
