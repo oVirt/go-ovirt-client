@@ -3,7 +3,7 @@ package ovirtclient_test
 import (
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 func assertCanUpdateNICName(t *testing.T, nic ovirtclient.NIC, name string) ovirtclient.NIC {

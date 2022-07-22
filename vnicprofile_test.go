@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 func TestVNICProfile(t *testing.T) {

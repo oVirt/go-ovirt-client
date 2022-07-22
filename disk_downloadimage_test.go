@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
 )
 
 func TestImageDownload(t *testing.T) {
