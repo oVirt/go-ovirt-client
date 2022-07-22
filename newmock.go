@@ -191,6 +191,7 @@ func generateTestStorageDomain() *storageDomain {
 		available:      10 * 1024 * 1024 * 1024,
 		status:         StorageDomainStatusActive,
 		externalStatus: StorageDomainExternalStatusNA,
+		storageType:    StorageDomainTypeNFS,
 	}
 }
 
