@@ -11,7 +11,7 @@ func (o *oVirtClient) GetVM(id VMID, retries ...RetryStrategy) (result VM, err e
 		o.logger,
 		retries,
 		func() error {
-			response, err := o.conn.SystemService().VmsService().VmService(string(id)).Get().Send()
+			response, err := o.conn.SystemService().VmsService().VmService(string(id)).Get().AllContent(true).Send()
 			if err != nil {
 				return err
 			}

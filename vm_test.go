@@ -795,11 +795,12 @@ func TestVMSerialConsole(t *testing.T) {
 				)
 				if vm.SerialConsole() != tc.expected {
 					t.Fatalf(
-						"Incorrect value for serial console (expected: %t, got: %t)",
+						"Incorrect value for serial console when creating (expected: %t, got: %t)",
 						tc.expected,
 						vm.SerialConsole(),
 					)
 				}
+
 				t.Logf("Found correct value for serial console: %t", tc.expected)
 			},
 		)
@@ -845,6 +846,20 @@ func TestVMSoundcardEnabled(t *testing.T) {
 				if vm.SoundcardEnabled() != tc.expected {
 					t.Fatalf(
 						"Incorrect value for soundcard (expected: %t, got: %t)",
+						tc.expected,
+						vm.SoundcardEnabled(),
+					)
+				}
+
+				// retrieve VM one more time to ensure that the sound_card attribute is set as it is excluded by default
+				// https://ovirt-engine.ocp-on-ovirt.gcp.devcluster.openshift.com/ovirt-engine/apidoc/#services/vm/methods/get/parameters/all_content
+				sameVM, err := helper.GetClient().GetVM(vm.ID())
+				if err != nil {
+					t.Fatalf("Failed to retrieve created VM: %v", err)
+				}
+				if sameVM.SoundcardEnabled() != tc.expected {
+					t.Fatalf(
+						"Incorrect value for serial console when retrieving (expected: %t, got: %t)",
 						tc.expected,
 						vm.SoundcardEnabled(),
 					)

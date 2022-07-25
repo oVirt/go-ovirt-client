@@ -8,7 +8,7 @@ func (o *oVirtClient) ListVMs(retries ...RetryStrategy) (result []VM, err error)
 		o.logger,
 		retries,
 		func() error {
-			response, e := o.conn.SystemService().VmsService().List().Send()
+			response, e := o.conn.SystemService().VmsService().List().AllContent(true).Send()
 			if e != nil {
 				return e
 			}
