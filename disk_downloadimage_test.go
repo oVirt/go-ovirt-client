@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
@@ -90,7 +89,7 @@ func getFullTestImage(t *testing.T) (io.ReadSeekCloser, uint64, uint64) {
 	}
 	size := stat.Size()
 
-	fullTestImage, err := ioutil.ReadAll(fh)
+	fullTestImage, err := io.ReadAll(fh)
 	if err != nil {
 		t.Skipf("testimage/full.qcow not found in the test environment. Did you run go generate? (%v)", err)
 	}
@@ -130,7 +129,7 @@ func getTestImageData(t *testing.T) ([]byte, uint64) {
 	}
 	size := stat.Size()
 
-	testImage, err := ioutil.ReadAll(fh)
+	testImage, err := io.ReadAll(fh)
 	if err != nil {
 		t.Errorf("testimage/image not found in the test environment. (%v)", err)
 	}
@@ -150,7 +149,7 @@ func downloadImage(
 		_ = imageDownload.Close()
 	}()
 
-	data, err := ioutil.ReadAll(imageDownload)
+	data, err := io.ReadAll(imageDownload)
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to download image (%w)", err))
 	}

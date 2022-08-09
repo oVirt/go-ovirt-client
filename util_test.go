@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	nextFreePortLock = &sync.Mutex{} // nolint:gochecknoglobals
+	nextFreePortLock = &sync.Mutex{} //nolint:gochecknoglobals
 )
 
 func getNextFreePort(t *testing.T) int {

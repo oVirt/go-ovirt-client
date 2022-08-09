@@ -1,6 +1,6 @@
 // This file contains tests for the internal retry functionality. It is therefore excluded from the testpackage check.
 
-package ovirtclient // nolint:testpackage
+package ovirtclient //nolint:testpackage
 
 import (
 	"context"
