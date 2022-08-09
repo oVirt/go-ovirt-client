@@ -242,7 +242,7 @@ func newError(code ErrorCode, format string, args ...interface{}) EngineError {
 // this function will attempt to identify the error deeper.
 func wrap(err error, code ErrorCode, format string, args ...interface{}) EngineError {
 	// gocritic will complain on the following line due to appendAssign, but that's legit here.
-	realArgs := append(args, err) // nolint:gocritic
+	realArgs := append(args, err) //nolint:gocritic
 	realMessage := fmt.Sprintf(fmt.Sprintf("%s (%v)", format, "%v"), realArgs...)
 	if code == EUnidentified {
 		var realErr EngineError

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -60,7 +60,7 @@ func main() {
 		secondaryID,
 		idType,
 	}
-	files, err := ioutil.ReadDir(tplDir)
+	files, err := os.ReadDir(tplDir)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -119,7 +119,7 @@ func getParameters() (string, string, string, string, string, string, bool, bool
 
 // setupFlags sets up the command line flags. This function is annotated with nolint:funlen since there is no reasonable
 // way to split this function and still keeping the code simple.
-func setupFlags( // nolint:funlen
+func setupFlags( //nolint:funlen
 	name *string,
 	id *string,
 	secondaryID *string,
@@ -206,14 +206,14 @@ func setupFlags( // nolint:funlen
 func handleTemplateFile(templateFileName string, id string, targetDir string, restItem restItem, nofmt bool) error {
 	// We are working through all template files here, so including these files is intentional
 	// and not a security issue.
-	fh, err := os.Open(templateFileName) // nolint:gosec
+	fh, err := os.Open(templateFileName) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to open %s (%w)", templateFileName, err)
 	}
 	defer func() {
 		_ = fh.Close()
 	}()
-	data, err := ioutil.ReadAll(fh)
+	data, err := io.ReadAll(fh)
 	if err != nil {
 		return fmt.Errorf("failed to read %s (%w)", templateFileName, err)
 	}
