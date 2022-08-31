@@ -103,4 +103,5 @@ issues:
       source: "//"
     - linters:
         - gofmt
+        - revive
       source: "/*"
