@@ -42,6 +42,12 @@ type OptionalNICParameters interface {
 // new copy, or implement your own.
 type BuildableNICParameters interface {
 	OptionalNICParameters
+
+	// WithMac sets macAddress for the NIC.
+	WithMac(mac string) (BuildableNICParameters, error)
+
+	// MustWithMac is the same as WithMac, but panics instead of returning an error.
+	MustWithMac(mac string) BuildableNICParameters
 }
 
 // CreateNICParams returns a buildable structure of OptionalNICParameters.
