@@ -181,6 +181,8 @@ type NICData interface {
 	VMID() VMID
 	// VNICProfileID returns the ID of the VNIC profile in use by the NIC.
 	VNICProfileID() VNICProfileID
+	// Mac returns a MacAddress for a nic
+	Mac() string
 }
 
 // NIC represents a network interface.
@@ -278,6 +280,10 @@ func (n nic) Name() string {
 
 func (n nic) VMID() VMID {
 	return n.vmid
+}
+
+func (n nic) Mac() string {
+	return n.mac
 }
 
 func (n nic) Remove(retries ...RetryStrategy) error {
