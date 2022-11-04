@@ -124,8 +124,10 @@ func validateNICCreationParameters(vmid VMID, name string) error {
 }
 
 func validateNICCreationOptionalParameters(params OptionalNICParameters) error {
-	if _, err := net.ParseMAC(params.Mac()); err != nil {
-		return newError(EUnidentified, "Failed to parse MacAddress: %s", params.Mac())
+	if mac := params.Mac(); mac != "" {
+		if _, err := net.ParseMAC(mac); err != nil {
+			return newError(EUnidentified, "Failed to parse MacAddress: %s", mac)
+		}
 	}
 	return nil
 }
