@@ -57,6 +57,19 @@ func (c *nicParams) Mac() string {
 	return c.mac
 }
 
+func (c *nicParams) WithMac(mac string) (BuildableNICParameters, error) {
+	c.mac = mac
+	return c, nil
+}
+
+func (c *nicParams) MustWithMac(mac string) BuildableNICParameters {
+	builder, err := c.WithMac(mac)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 // UpdateNICParameters is an interface that declares methods of changeable parameters for NIC's. Each
 // method can return nil to leave an attribute unchanged, or a new value for the attribute.
 type UpdateNICParameters interface {
