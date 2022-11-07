@@ -73,14 +73,3 @@ func assertCanUpdateNICVNICProfile(t *testing.T, nic ovirtclient.NIC, vnicProfil
 	}
 	return newNIC
 }
-
-// func assertCanUpdateNICMac(t *testing.T, nic ovirtclient.NIC, mac string) ovirtclient.NIC {
-// 	newNIC, err := nic.Update(ovirtclient.UpdateNICParams().MustWithMac(mac))
-// 	if err != nil {
-// 		t.Fatalf("failed to update NIC (%v)", err)
-// 	}
-// 	if newNIC.Mac() != mac {
-// 		t.Fatalf("NIC MacAddress not changed after update call")
-// 	}
-// 	return newNIC
-// }
