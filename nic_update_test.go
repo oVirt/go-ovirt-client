@@ -28,6 +28,8 @@ func TestVMNICUpdate(t *testing.T) {
 	nic = assertCanUpdateNICName(t, nic, fmt.Sprintf("test-%s", helper.GenerateRandomID(5)))
 	vnicProfile := assertCanCreateVNICProfile(t, helper)
 	nic = assertCanUpdateNICVNICProfile(t, nic, vnicProfile.ID())
+	nic = assertCanUpdateNICMac(t, nic, "a1:b2:c3:d4:e5:f6")
+	_ = assertCantUpdateNICMac(t, nic, "invalid mac address")
 	// Go back to the original VNIC profile ID to make sure we don't block deleting the test VNIC profile.
 	_ = assertCanUpdateNICVNICProfile(t, nic, helper.GetVNICProfileID())
 }
