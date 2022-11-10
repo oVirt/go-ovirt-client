@@ -58,3 +58,32 @@ func TestDuplicateVMNICCreation(t *testing.T) {
 	assertCanRemoveNIC(t, nic1)
 	assertNICCount(t, vm, 0)
 }
+
+func TestVMNICWithMacCreation(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	mac := "a1:b2:c3:d4:e5:f6"
+	invalidMac := "invalid mac address"
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("nic_test_%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams(),
+	)
+	assertNICCount(t, vm, 0)
+	nic := assertCanCreateNICMac(
+		t,
+		helper,
+		vm,
+		mac)
+	assertNICCount(t, vm, 1)
+	assertCantCreateNICMac(
+		t,
+		helper,
+		vm,
+		invalidMac)
+	assertNICCount(t, vm, 1)
+	assertCanRemoveNIC(t, nic)
+	assertNICCount(t, vm, 0)
+}
