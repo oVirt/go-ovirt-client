@@ -103,9 +103,10 @@ func (m *mockClient) CreateNIC(
 	}
 
 	if params != nil {
-		if mac := params.Mac(); mac != "" {
-			nic.mac = mac
+		if err := validateNICCreationOptionalParameters(params); err != nil {
+			return nil, err
 		}
+		nic.mac = params.Mac()
 	}
 
 	m.nics[id] = nic

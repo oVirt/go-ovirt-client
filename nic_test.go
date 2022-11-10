@@ -1,6 +1,7 @@
 package ovirtclient_test
 
 import (
+	"fmt"
 	"testing"
 
 	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
@@ -31,6 +32,11 @@ func assertCanCreateNIC(
 	if nic.VMID() != vm.ID() {
 		t.Fatalf("VM ID mismatch between NIC and VM (%s != %s)", nic.VMID(), vm.ID())
 	}
+	if params != nil {
+		if nic.Mac() != params.Mac() {
+			t.Fatalf("Failed to create NIC with custom mac address: %s", nic.Mac())
+		}
+	}
 	return nic
 }
 
@@ -41,10 +47,14 @@ func assertCannotCreateNIC(
 	name string,
 	params ovirtclient.BuildableNICParameters,
 ) {
-	nic, _ := vm.CreateNIC(name, helper.GetVNICProfileID(), params)
+	nic, err := vm.CreateNIC(name, helper.GetVNICProfileID(), params)
 	if nic != nil {
 		t.Fatalf("create 2 NICs with same name %s", name)
 	}
+	if err != nil {
+		print(err)
+	}
+
 }
 
 func assertCanRemoveNIC(t *testing.T, nic ovirtclient.NIC) {
@@ -88,7 +98,52 @@ func assertCanUpdateNICMac(t *testing.T, nic ovirtclient.NIC, mac string) ovirtc
 func assertCantUpdateNICMac(t *testing.T, nic ovirtclient.NIC, mac string) ovirtclient.NIC {
 	newNIC, err := nic.Update(ovirtclient.UpdateNICParams().MustWithMac(mac))
 	if err == nil {
-		t.Fatalf("Mac address validation error. Invalid mac was accepted.")
+		t.Fatalf("Mac address validation error. Invalid mac was accepted: %s", mac)
 	}
 	return newNIC
+}
+
+func assertCanCreateNICMac(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	vm ovirtclient.VM,
+	mac string,
+) ovirtclient.NIC {
+	params := ovirtclient.CreateNICParams()
+	params, err := params.WithMac(mac)
+
+	if err != nil {
+		t.Fatalf("Failed to set custom Mac address on NIC. Error: %s", err)
+	}
+
+	nic, err := vm.CreateNIC(fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), helper.GetVNICProfileID(), params)
+	if err != nil {
+		t.Fatalf("failed to create NIC on VM %s", vm.ID())
+	}
+	if nic.VMID() != vm.ID() {
+		t.Fatalf("VM ID mismatch between NIC and VM (%s != %s)", nic.VMID(), vm.ID())
+	}
+	if nic.Mac() != params.Mac() {
+		t.Fatalf("Failed to create NIC with custom mac address: %s", nic.Mac())
+	}
+
+	return nic
+}
+
+func assertCantCreateNICMac(
+	t *testing.T,
+	helper ovirtclient.TestHelper,
+	vm ovirtclient.VM,
+	mac string,
+) ovirtclient.NIC {
+	params := ovirtclient.CreateNICParams()
+	params, err := params.WithMac(mac)
+	if err != nil {
+		t.Fatalf("Failed to set custom Mac address on NIC. Error: %s", err)
+	}
+	nic, err := vm.CreateNIC(fmt.Sprintf("test-%s", helper.GenerateRandomID(5)), helper.GetVNICProfileID(), params)
+	if err == nil {
+		t.Fatalf("Mac address validation error. Invalid mac was accepted: %s", mac)
+	}
+	return nic
 }
