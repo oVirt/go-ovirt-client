@@ -505,43 +505,43 @@ func NewMockTestHelper(logger ovirtclientlog.Logger) (TestHelper, error) {
 // NewLiveTestHelperFromEnv is a function that creates a test helper working against a live (not mock)
 // oVirt engine using environment variables. The environment variables are as follows:
 //
-//   OVIRT_URL
+//	OVIRT_URL
 //
 // URL of the oVirt engine. Mandatory.
 //
-//   OVIRT_USERNAME
+//	OVIRT_USERNAME
 //
 // The username for the oVirt engine. Mandatory.
 //
-//   OVIRT_PASSWORD
+//	OVIRT_PASSWORD
 //
 // The password for the oVirt engine. Mandatory.
 //
-//   OVIRT_CAFILE
+//	OVIRT_CAFILE
 //
 // A file containing the CA certificate in PEM format.
 //
-//   OVIRT_CA_BUNDLE
+//	OVIRT_CA_BUNDLE
 //
 // Provide the CA certificate in PEM format directly.
 //
-//   OVIRT_INSECURE
+//	OVIRT_INSECURE
 //
 // Disable certificate verification if set. Not recommended.
 //
-//   OVIRT_CLUSTER_ID
+//	OVIRT_CLUSTER_ID
 //
 // The cluster to use for testing. Will be automatically chosen if not provided.
 //
-//   OVIRT_BLANK_TEMPLATE_ID
+//	OVIRT_BLANK_TEMPLATE_ID
 //
 // ID of the blank template. Will be automatically chosen if not provided.
 //
-//   OVIRT_STORAGE_DOMAIN_ID
+//	OVIRT_STORAGE_DOMAIN_ID
 //
 // Storage domain to use for testing. Will be automatically chosen if not provided.
 //
-//   OVIRT_VNIC_PROFILE_ID
+//	OVIRT_VNIC_PROFILE_ID
 //
 // VNIC profile to use for testing. Will be automatically chosen if not provided.
 func NewLiveTestHelperFromEnv(logger ovirtclientlog.Logger) (TestHelper, error) {
