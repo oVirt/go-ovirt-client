@@ -33,8 +33,8 @@ func assertCanCreateNIC(
 		t.Fatalf("VM ID mismatch between NIC and VM (%s != %s)", nic.VMID(), vm.ID())
 	}
 	if params != nil {
-		if nic.Mac() != params.Mac() {
-			t.Fatalf("Failed to create NIC with custom mac address: %s", nic.Mac())
+		if params.Mac() != "" && params.Mac() != nic.Mac() {
+			t.Fatalf("Failed to create NIC with custom mac address. Expected '%s', but created mac is '%s'", params.Mac(), nic.Mac())
 		}
 	}
 	return nic
