@@ -10,22 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
   test:
     name: go test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.16
       - name: Set up gotestfmt
         uses: haveyoudebuggedit/gotestfmt-action@v2
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/go/pkg/mod
@@ -38,7 +38,7 @@ jobs:
           go generate
           go test -json -v -client=mock ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
       - name: Upload test log
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always()
         with:
           name: test-log
@@ -49,12 +49,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.16
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/go/pkg/mod
@@ -78,7 +78,7 @@ jobs:
         run: |
           yum install -y git createrepo_c rpm-build golang make
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.16
       - name: Checkout
@@ -86,7 +86,7 @@ jobs:
       - name : Compile go-ovirt-client tests and Build go-ovirt-client-tests RPM
         run: |
           SUFFIX=.$(date -u +%Y%m%d%H%M%S).git$(git rev-parse --short HEAD)
-
+  
           mkdir -p go-ovirt-client-tests-bin
           go generate
           go test -v -c -o go-ovirt-client-tests-bin/go-ovirt-client-tests-exe
