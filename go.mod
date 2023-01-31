@@ -1,4 +1,4 @@
-module github.com/ovirt/go-ovirt-client/v2
+module github.com/ovirt/go-ovirt-client/v3
 
 go 1.16
 

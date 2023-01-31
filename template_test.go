@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 )
 
 // TestTemplateCreation is the simplest test for creating and using a template.

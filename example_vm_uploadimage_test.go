@@ -7,7 +7,7 @@ import (
 	"time"
 
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
-	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 )
 
 // This example demonstrates the simplest way to upload an image without special timeout handling. The call still times
