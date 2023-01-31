@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 )
 
 type ctxKey string

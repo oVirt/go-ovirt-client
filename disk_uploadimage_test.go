@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 )
 
 func assertCanUploadDiskImage(t *testing.T, helper ovirtclient.TestHelper, disk ovirtclient.Disk) {

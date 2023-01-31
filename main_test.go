@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
-	ovirtclient "github.com/ovirt/go-ovirt-client/v2"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 )
 
 var getHelper func(t *testing.T) ovirtclient.TestHelper
