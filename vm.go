@@ -206,6 +206,8 @@ type VMData interface {
 	Name() string
 	// Comment is the comment added to the VM.
 	Comment() string
+	// Description is the description added to the VM.
+	Description() string
 	// ClusterID returns the cluster this machine belongs to.
 	ClusterID() ClusterID
 	// TemplateID returns the ID of the base template for this machine.
@@ -661,6 +663,9 @@ type OptionalVMParameters interface {
 	// Comment returns the comment for the VM.
 	Comment() string
 
+	// Description returns the description for the VM.
+	Description() string
+
 	// CPU contains the CPU topology, if any.
 	CPU() VMCPUParams
 
@@ -711,6 +716,11 @@ type BuildableVMParameters interface {
 	WithComment(comment string) (BuildableVMParameters, error)
 	// MustWithComment is identical to WithComment, but panics instead of returning an error.
 	MustWithComment(comment string) BuildableVMParameters
+
+	// WithDescriptiont adds a common to the VM.
+	WithDescription(description string) (BuildableVMParameters, error)
+	// MustWithDescription is identical to WithDescription, but panics instead of returning an error.
+	MustWithDescription(descriptiont string) BuildableVMParameters
 
 	// WithCPU adds a VMCPUTopo to the VM.
 	WithCPU(cpu VMCPUParams) (BuildableVMParameters, error)
@@ -1376,6 +1386,8 @@ type UpdateVMParameters interface {
 	Name() *string
 	// Comment returns the comment for the VM. Return nil if the name should not be changed.
 	Comment() *string
+	// Description returns the description for the VM. Return nil if the name should not be changed.
+	Description() *string
 }
 
 // VMCPUTopo contains the CPU topology information about a VM.
@@ -1459,6 +1471,12 @@ type BuildableUpdateVMParameters interface {
 
 	// MustWithComment is identical to WithComment, but panics instead of returning an error.
 	MustWithComment(comment string) BuildableUpdateVMParameters
+
+	// WithDescription adds a description to the request
+	WithDescription(description string) (BuildableUpdateVMParameters, error)
+
+	// MustWithDescription is identical to WithDescription, but panics instead of returning an error.
+	MustWithDescription(comment string) BuildableUpdateVMParameters
 }
 
 // UpdateVMParams returns a buildable set of update parameters.
@@ -1467,8 +1485,9 @@ func UpdateVMParams() BuildableUpdateVMParameters {
 }
 
 type updateVMParams struct {
-	name    *string
-	comment *string
+	name        *string
+	comment     *string
+	description *string
 }
 
 func (u *updateVMParams) MustWithName(name string) BuildableUpdateVMParameters {
@@ -1487,12 +1506,24 @@ func (u *updateVMParams) MustWithComment(comment string) BuildableUpdateVMParame
 	return builder
 }
 
+func (u *updateVMParams) MustWithDescription(description string) BuildableUpdateVMParameters {
+	builder, err := u.WithDescription(description)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 func (u *updateVMParams) Name() *string {
 	return u.name
 }
 
 func (u *updateVMParams) Comment() *string {
 	return u.comment
+}
+
+func (u *updateVMParams) Description() *string {
+	return u.description
 }
 
 func (u *updateVMParams) WithName(name string) (BuildableUpdateVMParameters, error) {
@@ -1505,6 +1536,11 @@ func (u *updateVMParams) WithName(name string) (BuildableUpdateVMParameters, err
 
 func (u *updateVMParams) WithComment(comment string) (BuildableUpdateVMParameters, error) {
 	u.comment = &comment
+	return u, nil
+}
+
+func (u *updateVMParams) WithDescription(description string) (BuildableUpdateVMParameters, error) {
+	u.description = &description
 	return u, nil
 }
 
@@ -1524,9 +1560,10 @@ func CreateVMParams() BuildableVMParameters {
 type vmParams struct {
 	lock *sync.Mutex
 
-	name    string
-	comment string
-	cpu     VMCPUParams
+	name        string
+	comment     string
+	description string
+	cpu         VMCPUParams
 
 	hugePages *VMHugePages
 
@@ -1802,6 +1839,13 @@ func (v *vmParams) MustWithComment(comment string) BuildableVMParameters {
 	}
 	return builder
 }
+func (v *vmParams) MustWithDescription(description string) BuildableVMParameters {
+	builder, err := v.WithDescription(description)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
 
 func (v *vmParams) WithName(name string) (BuildableVMParameters, error) {
 	if err := validateVMName(name); err != nil {
@@ -1816,6 +1860,11 @@ func (v *vmParams) WithComment(comment string) (BuildableVMParameters, error) {
 	return v, nil
 }
 
+func (v *vmParams) WithDescription(description string) (BuildableVMParameters, error) {
+	v.description = description
+	return v, nil
+}
+
 func (v vmParams) Name() string {
 	return v.name
 }
@@ -1824,12 +1873,17 @@ func (v vmParams) Comment() string {
 	return v.comment
 }
 
+func (v vmParams) Description() string {
+	return v.description
+}
+
 type vm struct {
 	client Client
 
 	id               VMID
 	name             string
 	comment          string
+	description      string
 	clusterID        ClusterID
 	templateID       TemplateID
 	status           VMStatus
@@ -1960,6 +2014,7 @@ func (v *vm) withName(name string) *vm {
 		v.id,
 		name,
 		v.comment,
+		v.description,
 		v.clusterID,
 		v.templateID,
 		v.status,
@@ -1987,6 +2042,35 @@ func (v *vm) withComment(comment string) *vm {
 		v.id,
 		v.name,
 		comment,
+		v.description,
+		v.clusterID,
+		v.templateID,
+		v.status,
+		v.cpu,
+		v.memory,
+		v.tagIDs,
+		v.hugePages,
+		v.initialization,
+		v.hostID,
+		v.placementPolicy,
+		v.memoryPolicy,
+		v.instanceTypeID,
+		v.vmType,
+		v.os,
+		v.serialConsole,
+		v.soundcardEnabled,
+	}
+}
+
+// withDescription returns a copy of the VM with the new comment. It does not change the original copy to avoid
+// shared state issues.
+func (v *vm) withDescription(description string) *vm {
+	return &vm{
+		v.client,
+		v.id,
+		v.name,
+		v.comment,
+		description,
 		v.clusterID,
 		v.templateID,
 		v.status,
@@ -2058,6 +2142,10 @@ func (v *vm) Comment() string {
 	return v.comment
 }
 
+func (v *vm) Description() string {
+	return v.description
+}
+
 func (v *vm) ClusterID() ClusterID {
 	return v.clusterID
 }
@@ -2114,6 +2202,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmIDConverter,
 		vmNameConverter,
 		vmCommentConverter,
+		vmDescriptionConverter,
 		vmClusterConverter,
 		vmStatusConverter,
 		vmTemplateConverter,
@@ -2280,6 +2369,15 @@ func vmCommentConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
 		return newError(EFieldMissing, "comment field missing from VM object")
 	}
 	v.comment = comment
+	return nil
+}
+
+func vmDescriptionConverter(sdkObject *ovirtsdk.Vm, v *vm) error {
+	description, ok := sdkObject.Description()
+	if !ok {
+		return newError(EFieldMissing, "description field missing from VM object")
+	}
+	v.description = description
 	return nil
 }
 
