@@ -18,6 +18,12 @@ func vmBuilderComment(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) 
 	}
 }
 
+func vmBuilderDescription(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if description := params.Description(); description != "" {
+		builder.Description(description)
+	}
+}
+
 func vmBuilderCPU(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if cpu := params.CPU(); cpu != nil {
 		cpuBuilder := ovirtsdk.NewCpuBuilder()
@@ -148,6 +154,7 @@ func createSDKVM(
 	builder.Name(name)
 	parts := []vmBuilderComponent{
 		vmBuilderComment,
+		vmBuilderDescription,
 		vmBuilderCPU,
 		vmBuilderHugePages,
 		vmBuilderInitialization,
@@ -416,6 +423,7 @@ func (m *mockClient) createVM(
 		VMID(id),
 		name,
 		params.Comment(),
+		params.Description(),
 		clusterID,
 		templateID,
 		VMStatusDown,

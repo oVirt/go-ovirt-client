@@ -24,6 +24,9 @@ func (o *oVirtClient) UpdateVM(
 	if comment := params.Comment(); comment != nil {
 		vm.SetComment(*comment)
 	}
+	if description := params.Description(); description != nil {
+		vm.SetDescription(*description)
+	}
 
 	err = retry(
 		fmt.Sprintf("updating vm %s", id),
@@ -70,6 +73,9 @@ func (m *mockClient) UpdateVM(id VMID, params UpdateVMParameters, _ ...RetryStra
 	}
 	if comment := params.Comment(); comment != nil {
 		vm = vm.withComment(*comment)
+	}
+	if description := params.Description(); description != nil {
+		vm = vm.withDescription(*description)
 	}
 	m.vms[id] = vm
 
