@@ -65,17 +65,37 @@ func vmBuilderMemory(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 }
 
 func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
-	if init := params.Initialization(); init != nil {
-		initBuilder := ovirtsdk.NewInitializationBuilder()
-
-		if init.CustomScript() != "" {
-			initBuilder.CustomScript(init.CustomScript())
-		}
-		if init.HostName() != "" {
-			initBuilder.HostName(init.HostName())
-		}
-		builder.InitializationBuilder(initBuilder)
+	if params.Initialization() == nil {
+		return
 	}
+
+	init := params.Initialization()
+	initBuilder := ovirtsdk.NewInitializationBuilder()
+
+	if init.CustomScript() != "" {
+		initBuilder.CustomScript(init.CustomScript())
+	}
+	if init.HostName() != "" {
+		initBuilder.HostName(init.HostName())
+	}
+	if nicConf := init.NicConfiguration(); nicConf != nil {
+		ipBuilder := ovirtsdk.NewIpBuilder().
+			Address(nicConf.IP().Address).
+			Gateway(nicConf.IP().Gateway).
+			Netmask(nicConf.IP().Netmask)
+		ipBuilder.Version(ovirtsdk.IPVERSION_V4)
+		if nicConf.IP().IsIPv6() {
+			ipBuilder.Version(ovirtsdk.IPVERSION_V4)
+		}
+
+		nicBuilder := ovirtsdk.NewNicConfigurationBuilder()
+		nicBuilder.BootProtocol(ovirtsdk.BOOTPROTOCOL_STATIC)
+		nicBuilder.OnBoot(true)
+		nicBuilder.Ip(ipBuilder.MustBuild())
+
+		initBuilder.NicConfigurationsOfAny(nicBuilder.MustBuild())
+	}
+	builder.InitializationBuilder(initBuilder)
 }
 
 func vmPlacementPolicyParameterConverter(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {

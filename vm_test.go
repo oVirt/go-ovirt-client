@@ -220,12 +220,22 @@ func TestVMCreationWithInit(t *testing.T) {
 		ovirtclient.CreateVMParams(),
 	)
 	tpl := assertCanCreateTemplate(t, helper, vm1)
+
+	init := ovirtclient.NewInitialization("script-test", "test-vm").WithNicConfiguration(
+		ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
+			Version: ovirtclient.IPVERSION_V4,
+			Address: "192.168.178.15",
+			Gateway: "192.168.19.1",
+			Netmask: "255.255.255.0",
+		}),
+	)
+
 	vm2 := assertCanCreateVMFromTemplate(
 		t,
 		helper,
 		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
 		tpl.ID(),
-		ovirtclient.CreateVMParams().MustWithInitializationParameters("script-test", "test-vm"),
+		ovirtclient.CreateVMParams().MustWithInitialization(init),
 	)
 
 	if vm2.Initialization().CustomScript() != "script-test" {
@@ -234,6 +244,24 @@ func TestVMCreationWithInit(t *testing.T) {
 
 	if vm2.Initialization().HostName() != "test-vm" {
 		t.Fatalf("got Unexpected output from the HostName (%s) init field ", vm2.Initialization().HostName())
+	}
+
+	if vm2.Initialization().NicConfiguration() == nil {
+		t.Fatalf("got Unexpected output from the NicConfiguration (%s) init field ", vm2.Initialization().NicConfiguration())
+	}
+
+	if vm2.Initialization().NicConfiguration().Name() != "custom-nic" {
+		t.Fatalf("got Unexpected output from the NicConfiguration.Name (%s) init field ", vm2.Initialization().NicConfiguration().Name())
+	}
+
+	if vm2.Initialization().NicConfiguration().IP().Address != "192.168.178.15" {
+		t.Fatalf("got Unexpected output from the NicConfiguration.IP.Address (%s) init field ", vm2.Initialization().NicConfiguration().IP().Address)
+	}
+	if vm2.Initialization().NicConfiguration().IP().Gateway != "192.168.19.1" {
+		t.Fatalf("got Unexpected output from the NicConfiguration.IP.Gateway (%s) init field ", vm2.Initialization().NicConfiguration().IP().Gateway)
+	}
+	if vm2.Initialization().NicConfiguration().IP().Netmask != "255.255.255.0" {
+		t.Fatalf("got Unexpected output from the NicConfiguration.IP.Netmask (%s) init field ", vm2.Initialization().NicConfiguration().IP().Netmask)
 	}
 }
 
