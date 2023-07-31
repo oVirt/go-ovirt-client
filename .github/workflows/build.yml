@@ -66,6 +66,7 @@ jobs:
   rpm:
     # The RPM step builds an RPM to test with the oVirt System Test. This can be invoked by typing /ost in the comment.
     name: Build RPM
+    if: ${{ false }}
     needs:
       - generate
       - test
@@ -95,6 +96,7 @@ jobs:
           cp go-ovirt-client-tests-bin/go-ovirt-client-tests-exe SOURCES/
           tar cvzf go-ovirt-client-tests.tar.gz go-ovirt-client-tests-bin/
           cp go-ovirt-client-tests.tar.gz SOURCES
+
           rpmbuild -D "_topdir $(pwd)" -D "release_suffix ${SUFFIX}" -bb go-ovirt-client-tests.spec
       - name: Collect artifacts
         run: |
