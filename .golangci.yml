@@ -77,13 +77,17 @@ linters:
     # endregion
 linters-settings:
   depguard:
-    list-type: whitelist
-    include-go-root: false
-    packages:
-      - github.com/ovirt/go-ovirt
-      - github.com/ovirt/go-ovirt-client/v3
-      - github.com/ovirt/go-ovirt-client-log/v3
-      - github.com/google/uuid
+    rules:
+      main:
+        files:
+          - "**/*.go"
+        allow:
+          - $gostd
+          - github.com/ovirt/go-ovirt
+          - github.com/ovirt/go-ovirt-client/v3
+          - github.com/ovirt/go-ovirt-client-log/v3
+          - github.com/google/uuid
+
   govet:
     enable-all: true
     check-shadowing: false
