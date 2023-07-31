@@ -373,6 +373,7 @@ func VMHugePagesValues() VMHugePagesList {
 type Initialization interface {
 	CustomScript() string
 	HostName() string
+	NicConfiguration() NicConfiguration
 }
 
 // BuildableInitialization is a buildable version of Initialization.
@@ -380,21 +381,25 @@ type BuildableInitialization interface {
 	Initialization
 	WithCustomScript(customScript string) BuildableInitialization
 	WithHostname(hostname string) BuildableInitialization
+	WithNicConfiguration(nic NicConfiguration) BuildableInitialization
 }
 
 // initialization defines to the virtual machine’s initialization configuration.
 // customScript - Cloud-init script which will be executed on Virtual Machine when deployed.
 // hostname - Hostname to be set to Virtual Machine when deployed.
+// nicConfiguration - Optional. The nic configuration used on boot time.
 type initialization struct {
-	customScript string
-	hostname     string
+	customScript     string
+	hostname         string
+	nicConfiguration NicConfiguration
 }
 
 // NewInitialization creates a new Initialization from the specified parameters.
-func NewInitialization(customScript, hostname string) Initialization {
+func NewInitialization(customScript, hostname string) BuildableInitialization {
 	return &initialization{
-		customScript: customScript,
-		hostname:     hostname,
+		customScript:     customScript,
+		hostname:         hostname,
+		nicConfiguration: nil,
 	}
 }
 
@@ -406,6 +411,10 @@ func (i *initialization) HostName() string {
 	return i.hostname
 }
 
+func (i *initialization) NicConfiguration() NicConfiguration {
+	return i.nicConfiguration
+}
+
 func (i *initialization) WithCustomScript(customScript string) BuildableInitialization {
 	i.customScript = customScript
 	return i
@@ -413,6 +422,78 @@ func (i *initialization) WithCustomScript(customScript string) BuildableInitiali
 
 func (i *initialization) WithHostname(hostname string) BuildableInitialization {
 	i.hostname = hostname
+	return i
+}
+
+func (i *initialization) WithNicConfiguration(nic NicConfiguration) BuildableInitialization {
+	i.nicConfiguration = nic
+	return i
+}
+
+type IpVersion string
+
+const (
+	IPVERSION_V4 IpVersion = "v4"
+	IPVERSION_V6 IpVersion = "v6"
+)
+
+// Ip Represents the IP configuration of a network interface.
+type IP struct {
+	Address string
+	Gateway string
+	Netmask string
+	Version IpVersion
+}
+
+func (ip IP) IsIPv4() bool {
+	return ip.Version == IPVERSION_V4
+}
+
+func (ip IP) IsIPv6() bool {
+	return ip.Version == IPVERSION_V6
+}
+
+// NicConfiguration defines a virtual machine’s initialization nic configuration.
+type NicConfiguration interface {
+	Name() string
+	IP() IP
+}
+
+// BuildableNicConfiguration is a buildable version of NicConfiguration.
+type BuildableNicConfiguration interface {
+	NicConfiguration
+	WithName(name string) BuildableNicConfiguration
+	WithIP(ip IP) BuildableNicConfiguration
+}
+
+type nicConfiguration struct {
+	name string
+	ip   IP
+}
+
+// NewNicConfiguration creates a new NicConfiguration from the specified parameters.
+func NewNicConfiguration(name string, ip IP) NicConfiguration {
+	return &nicConfiguration{
+		name: name,
+		ip:   ip,
+	}
+}
+
+func (i *nicConfiguration) Name() string {
+	return i.name
+}
+
+func (i *nicConfiguration) IP() IP {
+	return i.ip
+}
+
+func (i *nicConfiguration) WithName(name string) BuildableNicConfiguration {
+	i.name = name
+	return i
+}
+
+func (i *nicConfiguration) WithIP(ip IP) BuildableNicConfiguration {
+	i.ip = ip
 	return i
 }
 
@@ -434,7 +515,21 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 	if ok {
 		init.hostname = hostname
 	}
+	nicConfigs, ok := initializationSDK.NicConfigurations()
+	if ok && len(nicConfigs.Slice()) >= 1 {
+		init.nicConfiguration = convertSDKNicConfiguration(nicConfigs.Slice()[0])
+	}
 	return &init, nil
+}
+
+func convertSDKNicConfiguration(sdkObject *ovirtsdk.NicConfiguration) NicConfiguration {
+	ip := sdkObject.MustIp()
+	return NewNicConfiguration(sdkObject.MustName(), IP{
+		Address: ip.MustAddress(),
+		Gateway: ip.MustGateway(),
+		Netmask: ip.MustNetmask(),
+		Version: IpVersion(ip.MustVersion()),
+	})
 }
 
 // VM is the implementation of the virtual machine in oVirt.
