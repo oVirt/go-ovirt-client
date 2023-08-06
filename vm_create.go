@@ -79,20 +79,28 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 		initBuilder.HostName(init.HostName())
 	}
 	if nicConf := init.NicConfiguration(); nicConf != nil {
-		ipBuilder := ovirtsdk.NewIpBuilder().
-			Address(nicConf.IP().Address).
-			Gateway(nicConf.IP().Gateway).
-			Netmask(nicConf.IP().Netmask)
-		ipBuilder.Version(ovirtsdk.IPVERSION_V4)
-		if nicConf.IP().IsIPv6() {
-			ipBuilder.Version(ovirtsdk.IPVERSION_V6)
-		}
 
 		nicBuilder := ovirtsdk.NewNicConfigurationBuilder()
 		nicBuilder.BootProtocol(ovirtsdk.BOOTPROTOCOL_STATIC)
 		nicBuilder.OnBoot(true)
-		nicBuilder.Ip(ipBuilder.MustBuild())
 		nicBuilder.Name(nicConf.Name())
+
+		ipBuilder := ovirtsdk.NewIpBuilder().
+			Address(nicConf.IP().Address).
+			Gateway(nicConf.IP().Gateway).
+			Netmask(nicConf.IP().Netmask).
+			Version(ovirtsdk.IPVERSION_V4)
+		nicBuilder.Ip(ipBuilder.MustBuild())
+
+		if nicConf.IPV6() != nil {
+			ipV6Builder := ovirtsdk.NewIpBuilder().
+				Address(nicConf.IPV6().Address).
+				Gateway(nicConf.IPV6().Gateway).
+				Netmask(nicConf.IPV6().Netmask).
+				Version(ovirtsdk.IPVERSION_V6)
+			nicBuilder.Ipv6(ipV6Builder.MustBuild())
+
+		}
 
 		initBuilder.NicConfigurationsOfAny(nicBuilder.MustBuild())
 	}

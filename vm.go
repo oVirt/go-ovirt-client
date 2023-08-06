@@ -457,6 +457,7 @@ func (ip IP) IsIPv6() bool {
 type NicConfiguration interface {
 	Name() string
 	IP() IP
+	IPV6() *IP
 }
 
 // BuildableNicConfiguration is a buildable version of NicConfiguration.
@@ -464,18 +465,21 @@ type BuildableNicConfiguration interface {
 	NicConfiguration
 	WithName(name string) BuildableNicConfiguration
 	WithIP(ip IP) BuildableNicConfiguration
+	WithIPV6(ip IP) BuildableNicConfiguration
 }
 
 type nicConfiguration struct {
 	name string
 	ip   IP
+	ipv6 *IP
 }
 
 // NewNicConfiguration creates a new NicConfiguration from the specified parameters.
-func NewNicConfiguration(name string, ip IP) NicConfiguration {
+func NewNicConfiguration(name string, ip IP) BuildableNicConfiguration {
 	return &nicConfiguration{
 		name: name,
 		ip:   ip,
+		ipv6: nil,
 	}
 }
 
@@ -487,6 +491,10 @@ func (i *nicConfiguration) IP() IP {
 	return i.ip
 }
 
+func (i *nicConfiguration) IPV6() *IP {
+	return i.ipv6
+}
+
 func (i *nicConfiguration) WithName(name string) BuildableNicConfiguration {
 	i.name = name
 	return i
@@ -494,6 +502,11 @@ func (i *nicConfiguration) WithName(name string) BuildableNicConfiguration {
 
 func (i *nicConfiguration) WithIP(ip IP) BuildableNicConfiguration {
 	i.ip = ip
+	return i
+}
+
+func (i *nicConfiguration) WithIPV6(ip IP) BuildableNicConfiguration {
+	i.ipv6 = &ip
 	return i
 }
 
@@ -523,23 +536,33 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 }
 
 func convertSDKNicConfiguration(sdkObject *ovirtsdk.NicConfiguration) NicConfiguration {
-
-	ipv4, ok := sdkObject.Ip()
-	if ok {
-		return NewNicConfiguration(sdkObject.MustName(), IP{
+	ipv4 := sdkObject.MustIp()
+	nicConfiguration := NewNicConfiguration(
+		sdkObject.MustName(), IP{
 			Address: ipv4.MustAddress(),
 			Gateway: ipv4.MustGateway(),
 			Netmask: ipv4.MustNetmask(),
 			Version: IPVERSION_V4,
-		})
+		},
+	)
+
+	ipv6, ok := sdkObject.Ipv6()
+	if ok {
+		// SdkObject can be like this:
+		// {ipv6{addres: nil, gateway: nil, netmask: nil, version: nil},}
+		address, _ := ipv6.Address()
+		gateway, _ := ipv6.Gateway()
+		netmask, _ := ipv6.Netmask()
+		nicConfiguration = nicConfiguration.WithIPV6(
+			IP{
+				Address: address,
+				Gateway: gateway,
+				Netmask: netmask,
+				Version: IPVERSION_V6,
+			},
+		)
 	}
-	ipv6 := sdkObject.MustIpv6()
-	return NewNicConfiguration(sdkObject.MustName(), IP{
-		Address: ipv6.MustAddress(),
-		Gateway: ipv6.MustGateway(),
-		Netmask: ipv6.MustNetmask(),
-		Version: IPVERSION_V6,
-	})
+	return nicConfiguration
 }
 
 // VM is the implementation of the virtual machine in oVirt.
