@@ -523,12 +523,22 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 }
 
 func convertSDKNicConfiguration(sdkObject *ovirtsdk.NicConfiguration) NicConfiguration {
-	ip := sdkObject.MustIp()
+
+	ipv4, ok := sdkObject.Ip()
+	if ok {
+		return NewNicConfiguration(sdkObject.MustName(), IP{
+			Address: ipv4.MustAddress(),
+			Gateway: ipv4.MustGateway(),
+			Netmask: ipv4.MustNetmask(),
+			Version: IPVERSION_V4,
+		})
+	}
+	ipv6 := sdkObject.MustIpv6()
 	return NewNicConfiguration(sdkObject.MustName(), IP{
-		Address: ip.MustAddress(),
-		Gateway: ip.MustGateway(),
-		Netmask: ip.MustNetmask(),
-		Version: IpVersion(ip.MustVersion()),
+		Address: ipv6.MustAddress(),
+		Gateway: ipv6.MustGateway(),
+		Netmask: ipv6.MustNetmask(),
+		Version: IPVERSION_V6,
 	})
 }
 
