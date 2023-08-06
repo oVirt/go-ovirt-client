@@ -210,9 +210,107 @@ func TestVMCreationFromTemplateChangedCPUValues(t *testing.T) {
 	}
 }
 
-func TestVMCreationWithInit(t *testing.T) {
+func assertNIC(t *testing.T, nic, shouldBe ovirtclient.NicConfiguration) {
+	if nic == nil {
+		t.Fatalf(
+			"got Unexpected output from the NicConfiguration (%s) init field ",
+			nic,
+		)
+	}
+
+	if nic.Name() != shouldBe.Name() {
+		t.Fatalf(
+			"got Unexpected output from the NicConfiguration.Name (%s) init field ",
+			nic.Name(),
+		)
+	}
+
+	if nic.IP().Address != shouldBe.IP().Address {
+		t.Fatalf(
+			"got Unexpected output from the NicConfiguration.IP.Address (%s) init field ",
+			nic.IP().Address,
+		)
+	}
+	if nic.IP().Gateway != shouldBe.IP().Gateway {
+		t.Fatalf(
+			"got Unexpected output from the NicConfiguration.IP.Gateway (%s) init field ",
+			nic.IP().Gateway,
+		)
+	}
+	if nic.IP().Netmask != shouldBe.IP().Netmask {
+		t.Fatalf(
+			"got Unexpected output from the NicConfiguration.IP.Netmask (%s) init field ",
+			nic.IP().Netmask,
+		)
+	}
+
+	if shouldBe.IPV6() != nil {
+		if nic.IPV6().Address != shouldBe.IPV6().Address {
+			t.Fatalf(
+				"got Unexpected output from the NicConfiguration.IPV6.Address (%s) init field ",
+				nic.IPV6().Address,
+			)
+		}
+		if nic.IPV6().Gateway != shouldBe.IPV6().Gateway {
+			t.Fatalf(
+				"got Unexpected output from the NicConfiguration.IPV6.Gateway (%s) init field ",
+				nic.IPV6().Gateway,
+			)
+		}
+		if nic.IPV6().Netmask != shouldBe.IPV6().Netmask {
+			t.Fatalf(
+				"got Unexpected output from the NicConfiguration.IPV6.Netmask (%s) init field ",
+				nic.IPV6().Netmask,
+			)
+		}
+
+	}
+}
+
+func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 	t.Parallel()
 	helper := getHelper(t)
+
+	testCases := []struct {
+		name             string
+		customScript     string
+		hostName         string
+		nicConfiguration ovirtclient.NicConfiguration
+	}{
+		{
+			"only custom script and hostname",
+			"script-test",
+			"test-vm",
+			nil,
+		},
+		{
+			"with ipv4 nic configuration",
+			"script-test",
+			"test-vm",
+			ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
+				Version: ovirtclient.IPVERSION_V4,
+				Address: "192.168.178.15",
+				Gateway: "192.168.19.1",
+				Netmask: "255.255.255.0",
+			})},
+		{
+			"with ipv6 nic configuration",
+			"script-test",
+			"test-vm",
+			ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
+				Version: ovirtclient.IPVERSION_V4,
+				Address: "192.168.178.15",
+				Gateway: "192.168.19.1",
+				Netmask: "255.255.255.0",
+			}).WithIPV6(ovirtclient.IP{
+				Version: ovirtclient.IPVERSION_V6,
+				Address: "fe80::bfb6:1c6c:f541:1aa564",
+				Gateway: "fe80::",
+				Netmask: "64",
+			}),
+		},
+	}
+
 	vm1 := assertCanCreateVM(
 		t,
 		helper,
@@ -221,48 +319,38 @@ func TestVMCreationWithInit(t *testing.T) {
 	)
 	tpl := assertCanCreateTemplate(t, helper, vm1)
 
-	init := ovirtclient.NewInitialization("script-test", "test-vm").WithNicConfiguration(
-		ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
-			Version: ovirtclient.IPVERSION_V4,
-			Address: "192.168.178.15",
-			Gateway: "192.168.19.1",
-			Netmask: "255.255.255.0",
-		}),
-	)
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			init := ovirtclient.NewInitialization(testCase.customScript, testCase.hostName)
+			if testCase.nicConfiguration != nil {
+				init = init.WithNicConfiguration(testCase.nicConfiguration)
+			}
 
-	vm2 := assertCanCreateVMFromTemplate(
-		t,
-		helper,
-		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
-		tpl.ID(),
-		ovirtclient.CreateVMParams().MustWithInitialization(init),
-	)
+			vm2 := assertCanCreateVMFromTemplate(
+				t,
+				helper,
+				fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+				tpl.ID(),
+				ovirtclient.CreateVMParams().MustWithInitialization(init),
+			)
 
-	if vm2.Initialization().CustomScript() != "script-test" {
-		t.Fatalf("got Unexpected output from the CustomScript (%s) init field ", vm2.Initialization().CustomScript())
+			if vm2.Initialization().CustomScript() != testCase.customScript {
+				t.Fatalf("got Unexpected output from the CustomScript (%s) init field ", vm2.Initialization().CustomScript())
+			}
+
+			if vm2.Initialization().HostName() != testCase.hostName {
+				t.Fatalf("got Unexpected output from the HostName (%s) init field ", vm2.Initialization().HostName())
+			}
+
+			if testCase.nicConfiguration != nil {
+				nic := vm2.Initialization().NicConfiguration()
+				assertNIC(t, nic, testCase.nicConfiguration)
+			}
+
+		},
+		)
 	}
 
-	if vm2.Initialization().HostName() != "test-vm" {
-		t.Fatalf("got Unexpected output from the HostName (%s) init field ", vm2.Initialization().HostName())
-	}
-
-	if vm2.Initialization().NicConfiguration() == nil {
-		t.Fatalf("got Unexpected output from the NicConfiguration (%s) init field ", vm2.Initialization().NicConfiguration())
-	}
-
-	if vm2.Initialization().NicConfiguration().Name() != "custom-nic" {
-		t.Fatalf("got Unexpected output from the NicConfiguration.Name (%s) init field ", vm2.Initialization().NicConfiguration().Name())
-	}
-
-	if vm2.Initialization().NicConfiguration().IP().Address != "192.168.178.15" {
-		t.Fatalf("got Unexpected output from the NicConfiguration.IP.Address (%s) init field ", vm2.Initialization().NicConfiguration().IP().Address)
-	}
-	if vm2.Initialization().NicConfiguration().IP().Gateway != "192.168.19.1" {
-		t.Fatalf("got Unexpected output from the NicConfiguration.IP.Gateway (%s) init field ", vm2.Initialization().NicConfiguration().IP().Gateway)
-	}
-	if vm2.Initialization().NicConfiguration().IP().Netmask != "255.255.255.0" {
-		t.Fatalf("got Unexpected output from the NicConfiguration.IP.Netmask (%s) init field ", vm2.Initialization().NicConfiguration().IP().Netmask)
-	}
 }
 
 func TestVMCreationWithDescription(t *testing.T) {
