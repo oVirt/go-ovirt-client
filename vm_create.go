@@ -85,13 +85,14 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 			Netmask(nicConf.IP().Netmask)
 		ipBuilder.Version(ovirtsdk.IPVERSION_V4)
 		if nicConf.IP().IsIPv6() {
-			ipBuilder.Version(ovirtsdk.IPVERSION_V4)
+			ipBuilder.Version(ovirtsdk.IPVERSION_V6)
 		}
 
 		nicBuilder := ovirtsdk.NewNicConfigurationBuilder()
 		nicBuilder.BootProtocol(ovirtsdk.BOOTPROTOCOL_STATIC)
 		nicBuilder.OnBoot(true)
 		nicBuilder.Ip(ipBuilder.MustBuild())
+		nicBuilder.Name(nicConf.Name())
 
 		initBuilder.NicConfigurationsOfAny(nicBuilder.MustBuild())
 	}
