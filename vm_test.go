@@ -267,47 +267,74 @@ func assertNIC(t *testing.T, nic, shouldBe ovirtclient.NicConfiguration) {
 	}
 }
 
-func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
+func TestVMCreationWithInit(t *testing.T) { //nolint:funlen,gocognit,gocyclo
 	t.Parallel()
 	helper := getHelper(t)
 
 	testCases := []struct {
-		name             string
-		customScript     string
-		hostName         string
-		nicConfiguration ovirtclient.NicConfiguration
+		name         string
+		customScript string
+		hostName     string
+		optional     map[string]interface{}
 	}{
 		{
 			"only custom script and hostname",
-			"script-test",
-			"test-vm",
+			"customScript",
+			"hostName",
 			nil,
 		},
 		{
+			"all string and boolean parameters",
+			"customScript",
+			"hostName",
+			map[string]interface{}{
+				"activeDirectoryOu": "ActiveDirectoryOu",
+				"authorizedSshKeys": "AuthorizedSshKeys",
+				"dnsSearch":         "DnsSearch",
+				"dnsServers":        "DnsServers",
+				"domain":            "Domain",
+				"inputLocale":       "InputLocale",
+				"orgName":           "OrgName",
+				"regenerateIds":     false,
+				"regenerateSshKeys": false,
+				"rootPassword":      "rootpass",
+				"systemLocale":      "SystemLocale",
+				"timezone":          "Timezone",
+				"uiLanguage":        "UiLanguage",
+				"userLocale":        "UserLocale",
+				"userName":          "UserName",
+				"windowsLicenseKey": "WindowsLicenseKey",
+			},
+		},
+		{
 			"with ipv4 nic configuration",
-			"script-test",
-			"test-vm",
-			ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
-				Version: ovirtclient.IPVERSION_V4,
-				Address: "192.168.178.15",
-				Gateway: "192.168.19.1",
-				Netmask: "255.255.255.0",
-			})},
+			"customScript",
+			"hostName",
+			map[string]interface{}{
+				"nicConfiguration": ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
+					Version: ovirtclient.IPVERSION_V4,
+					Address: "192.168.178.15",
+					Gateway: "192.168.19.1",
+					Netmask: "255.255.255.0",
+				})},
+		},
+
 		{
 			"with ipv6 nic configuration",
-			"script-test",
-			"test-vm",
-			ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
-				Version: ovirtclient.IPVERSION_V4,
-				Address: "192.168.178.15",
-				Gateway: "192.168.19.1",
-				Netmask: "255.255.255.0",
-			}).WithIPV6(ovirtclient.IP{
-				Version: ovirtclient.IPVERSION_V6,
-				Address: "fe80::bfb6:1c6c:f541:1aa564",
-				Gateway: "fe80::",
-				Netmask: "64",
-			}),
+			"customScript",
+			"hostName",
+			map[string]interface{}{
+				"nicConfiguration": ovirtclient.NewNicConfiguration("custom-nic", ovirtclient.IP{
+					Version: ovirtclient.IPVERSION_V4,
+					Address: "192.168.178.15",
+					Gateway: "192.168.19.1",
+					Netmask: "255.255.255.0",
+				}).WithIPV6(ovirtclient.IP{
+					Version: ovirtclient.IPVERSION_V6,
+					Address: "fe80::bfb6:1c6c:f541:1aa564",
+					Gateway: "fe80::",
+					Netmask: "64",
+				})},
 		},
 	}
 
@@ -321,9 +348,95 @@ func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			init := ovirtclient.NewInitialization(testCase.customScript, testCase.hostName)
-			if testCase.nicConfiguration != nil {
-				init = init.WithNicConfiguration(testCase.nicConfiguration)
+			customScript := testCase.customScript
+			hostName := testCase.hostName
+
+			init := ovirtclient.NewInitialization(customScript, hostName)
+
+			nicConfiguration, nicConfigurationExists := testCase.optional["nicConfiguration"]
+			if nicConfigurationExists {
+				init = init.WithNicConfiguration(nicConfiguration.(ovirtclient.NicConfiguration))
+
+			}
+
+			activeDirectoryOu, activeDirectoryOuExists := testCase.optional["activeDirectoryOu"]
+			if activeDirectoryOuExists {
+				init = init.WithActiveDirectoryOu(activeDirectoryOu.(string))
+			}
+
+			authorizedSshKeys, authorizedSshKeysExists := testCase.optional["authorizedSshKeys"]
+			if authorizedSshKeysExists {
+				init = init.WithAuthorizedSshKeys(authorizedSshKeys.(string))
+			}
+
+			dnsSearch, dnsSearchExists := testCase.optional["dnsSearch"]
+			if dnsSearchExists {
+				init = init.WithDnsSearch(dnsSearch.(string))
+			}
+
+			dnsServers, dnsServersExists := testCase.optional["dnsServers"]
+			if dnsServersExists {
+				init = init.WithDnsServers(dnsServers.(string))
+			}
+
+			domain, domainExists := testCase.optional["domain"]
+			if domainExists {
+				init = init.WithDomain(domain.(string))
+			}
+
+			inputLocale, inputLocaleExists := testCase.optional["inputLocale"]
+			if inputLocaleExists {
+				init = init.WithInputLocale(inputLocale.(string))
+			}
+
+			orgName, orgNameExists := testCase.optional["orgName"]
+			if orgNameExists {
+				init = init.WithOrgName(orgName.(string))
+			}
+
+			regenerateIds, regenerateIdsExists := testCase.optional["regenerateIds"]
+			if regenerateIdsExists {
+				init = init.WithRegenerateIds(regenerateIds.(bool))
+			}
+
+			regenerateSshKeys, regenerateSshKeysExists := testCase.optional["regenerateSshKeys"]
+			if regenerateSshKeysExists {
+				init = init.WithRegenerateSshKeys(regenerateSshKeys.(bool))
+			}
+
+			rootPassword, rootPasswordExists := testCase.optional["rootPassword"]
+			if rootPasswordExists {
+				init = init.WithRootPassword(rootPassword.(string))
+			}
+
+			systemLocale, systemLocaleExists := testCase.optional["systemLocale"]
+			if systemLocaleExists {
+				init = init.WithSystemLocale(systemLocale.(string))
+			}
+
+			timezone, timezoneExists := testCase.optional["timezone"]
+			if timezoneExists {
+				init = init.WithTimezone(timezone.(string))
+			}
+
+			uiLanguage, uiLanguageExists := testCase.optional["uiLanguage"]
+			if uiLanguageExists {
+				init = init.WithUiLanguage(uiLanguage.(string))
+			}
+
+			userLocale, userLocaleExists := testCase.optional["userLocale"]
+			if userLocaleExists {
+				init = init.WithUserLocale(userLocale.(string))
+			}
+
+			userName, userNameExists := testCase.optional["userName"]
+			if userNameExists {
+				init = init.WithUserName(userName.(string))
+			}
+
+			windowsLicenseKey, windowsLicenseKeyExists := testCase.optional["windowsLicenseKey"]
+			if windowsLicenseKeyExists {
+				init = init.WithWindowsLicenseKey(windowsLicenseKey.(string))
 			}
 
 			vm2 := assertCanCreateVMFromTemplate(
@@ -334,6 +447,8 @@ func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 				ovirtclient.CreateVMParams().MustWithInitialization(init),
 			)
 
+			// vm2.Initialization().RegenerateIds() always nil in response, so skip this parameter
+
 			if vm2.Initialization().CustomScript() != testCase.customScript {
 				t.Fatalf("got Unexpected output from the CustomScript (%s) init field ", vm2.Initialization().CustomScript())
 			}
@@ -342,9 +457,69 @@ func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 				t.Fatalf("got Unexpected output from the HostName (%s) init field ", vm2.Initialization().HostName())
 			}
 
-			if testCase.nicConfiguration != nil {
+			if nicConfigurationExists {
 				nic := vm2.Initialization().NicConfiguration()
-				assertNIC(t, nic, testCase.nicConfiguration)
+				assertNIC(t, nic, nicConfiguration.(ovirtclient.NicConfiguration))
+			}
+
+			if activeDirectoryOuExists && vm2.Initialization().ActiveDirectoryOu() != activeDirectoryOu {
+				t.Fatalf("got Unexpected output from the ActiveDirectoryOu (%s) init field ", vm2.Initialization().ActiveDirectoryOu())
+			}
+
+			if authorizedSshKeysExists && vm2.Initialization().AuthorizedSshKeys() != authorizedSshKeys {
+				t.Fatalf("got Unexpected output from the AuthorizedSshKeys (%s) init field ", vm2.Initialization().AuthorizedSshKeys())
+			}
+
+			if dnsSearchExists && vm2.Initialization().DnsSearch() != dnsSearch {
+				t.Fatalf("got Unexpected output from the DnsSearch (%s) init field ", vm2.Initialization().DnsSearch())
+			}
+
+			if dnsServersExists && vm2.Initialization().DnsServers() != dnsServers {
+				t.Fatalf("got Unexpected output from the DnsServers (%s) init field ", vm2.Initialization().DnsServers())
+			}
+
+			if domainExists && vm2.Initialization().Domain() != domain {
+				t.Fatalf("got Unexpected output from the Domain (%s) init field ", vm2.Initialization().Domain())
+			}
+
+			if inputLocaleExists && vm2.Initialization().InputLocale() != inputLocale {
+				t.Fatalf("got Unexpected output from the InputLocale (%s) init field ", vm2.Initialization().InputLocale())
+			}
+
+			if orgNameExists && vm2.Initialization().OrgName() != orgName {
+				t.Fatalf("got Unexpected output from the OrgName (%s) init field ", vm2.Initialization().OrgName())
+			}
+
+			if regenerateSshKeysExists && *vm2.Initialization().RegenerateSshKeys() != regenerateSshKeys {
+				t.Fatalf("got Unexpected output from the RegenerateSshKeys (%t)", *vm2.Initialization().RegenerateSshKeys())
+			}
+
+			if rootPasswordExists && vm2.Initialization().RootPassword() != "******" {
+				t.Fatalf("got Unexpected output from the RootPassword (%s) init field ", vm2.Initialization().RootPassword())
+			}
+
+			if systemLocaleExists && vm2.Initialization().SystemLocale() != systemLocale {
+				t.Fatalf("got Unexpected output from the SystemLocale (%s) init field ", vm2.Initialization().SystemLocale())
+			}
+
+			if timezoneExists && vm2.Initialization().Timezone() != timezone {
+				t.Fatalf("got Unexpected output from the Timezone (%s) init field ", vm2.Initialization().Timezone())
+			}
+
+			if uiLanguageExists && vm2.Initialization().UiLanguage() != uiLanguage {
+				t.Fatalf("got Unexpected output from the UiLanguage (%s) init field ", vm2.Initialization().UiLanguage())
+			}
+
+			if userLocaleExists && vm2.Initialization().UserLocale() != userLocale {
+				t.Fatalf("got Unexpected output from the UserLocale (%s) init field ", vm2.Initialization().UserLocale())
+			}
+
+			if userNameExists && vm2.Initialization().UserName() != userName {
+				t.Fatalf("got Unexpected output from the UserName (%s) init field ", vm2.Initialization().UserName())
+			}
+
+			if windowsLicenseKeyExists && vm2.Initialization().WindowsLicenseKey() != windowsLicenseKey {
+				t.Fatalf("got Unexpected output from the WindowsLicenseKey (%s) init field ", vm2.Initialization().WindowsLicenseKey())
 			}
 
 		},

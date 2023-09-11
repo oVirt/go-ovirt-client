@@ -374,6 +374,23 @@ type Initialization interface {
 	CustomScript() string
 	HostName() string
 	NicConfiguration() NicConfiguration
+	ActiveDirectoryOu() string
+	AuthorizedSshKeys() string
+	DnsSearch() string
+	DnsServers() string
+	Domain() string
+	InputLocale() string
+	OrgName() string
+	RegenerateIds() *bool
+	RegenerateSshKeys() *bool
+	RootPassword() string
+	SetRootPassword(string)
+	SystemLocale() string
+	Timezone() string
+	UiLanguage() string
+	UserLocale() string
+	UserName() string
+	WindowsLicenseKey() string
 }
 
 // BuildableInitialization is a buildable version of Initialization.
@@ -382,6 +399,22 @@ type BuildableInitialization interface {
 	WithCustomScript(customScript string) BuildableInitialization
 	WithHostname(hostname string) BuildableInitialization
 	WithNicConfiguration(nic NicConfiguration) BuildableInitialization
+	WithActiveDirectoryOu(activeDirectoryOu string) BuildableInitialization
+	WithAuthorizedSshKeys(authorizedSshKeys string) BuildableInitialization
+	WithDnsSearch(dnsSearch string) BuildableInitialization
+	WithDnsServers(dnsServers string) BuildableInitialization
+	WithDomain(domain string) BuildableInitialization
+	WithInputLocale(inputLocale string) BuildableInitialization
+	WithOrgName(orgName string) BuildableInitialization
+	WithRegenerateIds(regenerateIds bool) BuildableInitialization
+	WithRegenerateSshKeys(regenerateSshKeys bool) BuildableInitialization
+	WithRootPassword(rootPassword string) BuildableInitialization
+	WithSystemLocale(systemLocale string) BuildableInitialization
+	WithTimezone(timezone string) BuildableInitialization
+	WithUiLanguage(uiLanguage string) BuildableInitialization
+	WithUserLocale(userLocale string) BuildableInitialization
+	WithUserName(userName string) BuildableInitialization
+	WithWindowsLicenseKey(windowsLicenseKey string) BuildableInitialization
 }
 
 // initialization defines to the virtual machine’s initialization configuration.
@@ -389,17 +422,49 @@ type BuildableInitialization interface {
 // hostname - Hostname to be set to Virtual Machine when deployed.
 // nicConfiguration - Optional. The nic configuration used on boot time.
 type initialization struct {
-	customScript     string
-	hostname         string
-	nicConfiguration NicConfiguration
+	customScript      string
+	hostname          string
+	nicConfiguration  NicConfiguration
+	activeDirectoryOu string
+	authorizedSshKeys string
+	dnsSearch         string
+	dnsServers        string
+	domain            string
+	inputLocale       string
+	orgName           string
+	regenerateIds     *bool
+	regenerateSshKeys *bool
+	rootPassword      string
+	systemLocale      string
+	timezone          string
+	uiLanguage        string
+	userLocale        string
+	userName          string
+	windowsLicenseKey string
 }
 
 // NewInitialization creates a new Initialization from the specified parameters.
 func NewInitialization(customScript, hostname string) BuildableInitialization {
 	return &initialization{
-		customScript:     customScript,
-		hostname:         hostname,
-		nicConfiguration: nil,
+		customScript:      customScript,
+		hostname:          hostname,
+		nicConfiguration:  nil,
+		activeDirectoryOu: "",
+		authorizedSshKeys: "",
+		dnsSearch:         "",
+		dnsServers:        "",
+		domain:            "",
+		inputLocale:       "",
+		orgName:           "",
+		regenerateIds:     nil,
+		regenerateSshKeys: nil,
+		rootPassword:      "",
+		systemLocale:      "",
+		timezone:          "",
+		uiLanguage:        "",
+		userLocale:        "",
+		userName:          "",
+		windowsLicenseKey: "",
 	}
 }
 
@@ -415,6 +480,59 @@ func (i *initialization) NicConfiguration() NicConfiguration {
 	return i.nicConfiguration
 }
 
+func (i *initialization) ActiveDirectoryOu() string {
+	return i.activeDirectoryOu
+}
+func (i *initialization) AuthorizedSshKeys() string {
+	return i.authorizedSshKeys
+}
+func (i *initialization) DnsSearch() string {
+	return i.dnsSearch
+}
+func (i *initialization) DnsServers() string {
+	return i.dnsServers
+}
+func (i *initialization) Domain() string {
+	return i.domain
+}
+func (i *initialization) InputLocale() string {
+	return i.inputLocale
+}
+func (i *initialization) OrgName() string {
+	return i.orgName
+}
+func (i *initialization) RegenerateIds() *bool {
+	return i.regenerateIds
+}
+func (i *initialization) RegenerateSshKeys() *bool {
+	return i.regenerateSshKeys
+}
+func (i *initialization) RootPassword() string {
+	return i.rootPassword
+}
+func (i *initialization) SetRootPassword(rootPassword string) {
+	i.rootPassword = rootPassword
+}
+func (i *initialization) SystemLocale() string {
+	return i.systemLocale
+}
+func (i *initialization) Timezone() string {
+	return i.timezone
+}
+func (i *initialization) UiLanguage() string {
+	return i.uiLanguage
+}
+func (i *initialization) UserLocale() string {
+	return i.userLocale
+}
+func (i *initialization) UserName() string {
+	return i.userName
+}
+
+func (i *initialization) WindowsLicenseKey() string {
+	return i.windowsLicenseKey
+}
+
 func (i *initialization) WithCustomScript(customScript string) BuildableInitialization {
 	i.customScript = customScript
 	return i
@@ -427,6 +545,71 @@ func (i *initialization) WithHostname(hostname string) BuildableInitialization {
 
 func (i *initialization) WithNicConfiguration(nic NicConfiguration) BuildableInitialization {
 	i.nicConfiguration = nic
+	return i
+}
+
+func (i *initialization) WithActiveDirectoryOu(activeDirectoryOu string) BuildableInitialization {
+	i.activeDirectoryOu = activeDirectoryOu
+	return i
+}
+func (i *initialization) WithAuthorizedSshKeys(authorizedSshKeys string) BuildableInitialization {
+	i.authorizedSshKeys = authorizedSshKeys
+	return i
+}
+func (i *initialization) WithDnsSearch(dnsSearch string) BuildableInitialization {
+	i.dnsSearch = dnsSearch
+	return i
+}
+func (i *initialization) WithDnsServers(dnsServers string) BuildableInitialization {
+	i.dnsServers = dnsServers
+	return i
+}
+func (i *initialization) WithDomain(domain string) BuildableInitialization {
+	i.domain = domain
+	return i
+}
+func (i *initialization) WithInputLocale(inputLocale string) BuildableInitialization {
+	i.inputLocale = inputLocale
+	return i
+}
+func (i *initialization) WithOrgName(orgName string) BuildableInitialization {
+	i.orgName = orgName
+	return i
+}
+func (i *initialization) WithRegenerateIds(regenerateIds bool) BuildableInitialization {
+	i.regenerateIds = &regenerateIds
+	return i
+}
+func (i *initialization) WithRegenerateSshKeys(regenerateSshKeys bool) BuildableInitialization {
+	i.regenerateSshKeys = &regenerateSshKeys
+	return i
+}
+func (i *initialization) WithRootPassword(rootPassword string) BuildableInitialization {
+	i.rootPassword = rootPassword
+	return i
+}
+func (i *initialization) WithSystemLocale(systemLocale string) BuildableInitialization {
+	i.systemLocale = systemLocale
+	return i
+}
+func (i *initialization) WithTimezone(timezone string) BuildableInitialization {
+	i.timezone = timezone
+	return i
+}
+func (i *initialization) WithUiLanguage(uiLanguage string) BuildableInitialization {
+	i.uiLanguage = uiLanguage
+	return i
+}
+func (i *initialization) WithUserLocale(userLocale string) BuildableInitialization {
+	i.userLocale = userLocale
+	return i
+}
+func (i *initialization) WithUserName(userName string) BuildableInitialization {
+	i.userName = userName
+	return i
+}
+func (i *initialization) WithWindowsLicenseKey(windowsLicenseKey string) BuildableInitialization {
+	i.windowsLicenseKey = windowsLicenseKey
 	return i
 }
 
@@ -512,7 +695,7 @@ func (i *nicConfiguration) WithIPV6(ip IP) BuildableNicConfiguration {
 
 // convertSDKInitialization converts the initialization of a VM. We keep the error return in case we need it later
 // as errors may happen as we extend this function and we don't want to touch other functions.
-func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) { //nolint:unparam
+func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) { //nolint:unparam,funlen
 	initializationSDK, ok := sdkObject.Initialization()
 	if !ok {
 		// This happens for some, but not all API calls if the initialization is not set.
@@ -532,6 +715,72 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 	if ok && len(nicConfigs.Slice()) >= 1 {
 		init.nicConfiguration = convertSDKNicConfiguration(nicConfigs.Slice()[0])
 	}
+
+	activeDirectoryOu, ok := initializationSDK.ActiveDirectoryOu()
+	if ok {
+		init.activeDirectoryOu = activeDirectoryOu
+	}
+	authorizedSshKeys, ok := initializationSDK.AuthorizedSshKeys()
+	if ok {
+		init.authorizedSshKeys = authorizedSshKeys
+	}
+	dnsSearch, ok := initializationSDK.DnsSearch()
+	if ok {
+		init.dnsSearch = dnsSearch
+	}
+	dnsServers, ok := initializationSDK.DnsServers()
+	if ok {
+		init.dnsServers = dnsServers
+	}
+	domain, ok := initializationSDK.Domain()
+	if ok {
+		init.domain = domain
+	}
+	inputLocale, ok := initializationSDK.InputLocale()
+	if ok {
+		init.inputLocale = inputLocale
+	}
+	orgName, ok := initializationSDK.OrgName()
+	if ok {
+		init.orgName = orgName
+	}
+	regenerateIds, ok := initializationSDK.RegenerateIds()
+	if ok {
+		init.regenerateIds = &regenerateIds
+	}
+	regenerateSshKeys, ok := initializationSDK.RegenerateSshKeys()
+	if ok {
+		init.regenerateSshKeys = &regenerateSshKeys
+	}
+	rootPassword, ok := initializationSDK.RootPassword()
+	if ok {
+		init.rootPassword = rootPassword
+	}
+	systemLocale, ok := initializationSDK.SystemLocale()
+	if ok {
+		init.systemLocale = systemLocale
+	}
+	timezone, ok := initializationSDK.Timezone()
+	if ok {
+		init.timezone = timezone
+	}
+	uiLanguage, ok := initializationSDK.UiLanguage()
+	if ok {
+		init.uiLanguage = uiLanguage
+	}
+	userLocale, ok := initializationSDK.UserLocale()
+	if ok {
+		init.userLocale = userLocale
+	}
+	userName, ok := initializationSDK.UserName()
+	if ok {
+		init.userName = userName
+	}
+	windowsLicenseKey, ok := initializationSDK.WindowsLicenseKey()
+	if ok {
+		init.windowsLicenseKey = windowsLicenseKey
+	}
+
 	return &init, nil
 }
 
