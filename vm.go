@@ -391,7 +391,10 @@ type Initialization interface {
 	UserLocale() string
 	UserName() string
 	WindowsLicenseKey() string
+	ToSDK() *ovirtsdk.Initialization
 }
+
+
 
 // BuildableInitialization is a buildable version of Initialization.
 type BuildableInitialization interface {
@@ -442,6 +445,67 @@ type initialization struct {
 	userName          string
 	windowsLicenseKey string
 }
+
+func (i *initialization) ToSDK() *ovirtsdk.Initialization {
+	init := &ovirtsdk.Initialization{}
+	if i.customScript != "" {
+		init.SetCustomScript(i.customScript)
+	}
+	if i.hostname != "" {
+		init.SetHostName(i.hostname)
+	}
+	if i.activeDirectoryOu != "" {
+		init.SetActiveDirectoryOu(i.activeDirectoryOu)
+	}
+	if i.authorizedSshKeys != "" {
+		init.SetAuthorizedSshKeys(i.authorizedSshKeys)
+	}
+	if i.dnsSearch != "" {
+		init.SetDnsSearch(i.dnsSearch)
+	}
+	if i.dnsServers != "" {
+		init.SetDnsServers(i.dnsServers)
+	}
+	if i.domain != "" {
+		init.SetDomain(i.domain)
+	}
+	if i.inputLocale != "" {
+		init.SetInputLocale(i.inputLocale)
+	}
+	if i.orgName != "" {
+		init.SetOrgName(i.orgName)
+	}
+	if i.regenerateIds != nil {
+		init.SetRegenerateIds(*i.regenerateIds)
+	}
+	if i.regenerateSshKeys != nil {
+		init.SetRegenerateSshKeys(*i.regenerateSshKeys)
+	}
+	if i.rootPassword != "" {
+		init.SetRootPassword(i.rootPassword)
+	}
+	if i.systemLocale != "" {
+		init.SetSystemLocale(i.systemLocale)
+	}
+	if i.timezone != "" {
+		init.SetTimezone(i.timezone)
+	}
+	if i.uiLanguage != "" {
+		init.SetUiLanguage(i.uiLanguage)
+	}
+	if i.userLocale != "" {
+		init.SetUserLocale(i.userLocale)
+	}
+	if i.userName != "" {
+		init.SetUserName(i.userName)
+	}
+	if i.windowsLicenseKey != "" {
+		init.SetWindowsLicenseKey(i.windowsLicenseKey)
+	}
+	return init
+}
+
+
 
 // NewInitialization creates a new Initialization from the specified parameters.
 func NewInitialization(customScript, hostname string) BuildableInitialization {
@@ -1765,6 +1829,8 @@ type UpdateVMParameters interface {
 	Comment() *string
 	// Description returns the description for the VM. Return nil if the name should not be changed.
 	Description() *string
+	// Initialization returns the initalization config for the VM. Return nil if the name should not be changed.
+	Initialization() Initialization
 }
 
 // VMCPUTopo contains the CPU topology information about a VM.
@@ -1854,6 +1920,12 @@ type BuildableUpdateVMParameters interface {
 
 	// MustWithDescription is identical to WithDescription, but panics instead of returning an error.
 	MustWithDescription(comment string) BuildableUpdateVMParameters
+
+	// WithInitialization adds a initialization to the request
+	WithInitialization(initialization Initialization) (BuildableUpdateVMParameters, error)
+
+	// MustWithInitialization is identical to WithInitialization, but panics instead of returning an error.
+	MustWithInitialization(initialization Initialization) BuildableUpdateVMParameters
 }
 
 // UpdateVMParams returns a buildable set of update parameters.
@@ -1865,6 +1937,7 @@ type updateVMParams struct {
 	name        *string
 	comment     *string
 	description *string
+	initialization Initialization
 }
 
 func (u *updateVMParams) MustWithName(name string) BuildableUpdateVMParameters {
@@ -1891,6 +1964,14 @@ func (u *updateVMParams) MustWithDescription(description string) BuildableUpdate
 	return builder
 }
 
+func (u *updateVMParams) MustWithInitialization(initialization Initialization) BuildableUpdateVMParameters {
+	builder, err := u.WithInitialization(initialization)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 func (u *updateVMParams) Name() *string {
 	return u.name
 }
@@ -1901,6 +1982,10 @@ func (u *updateVMParams) Comment() *string {
 
 func (u *updateVMParams) Description() *string {
 	return u.description
+}
+
+func (u *updateVMParams) Initialization() Initialization {
+	return u.initialization
 }
 
 func (u *updateVMParams) WithName(name string) (BuildableUpdateVMParameters, error) {
@@ -1918,6 +2003,11 @@ func (u *updateVMParams) WithComment(comment string) (BuildableUpdateVMParameter
 
 func (u *updateVMParams) WithDescription(description string) (BuildableUpdateVMParameters, error) {
 	u.description = &description
+	return u, nil
+}
+
+func (u *updateVMParams) WithInitialization(initialization Initialization) (BuildableUpdateVMParameters, error) {
+	u.initialization = initialization
 	return u, nil
 }
 
