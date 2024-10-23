@@ -536,31 +536,40 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 }
 
 func convertSDKNicConfiguration(sdkObject *ovirtsdk.NicConfiguration) NicConfiguration {
-	ipv4 := sdkObject.MustIp()
-	nicConfiguration := NewNicConfiguration(
-		sdkObject.MustName(), IP{
-			Address: ipv4.MustAddress(),
-			Gateway: ipv4.MustGateway(),
-			Netmask: ipv4.MustNetmask(),
-			Version: IPVERSION_V4,
-		},
-	)
+	name, _ := sdkObject.Name()
+	nicConfiguration := NewNicConfiguration(name, IP{})
 
-	ipv6, ok := sdkObject.Ipv6()
-	if ok {
+	// It is fine for these values to be empty strings to account for shutdown VMs where these values are not set.
+	ipv4, hasIPv4 := sdkObject.Ip()
+	if hasIPv4 {
+		address, _ := ipv4.Address()
+		gateway, _ := ipv4.Gateway()
+		netmask, _ := ipv4.Netmask()
+		nicConfiguration = nicConfiguration.WithIP(IP{
+			Address: address,
+			Gateway: gateway,
+			Netmask: netmask,
+			Version: IPVERSION_V4,
+		})
+	}
+
+	ipv6, hasIPv6 := sdkObject.Ipv6()
+	if hasIPv6 {
 		// SdkObject can be like this:
 		// {ipv6{addres: nil, gateway: nil, netmask: nil, version: nil},}
 		address, _ := ipv6.Address()
 		gateway, _ := ipv6.Gateway()
 		netmask, _ := ipv6.Netmask()
-		nicConfiguration = nicConfiguration.WithIPV6(
-			IP{
-				Address: address,
-				Gateway: gateway,
-				Netmask: netmask,
-				Version: IPVERSION_V6,
-			},
-		)
+		nicConfiguration = nicConfiguration.WithIPV6(IP{
+			Address: address,
+			Gateway: gateway,
+			Netmask: netmask,
+			Version: IPVERSION_V6,
+		})
+	}
+
+	if !hasIPv4 && !hasIPv6 {
+		return nil
 	}
 	return nicConfiguration
 }
