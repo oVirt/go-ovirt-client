@@ -1521,10 +1521,48 @@ func (v *vmDiskParameters) MustWithSparse(sparse bool) BuildableVMDiskParameters
 type UpdateVMParameters interface {
 	// Name returns the name for the VM. Return nil if the name should not be changed.
 	Name() *string
+
 	// Comment returns the comment for the VM. Return nil if the name should not be changed.
 	Comment() *string
+
 	// Description returns the description for the VM. Return nil if the name should not be changed.
 	Description() *string
+
+	// CPU contains the CPU topology, if any. Return nil if the name should not be changed.
+	CPU() *VMCPUParams
+
+	// HugePages returns the optional value for the HugePages setting for VMs. Return nil if the name should not be changed.
+	HugePages() *VMHugePages
+
+	// Initialization defines the virtual machine’s initialization configuration. Return nil if the name should not be changed.
+	Initialization() *Initialization
+
+	// Memory returns the VM memory in Bytes. Return nil if the name should not be changed.
+	Memory() *int64
+
+	// MemoryPolicy returns the memory policy configuration for this VM, if any. Return nil if the name should not be changed.
+	MemoryPolicy() *MemoryPolicyParameters
+
+	// Disks returns a list of disks that are to be changed from the template. Return nil if the name should not be changed.
+	Disks() *[]OptionalVMDiskParameters
+
+	// PlacementPolicy returns a VM placement policy to apply, if any. Return nil if the name should not be changed.
+	PlacementPolicy() *VMPlacementPolicyParameters
+
+	// InstanceTypeID returns the instance type ID if set. Return nil if the name should not be changed.
+	InstanceTypeID() *InstanceTypeID
+
+	// VMType is the type of the VM created. Return nil if the name should not be changed.
+	VMType() *VMType
+
+	// OS returns the operating system parameters, and true if the OS parameter has been set. Return nil if the name should not be changed.
+	OS() (*VMOSParameters, bool)
+
+	// SerialConsole returns if a serial console should be created or not. Return nil if the name should not be changed.
+	SerialConsole() *bool
+
+	// SoundcardEnabled returns if a soundcard should be created or not. Return nil if the name should not be changed.
+	SoundcardEnabled() *bool
 }
 
 // VMCPUTopo contains the CPU topology information about a VM.
@@ -1613,7 +1651,79 @@ type BuildableUpdateVMParameters interface {
 	WithDescription(description string) (BuildableUpdateVMParameters, error)
 
 	// MustWithDescription is identical to WithDescription, but panics instead of returning an error.
-	MustWithDescription(comment string) BuildableUpdateVMParameters
+	MustWithDescription(description string) BuildableUpdateVMParameters
+
+	// WithCPU adds an updated CPU topology to the request.
+	WithCPU(cpu VMCPUParams) (BuildableUpdateVMParameters, error)
+
+	// MustWithCPU is identical to WithCPU, but panics instead of returning an error.
+	MustWithCPU(cpu VMCPUParams) BuildableUpdateVMParameters
+
+	// WithHugePages adds an updated huge pages configuration to the request.
+	WithHugePages(hugePages VMHugePages) (BuildableUpdateVMParameters, error)
+
+	// MustWithHugePages is identical to WithHugePages, but panics instead of returning an error.
+	MustWithHugePages(hugePages VMHugePages) BuildableUpdateVMParameters
+
+	// WithInitialization adds an updated initialization configuration to the request.
+	WithInitialization(initialization Initialization) (BuildableUpdateVMParameters, error)
+
+	// MustWithInitialization is identical to WithInitialization, but panics instead of returning an error.
+	MustWithInitialization(initialization Initialization) BuildableUpdateVMParameters
+
+	// WithMemory adds an updated memory configuration to the request.
+	WithMemory(memory int64) (BuildableUpdateVMParameters, error)
+
+	// MustWithMemory is identical to WithMemory, but panics instead of returning an error.
+	MustWithMemory(memory int64) BuildableUpdateVMParameters
+
+	// WithMemoryPolicy adds an updated memory policy configuration to the request.
+	WithMemoryPolicy(memory MemoryPolicyParameters) (BuildableUpdateVMParameters, error)
+
+	// MustWithMemoryPolicy is identical to WithMemoryPolicy, but panics instead of returning an error.
+	MustWithMemoryPolicy(memory MemoryPolicyParameters) BuildableUpdateVMParameters
+
+	// WithDisks adds updated disk configurations to the request to manipulate the disks inherited from templates.
+	WithDisks(disks []OptionalVMDiskParameters) (BuildableUpdateVMParameters, error)
+
+	// MustWithDisks is identical to WithDisks, but panics instead of returning an error.
+	MustWithDisks(disks []OptionalVMDiskParameters) BuildableUpdateVMParameters
+
+	// WithPlacementPolicy adds an updated placement policy configuration to the request.
+	WithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) (BuildableUpdateVMParameters, error)
+
+	// MustWithPlacementPolicy is identical to WithPlacementPolicy, but panics instead of returning an error.
+	MustWithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) BuildableUpdateVMParameters
+
+	// WithInstanceTypeID adds an updated instance type ID to the request.
+	WithInstanceTypeID(instanceTypeID InstanceTypeID) (BuildableUpdateVMParameters, error)
+
+	// MustWithInstanceTypeID is identical to WithInstanceTypeID, but panics instead of returning an error.
+	MustWithInstanceTypeID(instanceTypeID InstanceTypeID) BuildableUpdateVMParameters
+
+	// WithVMType adds an updated VM type to the request.
+	WithVMType(vmType VMType) (BuildableUpdateVMParameters, error)
+
+	// MustWithVMType is identical to WithVMType, but panics instead of returning an error.
+	MustWithVMType(vmType VMType) BuildableUpdateVMParameters
+
+	// WithOS adds updated operating system parameters to the request.
+	WithOS(parameters VMOSParameters) (BuildableUpdateVMParameters, error)
+
+	// MustWithOS is identical to WithOS, but panics instead of returning an error.
+	MustWithOS(parameters VMOSParameters) BuildableUpdateVMParameters
+
+	// WithSerialConsole adds an updated serial console configuration to the request.
+	WithSerialConsole(serialConsole bool) (BuildableUpdateVMParameters, error)
+
+	// MustWithSerialConsole is identical to WithSerialConsole, but panics instead of returning an error.
+	MustWithSerialConsole(serialConsole bool) BuildableUpdateVMParameters
+
+	// WithSoundcardEnabled adds an updated soundcard configuration to the request.
+	WithSoundcardEnabled(soundcardEnabled bool) (BuildableUpdateVMParameters, error)
+
+	// MustWithSoundcardEnabled is identical to WithSoundcardEnabled, but panics instead of returning an error.
+	MustWithSoundcardEnabled(soundcardEnabled bool) BuildableUpdateVMParameters
 }
 
 // UpdateVMParams returns a buildable set of update parameters.
@@ -1625,6 +1735,27 @@ type updateVMParams struct {
 	name        *string
 	comment     *string
 	description *string
+	cpu         *VMCPUParams
+
+	hugePages *VMHugePages
+
+	initialization *Initialization
+	memory         *int64
+	memoryPolicy   *MemoryPolicyParameters
+
+	disks *[]OptionalVMDiskParameters
+
+	placementPolicy *VMPlacementPolicyParameters
+
+	instanceTypeID *InstanceTypeID
+
+	vmType *VMType
+
+	os    *VMOSParameters
+	osSet bool
+
+	serialConsole    *bool
+	soundcardEnabled *bool
 }
 
 func (u *updateVMParams) MustWithName(name string) BuildableUpdateVMParameters {
@@ -1651,6 +1782,110 @@ func (u *updateVMParams) MustWithDescription(description string) BuildableUpdate
 	return builder
 }
 
+func (u *updateVMParams) MustWithCPU(cpu VMCPUParams) BuildableUpdateVMParameters {
+	builder, err := u.WithCPU(cpu)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithCPUParameters(cores uint, threads uint, sockets uint) BuildableUpdateVMParameters {
+	builder, err := u.WithCPUParameters(cores, threads, sockets)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithHugePages(hugePages VMHugePages) BuildableUpdateVMParameters {
+	builder, err := u.WithHugePages(hugePages)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithInitialization(initialization Initialization) BuildableUpdateVMParameters {
+	builder, err := u.WithInitialization(initialization)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithMemory(memory int64) BuildableUpdateVMParameters {
+	builder, err := u.WithMemory(memory)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithMemoryPolicy(memory MemoryPolicyParameters) BuildableUpdateVMParameters {
+	builder, err := u.WithMemoryPolicy(memory)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithDisks(disks []OptionalVMDiskParameters) BuildableUpdateVMParameters {
+	builder, err := u.WithDisks(disks)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) BuildableUpdateVMParameters {
+	builder, err := u.WithPlacementPolicy(placementPolicy)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithInstanceTypeID(instanceTypeID InstanceTypeID) BuildableUpdateVMParameters {
+	builder, err := u.WithInstanceTypeID(instanceTypeID)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithVMType(vmType VMType) BuildableUpdateVMParameters {
+	builder, err := u.WithVMType(vmType)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithOS(parameters VMOSParameters) BuildableUpdateVMParameters {
+	builder, err := u.WithOS(parameters)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithSerialConsole(serialConsole bool) BuildableUpdateVMParameters {
+	builder, err := u.WithSerialConsole(serialConsole)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithSoundcardEnabled(soundcardEnabled bool) BuildableUpdateVMParameters {
+	builder, err := u.WithSoundcardEnabled(soundcardEnabled)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 func (u *updateVMParams) Name() *string {
 	return u.name
 }
@@ -1661,6 +1896,54 @@ func (u *updateVMParams) Comment() *string {
 
 func (u *updateVMParams) Description() *string {
 	return u.description
+}
+
+func (u *updateVMParams) CPU() *VMCPUParams {
+	return u.cpu
+}
+
+func (u *updateVMParams) HugePages() *VMHugePages {
+	return u.hugePages
+}
+
+func (u *updateVMParams) Initialization() *Initialization {
+	return u.initialization
+}
+
+func (u *updateVMParams) Memory() *int64 {
+	return u.memory
+}
+
+func (u *updateVMParams) MemoryPolicy() *MemoryPolicyParameters {
+	return u.memoryPolicy
+}
+
+func (u *updateVMParams) Disks() *[]OptionalVMDiskParameters {
+	return u.disks
+}
+
+func (u *updateVMParams) PlacementPolicy() *VMPlacementPolicyParameters {
+	return u.placementPolicy
+}
+
+func (u *updateVMParams) InstanceTypeID() *InstanceTypeID {
+	return u.instanceTypeID
+}
+
+func (u *updateVMParams) VMType() *VMType {
+	return u.vmType
+}
+
+func (u *updateVMParams) OS() (*VMOSParameters, bool) {
+	return u.os, u.osSet
+}
+
+func (u *updateVMParams) SerialConsole() *bool {
+	return u.serialConsole
+}
+
+func (u *updateVMParams) SoundcardEnabled() *bool {
+	return u.soundcardEnabled
 }
 
 func (u *updateVMParams) WithName(name string) (BuildableUpdateVMParameters, error) {
@@ -1678,6 +1961,109 @@ func (u *updateVMParams) WithComment(comment string) (BuildableUpdateVMParameter
 
 func (u *updateVMParams) WithDescription(description string) (BuildableUpdateVMParameters, error) {
 	u.description = &description
+	return u, nil
+}
+
+func (u *updateVMParams) WithCPU(cpu VMCPUParams) (BuildableUpdateVMParameters, error) {
+	u.cpu = &cpu
+	return u, nil
+}
+
+func (u *updateVMParams) WithCPUParameters(cores uint, threads uint, sockets uint) (BuildableUpdateVMParameters, error) {
+	params := NewVMCPUTopoParams()
+	params, err := params.WithCores(cores)
+	if err != nil {
+		return nil, err
+	}
+	params, err = params.WithThreads(threads)
+	if err != nil {
+		return nil, err
+	}
+	params, err = params.WithSockets(sockets)
+	if err != nil {
+		return nil, err
+	}
+
+	topo, err := NewVMCPUParams().WithTopo(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return u.WithCPU(topo)
+}
+
+func (u *updateVMParams) WithHugePages(hugePages VMHugePages) (BuildableUpdateVMParameters, error) {
+	if err := hugePages.Validate(); err != nil {
+		return nil, err
+	}
+	u.hugePages = &hugePages
+	return u, nil
+}
+
+func (u *updateVMParams) WithInitialization(initialization Initialization) (BuildableUpdateVMParameters, error) {
+	u.initialization = &initialization
+	return u, nil
+}
+
+func (u *updateVMParams) WithMemory(memory int64) (BuildableUpdateVMParameters, error) {
+	u.memory = &memory
+	return u, nil
+}
+
+func (u *updateVMParams) WithMemoryPolicy(memory MemoryPolicyParameters) (BuildableUpdateVMParameters, error) {
+	u.memoryPolicy = &memory
+	return u, nil
+}
+
+func (u *updateVMParams) WithDisks(disks []OptionalVMDiskParameters) (BuildableUpdateVMParameters, error) {
+	diskIDs := map[DiskID]int{}
+	for i, d := range disks {
+		if previousID, ok := diskIDs[d.DiskID()]; ok {
+			return nil, newError(
+				EBadArgument,
+				"Disk %s appears twice, in position %d and %d.",
+				d.DiskID(),
+				previousID,
+				i,
+			)
+		}
+		diskIDs[d.DiskID()] = i
+	}
+	u.disks = &disks
+	return u, nil
+}
+
+func (u *updateVMParams) WithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) (BuildableUpdateVMParameters, error) {
+	u.placementPolicy = &placementPolicy
+	return u, nil
+}
+
+func (u *updateVMParams) WithInstanceTypeID(instanceTypeID InstanceTypeID) (BuildableUpdateVMParameters, error) {
+	u.instanceTypeID = &instanceTypeID
+	return u, nil
+}
+
+func (u *updateVMParams) WithVMType(vmType VMType) (BuildableUpdateVMParameters, error) {
+	if err := vmType.Validate(); err != nil {
+		return nil, err
+	}
+	u.vmType = &vmType
+	return u, nil
+}
+
+func (u *updateVMParams) WithOS(os VMOSParameters) (BuildableUpdateVMParameters, error) {
+	u.os = &os
+	u.osSet = true
+	return u, nil
+}
+
+func (u *updateVMParams) WithSerialConsole(serialConsole bool) (BuildableUpdateVMParameters, error) {
+	u.serialConsole = &serialConsole
+	return u, nil
+}
+
+func (u *updateVMParams) WithSoundcardEnabled(soundcardEnabled bool) (BuildableUpdateVMParameters, error) {
+	u.soundcardEnabled = &soundcardEnabled
 	return u, nil
 }
 
@@ -1841,6 +2227,7 @@ func (v *vmParams) WithDisks(disks []OptionalVMDiskParameters) (BuildableVMParam
 				i,
 			)
 		}
+		diskIDs[d.DiskID()] = i
 	}
 	v.disks = disks
 	return v, nil
@@ -2141,90 +2528,6 @@ func (v *vm) Memory() int64 {
 
 func (v *vm) Initialization() Initialization {
 	return v.initialization
-}
-
-// withName returns a copy of the VM with the new name. It does not change the original copy to avoid
-// shared state issues.
-func (v *vm) withName(name string) *vm {
-	return &vm{
-		v.client,
-		v.id,
-		name,
-		v.comment,
-		v.description,
-		v.clusterID,
-		v.templateID,
-		v.status,
-		v.cpu,
-		v.memory,
-		v.tagIDs,
-		v.hugePages,
-		v.initialization,
-		v.hostID,
-		v.placementPolicy,
-		v.memoryPolicy,
-		v.instanceTypeID,
-		v.vmType,
-		v.os,
-		v.serialConsole,
-		v.soundcardEnabled,
-	}
-}
-
-// withComment returns a copy of the VM with the new comment. It does not change the original copy to avoid
-// shared state issues.
-func (v *vm) withComment(comment string) *vm {
-	return &vm{
-		v.client,
-		v.id,
-		v.name,
-		comment,
-		v.description,
-		v.clusterID,
-		v.templateID,
-		v.status,
-		v.cpu,
-		v.memory,
-		v.tagIDs,
-		v.hugePages,
-		v.initialization,
-		v.hostID,
-		v.placementPolicy,
-		v.memoryPolicy,
-		v.instanceTypeID,
-		v.vmType,
-		v.os,
-		v.serialConsole,
-		v.soundcardEnabled,
-	}
-}
-
-// withDescription returns a copy of the VM with the new comment. It does not change the original copy to avoid
-// shared state issues.
-func (v *vm) withDescription(description string) *vm {
-	return &vm{
-		v.client,
-		v.id,
-		v.name,
-		v.comment,
-		description,
-		v.clusterID,
-		v.templateID,
-		v.status,
-		v.cpu,
-		v.memory,
-		v.tagIDs,
-		v.hugePages,
-		v.initialization,
-		v.hostID,
-		v.placementPolicy,
-		v.memoryPolicy,
-		v.instanceTypeID,
-		v.vmType,
-		v.os,
-		v.serialConsole,
-		v.soundcardEnabled,
-	}
 }
 
 func (v *vm) Update(params UpdateVMParameters, retries ...RetryStrategy) (VM, error) {
