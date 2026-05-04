@@ -2,7 +2,6 @@ package ovirtclient
 
 import (
 	"fmt"
-	"strconv"
 
 	ovirtsdk "github.com/ovirt/go-ovirt"
 )
@@ -29,103 +28,26 @@ func (o *oVirtClient) UpdateVM(
 		vm.SetDescription(*description)
 	}
 	if cpu := params.CPU(); cpu != nil {
-		cpuUpdate := &ovirtsdk.Cpu{}
-		if topo := (*cpu).Topo(); topo != nil {
-			cpuUpdate.SetTopology(
-				ovirtsdk.NewCpuTopologyBuilder().
-					Cores(int64((*cpu).Topo().Cores())).
-					Threads(int64((*cpu).Topo().Threads())).
-					Sockets(int64((*cpu).Topo().Sockets())).
-					MustBuild(),
-			)
-		}
-		if mode := (*cpu).Mode(); mode != nil {
-			cpuUpdate.SetMode(ovirtsdk.CpuMode(*mode))
-		}
-		vm.SetCpu(cpuUpdate)
+		vm.SetCpu(buildSDKVMCPUBuilder(*cpu).MustBuild())
 	}
 	if hugePages := params.HugePages(); hugePages != nil {
 		var customProperties []*ovirtsdk.CustomProperty
-		customProp, err := ovirtsdk.NewCustomPropertyBuilder().
-			Name("hugepages").
-			Value(strconv.FormatUint(uint64(*hugePages), 10)).
-			Build()
-		if err != nil {
-			panic(newError(EBug, "Failed to build 'hugepages' custom property from value %d", hugePages))
-		}
-		customProperties = append(customProperties, customProp)
+		customProperties = append(customProperties, buildSDKHugePagesCustomProperty(*hugePages))
 		customPropertiesSlice := &ovirtsdk.CustomPropertySlice{}
 		customPropertiesSlice.SetSlice(customProperties)
 		vm.SetCustomProperties(customPropertiesSlice)
 	}
 	if initialization := params.Initialization(); initialization != nil {
-		init := *params.Initialization()
-		initBuilder := ovirtsdk.NewInitializationBuilder()
-
-		if init.CustomScript() != "" {
-			initBuilder.CustomScript(init.CustomScript())
-		}
-		if init.HostName() != "" {
-			initBuilder.HostName(init.HostName())
-		}
-		if nicConf := init.NicConfiguration(); nicConf != nil {
-
-			nicBuilder := ovirtsdk.NewNicConfigurationBuilder()
-			nicBuilder.BootProtocol(ovirtsdk.BOOTPROTOCOL_STATIC)
-			nicBuilder.OnBoot(true)
-			nicBuilder.Name(nicConf.Name())
-
-			ipBuilder := ovirtsdk.NewIpBuilder().
-				Address(nicConf.IP().Address).
-				Gateway(nicConf.IP().Gateway).
-				Netmask(nicConf.IP().Netmask).
-				Version(ovirtsdk.IPVERSION_V4)
-			nicBuilder.Ip(ipBuilder.MustBuild())
-
-			if nicConf.IPV6() != nil {
-				ipV6Builder := ovirtsdk.NewIpBuilder().
-					Address(nicConf.IPV6().Address).
-					Gateway(nicConf.IPV6().Gateway).
-					Netmask(nicConf.IPV6().Netmask).
-					Version(ovirtsdk.IPVERSION_V6)
-				nicBuilder.Ipv6(ipV6Builder.MustBuild())
-
-			}
-
-			initBuilder.NicConfigurationsOfAny(nicBuilder.MustBuild())
-		}
-		vm.SetInitialization(initBuilder.MustBuild())
+		vm.SetInitialization(buildSDKVMInitializationBuilder(*initialization).MustBuild())
 	}
 	if memory := params.Memory(); memory != nil {
 		vm.SetMemory(*memory)
 	}
 	if memoryPolicyParams := params.MemoryPolicy(); memoryPolicyParams != nil {
-		memPolicy := &ovirtsdk.MemoryPolicy{}
-		if guaranteedMemory := (*memoryPolicyParams).Guaranteed(); guaranteedMemory != nil {
-			memPolicy.SetGuaranteed(*guaranteedMemory)
-		}
-
-		if maxMemory := (*memoryPolicyParams).Max(); maxMemory != nil {
-			memPolicy.SetMax(*maxMemory)
-		}
-
-		if memBallooning := (*memoryPolicyParams).Ballooning(); memBallooning != nil {
-			memPolicy.SetBallooning(*memBallooning)
-		}
-		vm.SetMemoryPolicy(memPolicy)
+		vm.SetMemoryPolicy(buildSDKMemoryPolicyBuilder(*memoryPolicyParams).MustBuild())
 	}
 	if placementPolicy := params.PlacementPolicy(); placementPolicy != nil {
-		placementPolicyBuilder := ovirtsdk.NewVmPlacementPolicyBuilder()
-		if affinity := (*placementPolicy).Affinity(); affinity != nil {
-			placementPolicyBuilder.Affinity(ovirtsdk.VmAffinity(*affinity))
-		}
-		hosts := make([]ovirtsdk.HostBuilder, len((*placementPolicy).HostIDs()))
-		for i, hostID := range (*placementPolicy).HostIDs() {
-			hostBuilder := ovirtsdk.NewHostBuilder().Id(string(hostID))
-			hosts[i] = *hostBuilder
-		}
-		placementPolicyBuilder.HostsBuilderOfAny(hosts...)
-		vm.SetPlacementPolicy(placementPolicyBuilder.MustBuild())
+		vm.SetPlacementPolicy(buildSDKVMPlacementPolicyBuilder(*placementPolicy).MustBuild())
 	}
 	if instanceType := params.InstanceTypeID(); instanceType != nil {
 		vm.SetInstanceType(ovirtsdk.NewInstanceTypeBuilder().Id(string(*instanceType)).MustBuild())
@@ -134,11 +56,7 @@ func (o *oVirtClient) UpdateVM(
 		vm.SetType(ovirtsdk.VmType(*vmType))
 	}
 	if osParams, isSet := params.OS(); isSet {
-		os := &ovirtsdk.OperatingSystem{}
-		if osType := (*osParams).Type(); osType != nil {
-			os.SetType(*osType)
-		}
-		vm.SetOs(os)
+		vm.SetOs(buildSDKVMOSBuilder(*osParams).MustBuild())
 	}
 	if serialConsole := params.SerialConsole(); serialConsole != nil {
 		vm.SetConsole(ovirtsdk.NewConsoleBuilder().Enabled(*serialConsole).MustBuild())

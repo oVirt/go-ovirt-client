@@ -26,36 +26,45 @@ func vmBuilderDescription(params OptionalVMParameters, builder *ovirtsdk.VmBuild
 
 func vmBuilderCPU(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if cpu := params.CPU(); cpu != nil {
-		cpuBuilder := ovirtsdk.NewCpuBuilder()
-		if cpuTopo := cpu.Topo(); cpuTopo != nil {
-			cpuBuilder.TopologyBuilder(ovirtsdk.
-				NewCpuTopologyBuilder().
-				Cores(int64(cpu.Topo().Cores())).
-				Threads(int64(cpu.Topo().Threads())).
-				Sockets(int64(cpu.Topo().Sockets())))
-		}
-		if mode := cpu.Mode(); mode != nil {
-			cpuBuilder.Mode(ovirtsdk.CpuMode(*mode))
-		}
-		builder.CpuBuilder(cpuBuilder)
+		builder.CpuBuilder(buildSDKVMCPUBuilder(cpu))
 	}
+}
+
+func buildSDKVMCPUBuilder(cpu VMCPUParams) *ovirtsdk.CpuBuilder {
+	cpuBuilder := ovirtsdk.NewCpuBuilder()
+	if cpuTopo := cpu.Topo(); cpuTopo != nil {
+		cpuBuilder.TopologyBuilder(
+			ovirtsdk.NewCpuTopologyBuilder().
+				Cores(int64(cpuTopo.Cores())).
+				Threads(int64(cpuTopo.Threads())).
+				Sockets(int64(cpuTopo.Sockets())),
+		)
+	}
+	if mode := cpu.Mode(); mode != nil {
+		cpuBuilder.Mode(ovirtsdk.CpuMode(*mode))
+	}
+	return cpuBuilder
 }
 
 func vmBuilderHugePages(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	var customProperties []*ovirtsdk.CustomProperty
 	if hugePages := params.HugePages(); hugePages != nil {
-		customProp, err := ovirtsdk.NewCustomPropertyBuilder().
-			Name("hugepages").
-			Value(strconv.FormatUint(uint64(*hugePages), 10)).
-			Build()
-		if err != nil {
-			panic(newError(EBug, "Failed to build 'hugepages' custom property from value %d", hugePages))
-		}
-		customProperties = append(customProperties, customProp)
+		customProperties = append(customProperties, buildSDKHugePagesCustomProperty(*hugePages))
 	}
 	if len(customProperties) > 0 {
 		builder.CustomPropertiesOfAny(customProperties...)
 	}
+}
+
+func buildSDKHugePagesCustomProperty(hugePages VMHugePages) *ovirtsdk.CustomProperty {
+	customProp, err := ovirtsdk.NewCustomPropertyBuilder().
+		Name("hugepages").
+		Value(strconv.FormatUint(uint64(hugePages), 10)).
+		Build()
+	if err != nil {
+		panic(newError(EBug, "Failed to build 'hugepages' custom property from value %d", hugePages))
+	}
+	return customProp
 }
 
 func vmBuilderMemory(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
@@ -68,8 +77,10 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 	if params.Initialization() == nil {
 		return
 	}
+	builder.InitializationBuilder(buildSDKVMInitializationBuilder(params.Initialization()))
+}
 
-	init := params.Initialization()
+func buildSDKVMInitializationBuilder(init Initialization) *ovirtsdk.InitializationBuilder {
 	initBuilder := ovirtsdk.NewInitializationBuilder()
 
 	if init.CustomScript() != "" {
@@ -79,7 +90,6 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 		initBuilder.HostName(init.HostName())
 	}
 	if nicConf := init.NicConfiguration(); nicConf != nil {
-
 		nicBuilder := ovirtsdk.NewNicConfigurationBuilder()
 		nicBuilder.BootProtocol(ovirtsdk.BOOTPROTOCOL_STATIC)
 		nicBuilder.OnBoot(true)
@@ -99,28 +109,54 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 				Netmask(nicConf.IPV6().Netmask).
 				Version(ovirtsdk.IPVERSION_V6)
 			nicBuilder.Ipv6(ipV6Builder.MustBuild())
-
 		}
 
 		initBuilder.NicConfigurationsOfAny(nicBuilder.MustBuild())
 	}
-	builder.InitializationBuilder(initBuilder)
+
+	return initBuilder
 }
 
 func vmPlacementPolicyParameterConverter(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if pp := params.PlacementPolicy(); pp != nil {
-		placementPolicyBuilder := ovirtsdk.NewVmPlacementPolicyBuilder()
-		if affinity := (*pp).Affinity(); affinity != nil {
-			placementPolicyBuilder.Affinity(ovirtsdk.VmAffinity(*affinity))
-		}
-		hosts := make([]ovirtsdk.HostBuilder, len((*pp).HostIDs()))
-		for i, hostID := range (*pp).HostIDs() {
-			hostBuilder := ovirtsdk.NewHostBuilder().Id(string(hostID))
-			hosts[i] = *hostBuilder
-		}
-		placementPolicyBuilder.HostsBuilderOfAny(hosts...)
-		builder.PlacementPolicyBuilder(placementPolicyBuilder)
+		builder.PlacementPolicyBuilder(buildSDKVMPlacementPolicyBuilder(*pp))
 	}
+}
+
+func buildSDKVMPlacementPolicyBuilder(pp VMPlacementPolicyParameters) *ovirtsdk.VmPlacementPolicyBuilder {
+	placementPolicyBuilder := ovirtsdk.NewVmPlacementPolicyBuilder()
+	if affinity := pp.Affinity(); affinity != nil {
+		placementPolicyBuilder.Affinity(ovirtsdk.VmAffinity(*affinity))
+	}
+	hosts := make([]ovirtsdk.HostBuilder, len(pp.HostIDs()))
+	for i, hostID := range pp.HostIDs() {
+		hostBuilder := ovirtsdk.NewHostBuilder().Id(string(hostID))
+		hosts[i] = *hostBuilder
+	}
+	placementPolicyBuilder.HostsBuilderOfAny(hosts...)
+	return placementPolicyBuilder
+}
+
+func buildSDKMemoryPolicyBuilder(memoryPolicyParams MemoryPolicyParameters) *ovirtsdk.MemoryPolicyBuilder {
+	memoryPolicyBuilder := ovirtsdk.NewMemoryPolicyBuilder()
+	if guaranteed := memoryPolicyParams.Guaranteed(); guaranteed != nil {
+		memoryPolicyBuilder.Guaranteed(*guaranteed)
+	}
+	if max := memoryPolicyParams.Max(); max != nil {
+		memoryPolicyBuilder.Max(*max)
+	}
+	if ballooning := memoryPolicyParams.Ballooning(); ballooning != nil {
+		memoryPolicyBuilder.Ballooning(*ballooning)
+	}
+	return memoryPolicyBuilder
+}
+
+func buildSDKVMOSBuilder(os VMOSParameters) *ovirtsdk.OperatingSystemBuilder {
+	osBuilder := ovirtsdk.NewOperatingSystemBuilder()
+	if t := os.Type(); t != nil {
+		osBuilder.Type(*t)
+	}
+	return osBuilder
 }
 
 func (o *oVirtClient) CreateVM(clusterID ClusterID, templateID TemplateID, name string, params OptionalVMParameters, retries ...RetryStrategy) (result VM, err error) {
@@ -251,11 +287,7 @@ func vmSoundcardEnabledCreator(params OptionalVMParameters, builder *ovirtsdk.Vm
 
 func vmOSCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if os, ok := params.OS(); ok {
-		osBuilder := ovirtsdk.NewOperatingSystemBuilder()
-		if t := os.Type(); t != nil {
-			osBuilder.Type(*t)
-		}
-		builder.OsBuilder(osBuilder)
+		builder.OsBuilder(buildSDKVMOSBuilder(os))
 	}
 }
 
@@ -273,17 +305,7 @@ func vmInstanceTypeID(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) 
 
 func vmBuilderMemoryPolicy(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	if memPolicyParams := params.MemoryPolicy(); memPolicyParams != nil {
-		memoryPolicyBuilder := ovirtsdk.NewMemoryPolicyBuilder()
-		if guaranteed := (*memPolicyParams).Guaranteed(); guaranteed != nil {
-			memoryPolicyBuilder.Guaranteed(*guaranteed)
-		}
-		if max := (*memPolicyParams).Max(); max != nil {
-			memoryPolicyBuilder.Max(*max)
-		}
-		if ballooning := (*memPolicyParams).Ballooning(); ballooning != nil {
-			memoryPolicyBuilder.Ballooning(*ballooning)
-		}
-		builder.MemoryPolicyBuilder(memoryPolicyBuilder)
+		builder.MemoryPolicyBuilder(buildSDKMemoryPolicyBuilder(*memPolicyParams))
 	}
 }
 
