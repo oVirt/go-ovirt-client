@@ -59,10 +59,10 @@ func (m *mockClient) createDisk(
 
 	if params != nil {
 		if alias := params.Alias(); alias != "" {
-			disk.disk.alias = alias
+			disk.alias = alias
 		}
 		if sparse := params.Sparse(); sparse != nil {
-			disk.disk.sparse = *sparse
+			disk.sparse = *sparse
 		}
 	}
 

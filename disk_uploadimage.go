@@ -386,7 +386,7 @@ func (u *uploadToNewDiskProgress) Do() {
 
 	u.updateDisk(disk)
 
-	err = u.uploadToDiskProgress.transfer()
+	err = u.transfer()
 	u.lock.Lock()
 	u.err = err
 	u.lock.Unlock()
