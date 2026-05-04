@@ -5,7 +5,7 @@ import (
 	"net"
 	"regexp"
 
-	ovirtsdk "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt/v4"
 )
 
 func (m *mockClient) GetVMIPAddresses(id VMID, params VMIPSearchParams, _ ...RetryStrategy) (map[string][]net.IP, error) {

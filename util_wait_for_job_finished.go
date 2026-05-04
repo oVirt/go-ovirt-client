@@ -3,7 +3,7 @@ package ovirtclient
 import (
 	"fmt"
 
-	ovirtsdk "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt/v4"
 )
 
 // waitForJobFinished waits for a job to truly finish. This is especially important when disks are involved as their

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	ovirtsdk "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt/v4"
 )
 
 // ErrorCode is a code that can be used to identify error types. These errors are identified on a best effort basis

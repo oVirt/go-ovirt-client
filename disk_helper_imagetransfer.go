@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	ovirtsdk4 "github.com/ovirt/go-ovirt"
+	ovirtsdk4 "github.com/ovirt/go-ovirt/v4"
 )
 
 // correlationIDRand is a random generator for selecting letters to put in the correlation ID. This does not need
