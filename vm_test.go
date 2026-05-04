@@ -744,7 +744,7 @@ func checkVMDiskSparseness(t *testing.T, checkVM ovirtclient.VM, sparse bool, me
 		t.Fatalf("Failed to fetch disk for VM %s (%v).", checkVM.ID(), err)
 	}
 	if d.Sparse() != sparse {
-		t.Fatalf(message)
+		t.Fatal(message)
 	}
 }
 

@@ -145,7 +145,7 @@ func excludeInterface(
 	}
 	includedByName := isInIncludedInterfaceNames(includedInterfaceNames, interf)
 	includedByPattern := isInIncludedInterfacePatterns(includedInterfacePatterns, interf)
-	return !((len(includedInterfaceNames) == 0 && len(includedInterfacePatterns) == 0) || includedByName || includedByPattern)
+	return (len(includedInterfaceNames) != 0 || len(includedInterfacePatterns) != 0) && !includedByName && !includedByPattern
 }
 
 func isInIncludedInterfacePatterns(patterns []*regexp.Regexp, interf string) bool {

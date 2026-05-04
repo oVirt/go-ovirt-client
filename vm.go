@@ -3026,9 +3026,7 @@ type VMStatusList []VMStatus
 func (l VMStatusList) Copy() VMStatusList {
 	result := make([]VMStatus, len(l))
 	//nolint:gosimple
-	for i, s := range l {
-		result[i] = s
-	}
+	copy(result, l)
 	return result
 }
 
