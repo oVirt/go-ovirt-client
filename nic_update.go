@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	ovirtsdk "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt/v4"
 )
 
 func (o *oVirtClient) UpdateNIC(

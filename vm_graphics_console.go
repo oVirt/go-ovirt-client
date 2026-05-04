@@ -1,6 +1,6 @@
 package ovirtclient
 
-import ovirtsdk "github.com/ovirt/go-ovirt"
+import ovirtsdk "github.com/ovirt/go-ovirt/v4"
 
 // VMGraphicsConsoleID is the identifier for graphics consoles on a VM.
 type VMGraphicsConsoleID string

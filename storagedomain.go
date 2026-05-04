@@ -4,7 +4,7 @@ import (
 	"strings"
 	"sync"
 
-	ovirtsdk4 "github.com/ovirt/go-ovirt"
+	ovirtsdk4 "github.com/ovirt/go-ovirt/v4"
 )
 
 // StorageDomainID is a specialized type for storage domain IDs.

@@ -1,7 +1,7 @@
 package ovirtclient
 
 import (
-	ovirtsdk "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt/v4"
 )
 
 // TemplateDiskClient contains the methods to work with template disk attachments.

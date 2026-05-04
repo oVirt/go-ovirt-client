@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	ovirtsdk4 "github.com/ovirt/go-ovirt"
+	ovirtsdk4 "github.com/ovirt/go-ovirt/v4"
 )
 
 //go:generate go run scripts/rest/rest.go -i "Disk" -n "disk" -T DiskID

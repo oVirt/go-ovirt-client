@@ -1,7 +1,7 @@
 package ovirtclient
 
 import (
-	ovirtsdk "github.com/ovirt/go-ovirt"
+	ovirtsdk "github.com/ovirt/go-ovirt/v4"
 )
 
 //go:generate go run scripts/rest/rest.go -i "VnicProfile" -n "VNIC profile" -o "VNICProfile" -s "Profile" -T VNICProfileID
