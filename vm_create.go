@@ -64,7 +64,7 @@ func vmBuilderMemory(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
 	}
 }
 
-func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) { //nolint:funlen
 	if params.Initialization() == nil {
 		return
 	}
@@ -103,6 +103,55 @@ func vmBuilderInitialization(params OptionalVMParameters, builder *ovirtsdk.VmBu
 		}
 
 		initBuilder.NicConfigurationsOfAny(nicBuilder.MustBuild())
+	}
+
+	if init.ActiveDirectoryOu() != "" {
+		initBuilder.ActiveDirectoryOu(init.ActiveDirectoryOu())
+	}
+	if init.AuthorizedSshKeys() != "" {
+		initBuilder.AuthorizedSshKeys(init.AuthorizedSshKeys())
+	}
+	if init.DnsSearch() != "" {
+		initBuilder.DnsSearch(init.DnsSearch())
+	}
+	if init.DnsServers() != "" {
+		initBuilder.DnsServers(init.DnsServers())
+	}
+	if init.Domain() != "" {
+		initBuilder.Domain(init.Domain())
+	}
+	if init.InputLocale() != "" {
+		initBuilder.InputLocale(init.InputLocale())
+	}
+	if init.OrgName() != "" {
+		initBuilder.OrgName(init.OrgName())
+	}
+	if init.RegenerateIds() != nil {
+		initBuilder.RegenerateIds(*init.RegenerateIds())
+	}
+	if init.RegenerateSshKeys() != nil {
+		initBuilder.RegenerateSshKeys(*init.RegenerateSshKeys())
+	}
+	if init.RootPassword() != "" {
+		initBuilder.RootPassword(init.RootPassword())
+	}
+	if init.SystemLocale() != "" {
+		initBuilder.SystemLocale(init.SystemLocale())
+	}
+	if init.Timezone() != "" {
+		initBuilder.Timezone(init.Timezone())
+	}
+	if init.UiLanguage() != "" {
+		initBuilder.UiLanguage(init.UiLanguage())
+	}
+	if init.UserLocale() != "" {
+		initBuilder.UserLocale(init.UserLocale())
+	}
+	if init.UserName() != "" {
+		initBuilder.UserName(init.UserName())
+	}
+	if init.WindowsLicenseKey() != "" {
+		initBuilder.WindowsLicenseKey(init.WindowsLicenseKey())
 	}
 	builder.InitializationBuilder(initBuilder)
 }
@@ -434,6 +483,10 @@ func (m *mockClient) createVM(
 	init := params.Initialization()
 	if init == nil {
 		init = &initialization{}
+	}
+
+	if init.RootPassword() != "" {
+		init.SetRootPassword("******")
 	}
 
 	vmType := m.createVMType(params)

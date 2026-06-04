@@ -27,6 +27,9 @@ func (o *oVirtClient) UpdateVM(
 	if description := params.Description(); description != nil {
 		vm.SetDescription(*description)
 	}
+	if initialization := params.Initialization(); initialization != nil {
+		vm.SetInitialization(initialization.ToSDK())
+	}
 
 	err = retry(
 		fmt.Sprintf("updating vm %s", id),
