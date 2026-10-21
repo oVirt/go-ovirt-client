@@ -1,6 +1,7 @@
 package ovirtclient
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -15,6 +16,10 @@ import (
 // correlationIDRand is a random generator for selecting letters to put in the correlation ID. This does not need
 // to be cryptographically strong as it is short-lived.
 var correlationIDRand = rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec,gochecknoglobals
+
+// transferURLProbeTimeout limits how long a single OPTIONS request to a candidate transfer URL may take, so that an
+// unreachable host does not delay the fallback to the next URL until the operating system gives up on the connection.
+var transferURLProbeTimeout = 10 * time.Second //nolint:gochecknoglobals
 
 // generateCorrelationID generates a random ID usable for correlation.
 func generateCorrelationID(prefix string) string {
@@ -457,9 +462,11 @@ func (i *imageTransferImpl) findTransferURL() (err error) {
 	for _, transferURL := range tryURLs {
 		lastError = i.verifyTransferURL(transferURL)
 		if lastError == nil {
+			i.logger.Infof("Using image transfer URL %s for disk %s.", transferURL, i.diskID)
 			i.transferURL = transferURL
 			return nil
 		}
+		i.logger.Infof("Image transfer URL %s for disk %s is not usable (%v).", transferURL, i.diskID, lastError)
 	}
 	if lastError != nil {
 		return wrap(
@@ -492,7 +499,20 @@ func (i *imageTransferImpl) verifyTransferURL(transferURL string) error {
 // optionsRequest sends an individual options request to the specified URL to figure out if the URL can be used for
 // an image transfer.
 func (i *imageTransferImpl) optionsRequest(parsedTransferURL *url.URL) error {
-	optionsReq, e := http.NewRequest(http.MethodOptions, parsedTransferURL.String(), strings.NewReader(""))
+	parentCtx := context.Background()
+	if i.cli != nil {
+		if clientCtx := i.cli.GetContext(); clientCtx != nil {
+			parentCtx = clientCtx
+		}
+	}
+	ctx, cancel := context.WithTimeout(parentCtx, transferURLProbeTimeout)
+	defer cancel()
+	optionsReq, e := http.NewRequestWithContext(
+		ctx,
+		http.MethodOptions,
+		parsedTransferURL.String(),
+		strings.NewReader(""),
+	)
 	if e != nil {
 		return wrap(e, EBug, "failed to create OPTIONS request to %s", parsedTransferURL.String())
 	}
