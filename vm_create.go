@@ -156,6 +156,13 @@ func buildSDKVMOSBuilder(os VMOSParameters) *ovirtsdk.OperatingSystemBuilder {
 	if t := os.Type(); t != nil {
 		osBuilder.Type(*t)
 	}
+	if bootDevices := os.BootDevices(); bootDevices != nil {
+		sdkDevices := make([]ovirtsdk.BootDevice, len(bootDevices))
+		for i, dev := range bootDevices {
+			sdkDevices[i] = ovirtsdk.BootDevice(dev)
+		}
+		osBuilder.Boot(ovirtsdk.NewBootBuilder().Devices(sdkDevices).MustBuild())
+	}
 	return osBuilder
 }
 
@@ -526,11 +533,15 @@ func (m *mockClient) createVMMemoryPolicy(params OptionalVMParameters) *memoryPo
 
 func (m *mockClient) createVMOS(params OptionalVMParameters) *vmOS {
 	os := &vmOS{
-		t: "other",
+		t:           "other",
+		bootDevices: []BootDevice{BootDeviceHardDisk},
 	}
 	if osParams, ok := params.OS(); ok {
 		if osType := osParams.Type(); osType != nil {
 			os.t = *osType
+		}
+		if bootDevices := osParams.BootDevices(); bootDevices != nil {
+			os.bootDevices = bootDevices
 		}
 	}
 	return os

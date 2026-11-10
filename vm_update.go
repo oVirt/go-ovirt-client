@@ -168,13 +168,25 @@ func (m *mockClient) UpdateVM(id VMID, params UpdateVMParameters, _ ...RetryStra
 		vm.vmType = *vmType
 	}
 	if osParams, isSet := params.OS(); isSet {
-		os := &vmOS{
-			t: "other",
+		var t string
+		var bootDevices []BootDevice
+		if vm.os != nil {
+			t = vm.os.t
+			bootDevices = vm.os.bootDevices
+		} else {
+			t = "other"
+			bootDevices = []BootDevice{BootDeviceHardDisk}
 		}
 		if osType := (*osParams).Type(); osType != nil {
-			os.t = *osType
+			t = *osType
 		}
-		vm.os = os
+		if bd := (*osParams).BootDevices(); bd != nil {
+			bootDevices = bd
+		}
+		vm.os = &vmOS{
+			t:           t,
+			bootDevices: bootDevices,
+		}
 	}
 	if serialConsole := params.SerialConsole(); serialConsole != nil {
 		vm.serialConsole = *serialConsole
