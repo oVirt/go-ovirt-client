@@ -1146,3 +1146,41 @@ func assertCanCreateBootableVM(t *testing.T, helper ovirtclient.TestHelper) ovir
 	assertCanAttachDiskWithParams(t, vm1, disk1, ovirtclient.CreateDiskAttachmentParams().MustWithBootable(true).MustWithActive(true))
 	return vm1
 }
+
+func TestVMCreateWithNICs(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	client := helper.GetClient()
+
+	vnicProfileID := helper.GetVNICProfileID()
+	nicName := fmt.Sprintf("test-nic-%s", helper.GenerateRandomID(5))
+
+	vm, err := client.CreateVM(
+		helper.GetClusterID(),
+		helper.GetBlankTemplateID(),
+		helper.GenerateTestResourceName(t),
+		ovirtclient.NewCreateVMParams().MustWithNICs([]ovirtclient.OptionalVMNICParameters{
+			ovirtclient.MustNewBuildableVMNICParameters(vnicProfileID).MustWithName(nicName),
+		}),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create VM with NICs: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = vm.Remove()
+	})
+
+	nics, err := client.ListNICs(vm.ID())
+	if err != nil {
+		t.Fatalf("Failed to list NICs for VM %s: %v", vm.ID(), err)
+	}
+	if len(nics) != 1 {
+		t.Fatalf("Expected 1 NIC on VM, got %d", len(nics))
+	}
+	if nics[0].Name() != nicName {
+		t.Fatalf("Expected NIC name %s, got %s", nicName, nics[0].Name())
+	}
+	if nics[0].VNICProfileID() != vnicProfileID {
+		t.Fatalf("Expected VNIC profile ID %s, got %s", vnicProfileID, nics[0].VNICProfileID())
+	}
+}

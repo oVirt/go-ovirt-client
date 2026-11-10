@@ -262,6 +262,23 @@ func createSDKVM(
 		builder.DiskAttachmentsOfAny(diskAttachments...)
 	}
 
+	if params != nil && len(params.NICs()) > 0 {
+		var nics []*ovirtsdk.Nic
+		for i, n := range params.NICs() {
+			nicBuilder := ovirtsdk.NewNicBuilder()
+			if n.Name() != "" {
+				nicBuilder.Name(n.Name())
+			}
+			nicBuilder.VnicProfile(ovirtsdk.NewVnicProfileBuilder().Id(string(n.VNICProfileID())).MustBuild())
+			sdkNIC, err := nicBuilder.Build()
+			if err != nil {
+				return nil, wrap(err, EBadArgument, "Failed to convert NIC %d.", i)
+			}
+			nics = append(nics, sdkNIC)
+		}
+		builder.NicsOfAny(nics...)
+	}
+
 	vm, err := builder.Build()
 	if err != nil {
 		return nil, wrap(err, EBug, "failed to build VM")
@@ -364,6 +381,26 @@ func validateVMCreationParameters(clusterID ClusterID, templateID TemplateID, na
 		}
 	}
 
+	nics := params.NICs()
+	nicNames := map[string]int{}
+	for i, n := range nics {
+		if n.VNICProfileID() == "" {
+			return newError(EBadArgument, "VNIC profile ID cannot be empty for NIC at position %d", i)
+		}
+		if n.Name() != "" {
+			if previousIndex, ok := nicNames[n.Name()]; ok {
+				return newError(
+					EBadArgument,
+					"NIC name %s appears twice, in position %d and %d.",
+					n.Name(),
+					previousIndex,
+					i,
+				)
+			}
+			nicNames[n.Name()] = i
+		}
+	}
+
 	return nil
 }
 
@@ -414,6 +451,56 @@ func (m *mockClient) CreateVM(
 			vm := m.createVM(name, params, clusterID, templateID, cpu)
 
 			m.attachVMDisksFromTemplate(tpl, vm, params)
+
+			if params != nil && len(params.NICs()) > 0 {
+				for _, n := range params.NICs() {
+					if _, ok := m.vnicProfiles[n.VNICProfileID()]; !ok {
+						return newError(ENotFound, "VNIC profile with ID %s not found", n.VNICProfileID())
+					}
+				}
+				for _, n := range params.NICs() {
+					nicName := n.Name()
+					var foundNIC *nic
+					if nicName != "" {
+						for _, existing := range m.nics {
+							if existing.vmid == vm.id && existing.name == nicName {
+								foundNIC = existing
+								break
+							}
+						}
+					} else {
+						nicIndex := 0
+						for {
+							candidate := fmt.Sprintf("eth%d", nicIndex)
+							inUse := false
+							for _, existing := range m.nics {
+								if existing.vmid == vm.id && existing.name == candidate {
+									inUse = true
+									break
+								}
+							}
+							if !inUse {
+								nicName = candidate
+								break
+							}
+							nicIndex++
+						}
+					}
+					if foundNIC != nil {
+						foundNIC.vnicProfileID = n.VNICProfileID()
+					} else {
+						id := NICID(uuid.Must(uuid.NewUUID()).String())
+						newNIC := &nic{
+							client:        m,
+							id:            id,
+							name:          nicName,
+							vmid:          vm.id,
+							vnicProfileID: n.VNICProfileID(),
+						}
+						m.nics[id] = newNIC
+					}
+				}
+			}
 
 			if clone := params.Clone(); clone != nil && *clone {
 				vm.templateID = DefaultBlankTemplateID
