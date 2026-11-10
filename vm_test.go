@@ -807,6 +807,74 @@ func TestVMOSParameter(t *testing.T) {
 	}
 }
 
+func TestVMBootDevices(t *testing.T) {
+	helper := getHelper(t)
+	client := helper.GetClient()
+
+	// 1. Validation tests
+	if err := ovirtclient.BootDevice("invalid").Validate(); err == nil {
+		t.Fatal("Expected error validating invalid boot device, got nil")
+	}
+	if err := ovirtclient.BootDeviceHardDisk.Validate(); err != nil {
+		t.Fatalf("Unexpected error validating BootDeviceHardDisk: %v", err)
+	}
+	if _, err := ovirtclient.NewVMOSParameters().WithBootDevices([]ovirtclient.BootDevice{}); err == nil {
+		t.Fatal("Expected error for empty boot devices, got nil")
+	}
+
+	// 2. Default VM creation should have BootDeviceHardDisk
+	vmDefault := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-def-%s", t.Name(), helper.GenerateRandomID(5)),
+		nil,
+	)
+	defaultDevices := vmDefault.OS().BootDevices()
+	if len(defaultDevices) != 1 || defaultDevices[0] != ovirtclient.BootDeviceHardDisk {
+		t.Fatalf("Expected default boot device [%s], got %v", ovirtclient.BootDeviceHardDisk, defaultDevices)
+	}
+
+	// 3. Create VM with custom boot devices [network, hd]
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("%s-%s", t.Name(), helper.GenerateRandomID(5)),
+		ovirtclient.NewCreateVMParams().WithOS(
+			ovirtclient.NewVMOSParameters().MustWithBootDevices(
+				[]ovirtclient.BootDevice{ovirtclient.BootDeviceNetwork, ovirtclient.BootDeviceHardDisk},
+			),
+		),
+	)
+	devices := vm.OS().BootDevices()
+	if len(devices) != 2 || devices[0] != ovirtclient.BootDeviceNetwork || devices[1] != ovirtclient.BootDeviceHardDisk {
+		t.Fatalf("Incorrect boot devices (expected [network, hd], got %v)", devices)
+	}
+
+	// 4. Update VM boot devices to [cdrom]
+	updatedVM, err := vm.Update(
+		ovirtclient.UpdateVMParams().MustWithOS(
+			ovirtclient.NewVMOSParameters().MustWithBootDevices([]ovirtclient.BootDevice{ovirtclient.BootDeviceCDROM}),
+		),
+	)
+	if err != nil {
+		t.Fatalf("Failed to update VM boot devices: %v", err)
+	}
+	updatedDevices := updatedVM.OS().BootDevices()
+	if len(updatedDevices) != 1 || updatedDevices[0] != ovirtclient.BootDeviceCDROM {
+		t.Fatalf("Incorrect updated boot devices (expected [cdrom], got %v)", updatedDevices)
+	}
+
+	// 5. Verify fetched VM has updated boot devices
+	fetchedVM, err := client.GetVM(vm.ID())
+	if err != nil {
+		t.Fatalf("Failed to fetch VM: %v", err)
+	}
+	fetchedDevices := fetchedVM.OS().BootDevices()
+	if len(fetchedDevices) != 1 || fetchedDevices[0] != ovirtclient.BootDeviceCDROM {
+		t.Fatalf("Incorrect fetched boot devices (expected [cdrom], got %v)", fetchedDevices)
+	}
+}
+
 func TestVMCPUMode(t *testing.T) {
 	helper := getHelper(t)
 
