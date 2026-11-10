@@ -825,6 +825,9 @@ type OptionalVMParameters interface {
 	// Disks returns a list of disks that are to be changed from the template.
 	Disks() []OptionalVMDiskParameters
 
+	// NICs returns a list of NICs that are to be changed from the template or created on the VM.
+	NICs() []OptionalVMNICParameters
+
 	// PlacementPolicy returns a VM placement policy to apply, if any.
 	PlacementPolicy() *VMPlacementPolicyParameters
 
@@ -900,6 +903,11 @@ type BuildableVMParameters interface {
 	WithDisks(disks []OptionalVMDiskParameters) (BuildableVMParameters, error)
 	// MustWithDisks is identical to WithDisks, but panics instead of returning an error.
 	MustWithDisks(disks []OptionalVMDiskParameters) BuildableVMParameters
+
+	// WithNICs adds NIC configurations to the VM creation to manipulate NICs inherited from templates or created on the VM.
+	WithNICs(nics []OptionalVMNICParameters) (BuildableVMParameters, error)
+	// MustWithNICs is identical to WithNICs, but panics instead of returning an error.
+	MustWithNICs(nics []OptionalVMNICParameters) BuildableVMParameters
 
 	// WithPlacementPolicy adds a placement policy dictating which hosts the VM can be migrated to.
 	WithPlacementPolicy(placementPolicy VMPlacementPolicyParameters) BuildableVMParameters
@@ -1517,6 +1525,71 @@ func (v *vmDiskParameters) MustWithSparse(sparse bool) BuildableVMDiskParameters
 	return builder
 }
 
+// OptionalVMNICParameters describes the NIC parameters that can be given to VM creation. These manipulate the
+// network interfaces inherited from the template or created with the VM.
+type OptionalVMNICParameters interface {
+	// Name returns the name of the NIC to be changed or created.
+	Name() string
+	// VNICProfileID returns the ID of the VNIC profile to attach to this NIC.
+	VNICProfileID() VNICProfileID
+}
+
+// BuildableVMNICParameters is a buildable version of OptionalVMNICParameters.
+type BuildableVMNICParameters interface {
+	OptionalVMNICParameters
+
+	// WithName sets the name of the NIC.
+	WithName(name string) (BuildableVMNICParameters, error)
+	// MustWithName is identical to WithName, but panics instead of returning an error.
+	MustWithName(name string) BuildableVMNICParameters
+}
+
+// NewBuildableVMNICParameters creates a new buildable OptionalVMNICParameters.
+func NewBuildableVMNICParameters(vnicProfileID VNICProfileID) (BuildableVMNICParameters, error) {
+	if vnicProfileID == "" {
+		return nil, newError(EBadArgument, "VNIC profile ID cannot be empty")
+	}
+	return &vmNICParameters{
+		vnicProfileID: vnicProfileID,
+		name:          "",
+	}, nil
+}
+
+// MustNewBuildableVMNICParameters is identical to NewBuildableVMNICParameters but panics instead of returning an error.
+func MustNewBuildableVMNICParameters(vnicProfileID VNICProfileID) BuildableVMNICParameters {
+	builder, err := NewBuildableVMNICParameters(vnicProfileID)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+type vmNICParameters struct {
+	vnicProfileID VNICProfileID
+	name          string
+}
+
+func (v *vmNICParameters) VNICProfileID() VNICProfileID {
+	return v.vnicProfileID
+}
+
+func (v *vmNICParameters) Name() string {
+	return v.name
+}
+
+func (v *vmNICParameters) WithName(name string) (BuildableVMNICParameters, error) {
+	v.name = name
+	return v, nil
+}
+
+func (v *vmNICParameters) MustWithName(name string) BuildableVMNICParameters {
+	b, err := v.WithName(name)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 // UpdateVMParameters returns a set of parameters to change on a VM.
 type UpdateVMParameters interface {
 	// Name returns the name for the VM. Return nil if the name should not be changed.
@@ -2097,6 +2170,7 @@ type vmParams struct {
 	clone *bool
 
 	disks []OptionalVMDiskParameters
+	nics  []OptionalVMNICParameters
 
 	placementPolicy *VMPlacementPolicyParameters
 
@@ -2235,6 +2309,41 @@ func (v *vmParams) WithDisks(disks []OptionalVMDiskParameters) (BuildableVMParam
 
 func (v *vmParams) MustWithDisks(disks []OptionalVMDiskParameters) BuildableVMParameters {
 	builder, err := v.WithDisks(disks)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) NICs() []OptionalVMNICParameters {
+	return v.nics
+}
+
+func (v *vmParams) WithNICs(nics []OptionalVMNICParameters) (BuildableVMParameters, error) {
+	nicNames := map[string]int{}
+	for i, n := range nics {
+		if n.VNICProfileID() == "" {
+			return nil, newError(EBadArgument, "VNIC profile ID cannot be empty for NIC at position %d", i)
+		}
+		if n.Name() != "" {
+			if previousIndex, ok := nicNames[n.Name()]; ok {
+				return nil, newError(
+					EBadArgument,
+					"NIC name %s appears twice, in position %d and %d.",
+					n.Name(),
+					previousIndex,
+					i,
+				)
+			}
+			nicNames[n.Name()] = i
+		}
+	}
+	v.nics = nics
+	return v, nil
+}
+
+func (v *vmParams) MustWithNICs(nics []OptionalVMNICParameters) BuildableVMParameters {
+	builder, err := v.WithNICs(nics)
 	if err != nil {
 		panic(err)
 	}
