@@ -374,6 +374,14 @@ type Initialization interface {
 	CustomScript() string
 	HostName() string
 	NicConfiguration() NicConfiguration
+	AuthorizedSSHKeys() *string
+	RootPassword() *string
+	UserName() *string
+	Timezone() *string
+	DNSServers() *string
+	DNSSearch() *string
+	RegenerateSSHKeys() *bool
+	WindowsLicenseKey() *string
 }
 
 // BuildableInitialization is a buildable version of Initialization.
@@ -382,6 +390,14 @@ type BuildableInitialization interface {
 	WithCustomScript(customScript string) BuildableInitialization
 	WithHostname(hostname string) BuildableInitialization
 	WithNicConfiguration(nic NicConfiguration) BuildableInitialization
+	WithAuthorizedSSHKeys(authorizedSSHKeys string) BuildableInitialization
+	WithRootPassword(rootPassword string) BuildableInitialization
+	WithUserName(userName string) BuildableInitialization
+	WithTimezone(timezone string) BuildableInitialization
+	WithDNSServers(dnsServers string) BuildableInitialization
+	WithDNSSearch(dnsSearch string) BuildableInitialization
+	WithRegenerateSSHKeys(regenerateSSHKeys bool) BuildableInitialization
+	WithWindowsLicenseKey(windowsLicenseKey string) BuildableInitialization
 }
 
 // initialization defines to the virtual machine’s initialization configuration.
@@ -389,9 +405,17 @@ type BuildableInitialization interface {
 // hostname - Hostname to be set to Virtual Machine when deployed.
 // nicConfiguration - Optional. The nic configuration used on boot time.
 type initialization struct {
-	customScript     string
-	hostname         string
-	nicConfiguration NicConfiguration
+	customScript      string
+	hostname          string
+	nicConfiguration  NicConfiguration
+	authorizedSSHKeys *string
+	rootPassword      *string
+	userName          *string
+	timezone          *string
+	dnsServers        *string
+	dnsSearch         *string
+	regenerateSSHKeys *bool
+	windowsLicenseKey *string
 }
 
 // NewInitialization creates a new Initialization from the specified parameters.
@@ -415,6 +439,38 @@ func (i *initialization) NicConfiguration() NicConfiguration {
 	return i.nicConfiguration
 }
 
+func (i *initialization) AuthorizedSSHKeys() *string {
+	return i.authorizedSSHKeys
+}
+
+func (i *initialization) RootPassword() *string {
+	return i.rootPassword
+}
+
+func (i *initialization) UserName() *string {
+	return i.userName
+}
+
+func (i *initialization) Timezone() *string {
+	return i.timezone
+}
+
+func (i *initialization) DNSServers() *string {
+	return i.dnsServers
+}
+
+func (i *initialization) DNSSearch() *string {
+	return i.dnsSearch
+}
+
+func (i *initialization) RegenerateSSHKeys() *bool {
+	return i.regenerateSSHKeys
+}
+
+func (i *initialization) WindowsLicenseKey() *string {
+	return i.windowsLicenseKey
+}
+
 func (i *initialization) WithCustomScript(customScript string) BuildableInitialization {
 	i.customScript = customScript
 	return i
@@ -427,6 +483,46 @@ func (i *initialization) WithHostname(hostname string) BuildableInitialization {
 
 func (i *initialization) WithNicConfiguration(nic NicConfiguration) BuildableInitialization {
 	i.nicConfiguration = nic
+	return i
+}
+
+func (i *initialization) WithAuthorizedSSHKeys(authorizedSSHKeys string) BuildableInitialization {
+	i.authorizedSSHKeys = &authorizedSSHKeys
+	return i
+}
+
+func (i *initialization) WithRootPassword(rootPassword string) BuildableInitialization {
+	i.rootPassword = &rootPassword
+	return i
+}
+
+func (i *initialization) WithUserName(userName string) BuildableInitialization {
+	i.userName = &userName
+	return i
+}
+
+func (i *initialization) WithTimezone(timezone string) BuildableInitialization {
+	i.timezone = &timezone
+	return i
+}
+
+func (i *initialization) WithDNSServers(dnsServers string) BuildableInitialization {
+	i.dnsServers = &dnsServers
+	return i
+}
+
+func (i *initialization) WithDNSSearch(dnsSearch string) BuildableInitialization {
+	i.dnsSearch = &dnsSearch
+	return i
+}
+
+func (i *initialization) WithRegenerateSSHKeys(regenerateSSHKeys bool) BuildableInitialization {
+	i.regenerateSSHKeys = &regenerateSSHKeys
+	return i
+}
+
+func (i *initialization) WithWindowsLicenseKey(windowsLicenseKey string) BuildableInitialization {
+	i.windowsLicenseKey = &windowsLicenseKey
 	return i
 }
 
@@ -531,6 +627,30 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 	nicConfigs, ok := initializationSDK.NicConfigurations()
 	if ok && len(nicConfigs.Slice()) >= 1 {
 		init.nicConfiguration = convertSDKNicConfiguration(nicConfigs.Slice()[0])
+	}
+	if authorizedSSHKeys, ok := initializationSDK.AuthorizedSshKeys(); ok {
+		init.authorizedSSHKeys = &authorizedSSHKeys
+	}
+	if rootPassword, ok := initializationSDK.RootPassword(); ok {
+		init.rootPassword = &rootPassword
+	}
+	if userName, ok := initializationSDK.UserName(); ok {
+		init.userName = &userName
+	}
+	if timezone, ok := initializationSDK.Timezone(); ok {
+		init.timezone = &timezone
+	}
+	if dnsServers, ok := initializationSDK.DnsServers(); ok {
+		init.dnsServers = &dnsServers
+	}
+	if dnsSearch, ok := initializationSDK.DnsSearch(); ok {
+		init.dnsSearch = &dnsSearch
+	}
+	if regenerateSSHKeys, ok := initializationSDK.RegenerateSshKeys(); ok {
+		init.regenerateSSHKeys = &regenerateSSHKeys
+	}
+	if windowsLicenseKey, ok := initializationSDK.WindowsLicenseKey(); ok {
+		init.windowsLicenseKey = &windowsLicenseKey
 	}
 	return &init, nil
 }
