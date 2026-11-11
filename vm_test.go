@@ -353,6 +353,66 @@ func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 
 }
 
+func TestVMCreationWithExtendedInit(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+
+	sshKey := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGoVb..."
+	rootPass := "SuperSecret123!"
+	userName := "admin"
+	timezone := "Europe/Zagreb"
+	dnsServers := "1.1.1.1 8.8.8.8"
+	dnsSearch := "example.local"
+	regenSSH := true
+	winKey := "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+
+	init := ovirtclient.NewInitialization("script-test", "test-vm").
+		WithAuthorizedSSHKeys(sshKey).
+		WithRootPassword(rootPass).
+		WithUserName(userName).
+		WithTimezone(timezone).
+		WithDNSServers(dnsServers).
+		WithDNSSearch(dnsSearch).
+		WithRegenerateSSHKeys(regenSSH).
+		WithWindowsLicenseKey(winKey)
+
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		fmt.Sprintf("test-%s", helper.GenerateRandomID(5)),
+		ovirtclient.CreateVMParams().MustWithInitialization(init),
+	)
+
+	vmInit := vm.Initialization()
+	if vmInit == nil {
+		t.Fatalf("expected initialization to be set on VM")
+	}
+	if vmInit.AuthorizedSSHKeys() == nil || *vmInit.AuthorizedSSHKeys() != sshKey {
+		t.Fatalf("expected authorized SSH keys %s, got %v", sshKey, vmInit.AuthorizedSSHKeys())
+	}
+	if vmInit.RootPassword() == nil || *vmInit.RootPassword() != rootPass {
+		t.Fatalf("expected root password %s, got %v", rootPass, vmInit.RootPassword())
+	}
+	if vmInit.UserName() == nil || *vmInit.UserName() != userName {
+		t.Fatalf("expected username %s, got %v", userName, vmInit.UserName())
+	}
+	if vmInit.Timezone() == nil || *vmInit.Timezone() != timezone {
+		t.Fatalf("expected timezone %s, got %v", timezone, vmInit.Timezone())
+	}
+	if vmInit.DNSServers() == nil || *vmInit.DNSServers() != dnsServers {
+		t.Fatalf("expected DNS servers %s, got %v", dnsServers, vmInit.DNSServers())
+	}
+	if vmInit.DNSSearch() == nil || *vmInit.DNSSearch() != dnsSearch {
+		t.Fatalf("expected DNS search %s, got %v", dnsSearch, vmInit.DNSSearch())
+	}
+	if vmInit.RegenerateSSHKeys() == nil || *vmInit.RegenerateSSHKeys() != regenSSH {
+		t.Fatalf("expected regenerate SSH keys %v, got %v", regenSSH, vmInit.RegenerateSSHKeys())
+	}
+	if vmInit.WindowsLicenseKey() == nil || *vmInit.WindowsLicenseKey() != winKey {
+		t.Fatalf("expected windows license key %s, got %v", winKey, vmInit.WindowsLicenseKey())
+	}
+}
+
 func TestVMCreationWithDescription(t *testing.T) {
 	t.Parallel()
 	testDescription := "test description"
