@@ -238,6 +238,9 @@ type VMData interface {
 
 	// OS returns the operating system structure.
 	OS() VMOS
+
+	// FQDN returns the fully qualified domain name reported by the guest agent, if any.
+	FQDN() *string
 }
 
 // VMOS is the structure describing the virtual machine operating system, if set.
@@ -618,7 +621,7 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 	init := initialization{}
 	customScript, ok := initializationSDK.CustomScript()
 	if ok {
-		init.customScript = customScript
+		init.customScript = unwrapCDATA(customScript)
 	}
 	hostname, ok := initializationSDK.HostName()
 	if ok {
@@ -653,6 +656,15 @@ func convertSDKInitialization(sdkObject *ovirtsdk.Vm) (*initialization, error) {
 		init.windowsLicenseKey = &windowsLicenseKey
 	}
 	return &init, nil
+}
+
+func unwrapCDATA(s string) string {
+	trimmed := strings.TrimSpace(s)
+	if strings.HasPrefix(trimmed, "<![CDATA[") && strings.HasSuffix(trimmed, "]]>") {
+		inner := trimmed[9 : len(trimmed)-3]
+		return strings.ReplaceAll(inner, "]]]]><![CDATA[>", "]]>")
+	}
+	return s
 }
 
 func convertSDKNicConfiguration(sdkObject *ovirtsdk.NicConfiguration) NicConfiguration {
@@ -2544,6 +2556,11 @@ type vm struct {
 	os               *vmOS
 	serialConsole    bool
 	soundcardEnabled bool
+	fqdn             *string
+}
+
+func (v *vm) FQDN() *string {
+	return v.fqdn
 }
 
 func (v *vm) SoundcardEnabled() bool {
@@ -2779,6 +2796,7 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmOSConverter,
 		vmSoundcardEnabledConverter,
 		vmSerialConsoleConverter,
+		vmFQDNConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -2787,6 +2805,13 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 	}
 
 	return vmObject, nil
+}
+
+func vmFQDNConverter(object *ovirtsdk.Vm, v *vm) error {
+	if fqdn, ok := object.Fqdn(); ok {
+		v.fqdn = &fqdn
+	}
+	return nil
 }
 
 func vmSerialConsoleConverter(object *ovirtsdk.Vm, v *vm) error {

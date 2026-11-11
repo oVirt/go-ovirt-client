@@ -309,6 +309,12 @@ func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 				Netmask: "64",
 			}),
 		},
+		{
+			"with special xml characters in custom script",
+			"cat <<'EOF' > /tmp/test.sh && echo hello > /tmp/out\nEOF",
+			"test-xml-vm",
+			nil,
+		},
 	}
 
 	vm1 := assertCanCreateVM(
@@ -410,6 +416,9 @@ func TestVMCreationWithExtendedInit(t *testing.T) {
 	}
 	if vmInit.WindowsLicenseKey() == nil || *vmInit.WindowsLicenseKey() != winKey {
 		t.Fatalf("expected windows license key %s, got %v", winKey, vmInit.WindowsLicenseKey())
+	}
+	if vm.FQDN() == nil || *vm.FQDN() != "test-vm" {
+		t.Fatalf("expected FQDN test-vm, got %v", vm.FQDN())
 	}
 }
 

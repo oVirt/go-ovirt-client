@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -84,7 +85,7 @@ func buildSDKVMInitializationBuilder(init Initialization) *ovirtsdk.Initializati
 	initBuilder := ovirtsdk.NewInitializationBuilder()
 
 	if init.CustomScript() != "" {
-		initBuilder.CustomScript(init.CustomScript())
+		initBuilder.CustomScript(xmlSafeCustomScript(init.CustomScript()))
 	}
 	if init.HostName() != "" {
 		initBuilder.HostName(init.HostName())
@@ -139,6 +140,20 @@ func buildSDKVMInitializationBuilder(init Initialization) *ovirtsdk.Initializati
 	}
 
 	return initBuilder
+}
+
+func xmlSafeCustomScript(script string) string {
+	if script == "" {
+		return ""
+	}
+	if strings.HasPrefix(strings.TrimSpace(script), "<![CDATA[") {
+		return script
+	}
+	if strings.ContainsAny(script, "<&>") {
+		safe := strings.ReplaceAll(script, "]]>", "]]]]><![CDATA[>")
+		return "<![CDATA[" + safe + "]]>"
+	}
+	return script
 }
 
 func vmPlacementPolicyParameterConverter(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
@@ -493,6 +508,12 @@ func (m *mockClient) createVM(
 		soundcardEnabled = *isEnabled
 	}
 
+	var fqdn *string
+	if init != nil && init.HostName() != "" {
+		h := init.HostName()
+		fqdn = &h
+	}
+
 	vm := &vm{
 		m,
 		VMID(id),
@@ -515,6 +536,7 @@ func (m *mockClient) createVM(
 		m.createVMOS(params),
 		console,
 		soundcardEnabled,
+		fqdn,
 	}
 	m.vms[VMID(id)] = vm
 	return vm
