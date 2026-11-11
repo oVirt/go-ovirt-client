@@ -12,6 +12,15 @@ type StorageDomainID string
 
 // StorageDomainClient contains the portion of the goVirt API that deals with storage domains.
 type StorageDomainClient interface {
+	// CreateNFSStorageDomain creates a new NFS storage domain.
+	CreateNFSStorageDomain(
+		name string,
+		hostID HostID,
+		address string,
+		path string,
+		params CreateNFSStorageDomainParams,
+		retries ...RetryStrategy,
+	) (StorageDomain, error)
 	// ListStorageDomains lists all storage domains.
 	ListStorageDomains(retries ...RetryStrategy) (StorageDomainList, error)
 	// GetStorageDomain returns a single storage domain, or an error if the storage domain could not be found.
@@ -21,6 +30,10 @@ type StorageDomainClient interface {
 	// RemoveDiskFromStorageDomain removes a disk from a specific storage domain, but leaves the disk on other storage
 	// domains if any. If the disk is not present on any more storage domains, the entire disk will be removed.
 	RemoveDiskFromStorageDomain(id StorageDomainID, diskID DiskID, retries ...RetryStrategy) error
+	// UpdateStorageDomain updates an existing storage domain.
+	UpdateStorageDomain(id StorageDomainID, params UpdateStorageDomainParams, retries ...RetryStrategy) (StorageDomain, error)
+	// RemoveStorageDomain removes a storage domain.
+	RemoveStorageDomain(id StorageDomainID, params RemoveStorageDomainParams, retries ...RetryStrategy) error
 }
 
 // StorageDomainData is the core of StorageDomain, providing only data access functions.
@@ -38,11 +51,32 @@ type StorageDomainData interface {
 	Status() StorageDomainStatus
 	// ExternalStatus returns the external status of a storage domain.
 	ExternalStatus() StorageDomainExternalStatus
+	// Description returns the user-given description for the storage domain.
+	Description() *string
+	// Comment returns the user-given comment for the storage domain.
+	Comment() *string
+	// StorageAddress returns the host address of the storage server.
+	StorageAddress() *string
+	// StoragePath returns the path or export of the storage server.
+	StoragePath() *string
+	// StorageFormat returns the storage format (e.g. v5).
+	StorageFormat() *StorageFormat
+	// WipeAfterDelete returns whether wipe-after-delete is enabled by default on the storage domain.
+	WipeAfterDelete() *bool
+	// Backup returns whether the storage domain is marked for backup.
+	Backup() *bool
+	// CriticalSpaceActionBlocker returns the percentage threshold to block actions.
+	CriticalSpaceActionBlocker() *int64
+	// WarningLowSpaceIndicator returns the percentage threshold for low space warning.
+	WarningLowSpaceIndicator() *int64
 }
 
 // StorageDomain represents a storage domain returned from the oVirt Engine API.
 type StorageDomain interface {
 	StorageDomainData
+
+	Update(params UpdateStorageDomainParams, retries ...RetryStrategy) (StorageDomain, error)
+	Remove(params RemoveStorageDomainParams, retries ...RetryStrategy) error
 }
 
 // StorageDomainList represents a list of storage domains.
@@ -275,27 +309,83 @@ func convertSDKStorageDomain(sdkStorageDomain *ovirtsdk4.StorageDomain, client C
 		return nil, newError(EFieldMissing, "neither the status nor the external status is set for storage domain %s", id)
 	}
 
+	var description *string
+	if d, ok := sdkStorageDomain.Description(); ok {
+		description = &d
+	}
+	var comment *string
+	if c, ok := sdkStorageDomain.Comment(); ok {
+		comment = &c
+	}
+	var storageAddress *string
+	if a, ok := storage.Address(); ok {
+		storageAddress = &a
+	}
+	var storagePath *string
+	if p, ok := storage.Path(); ok {
+		storagePath = &p
+	}
+	var storageFormat *StorageFormat
+	if sf, ok := sdkStorageDomain.StorageFormat(); ok {
+		s := StorageFormat(sf)
+		storageFormat = &s
+	}
+	var wipeAfterDelete *bool
+	if wad, ok := sdkStorageDomain.WipeAfterDelete(); ok {
+		wipeAfterDelete = &wad
+	}
+	var backup *bool
+	if b, ok := sdkStorageDomain.Backup(); ok {
+		backup = &b
+	}
+	var csab *int64
+	if c, ok := sdkStorageDomain.CriticalSpaceActionBlocker(); ok {
+		csab = &c
+	}
+	var wlsi *int64
+	if w, ok := sdkStorageDomain.WarningLowSpaceIndicator(); ok {
+		wlsi = &w
+	}
+
 	return &storageDomain{
 		client: client,
 
-		id:             StorageDomainID(id),
-		name:           name,
-		available:      uint64(available),
-		storageType:    StorageDomainType(storageType),
-		status:         StorageDomainStatus(status),
-		externalStatus: StorageDomainExternalStatus(externalStatus),
+		id:                         StorageDomainID(id),
+		name:                       name,
+		available:                  uint64(available),
+		storageType:                StorageDomainType(storageType),
+		status:                     StorageDomainStatus(status),
+		externalStatus:             StorageDomainExternalStatus(externalStatus),
+		description:                description,
+		comment:                    comment,
+		storageAddress:             storageAddress,
+		storagePath:                storagePath,
+		storageFormat:              storageFormat,
+		wipeAfterDelete:            wipeAfterDelete,
+		backup:                     backup,
+		criticalSpaceActionBlocker: csab,
+		warningLowSpaceIndicator:   wlsi,
 	}, nil
 }
 
 type storageDomain struct {
 	client Client
 
-	id             StorageDomainID
-	name           string
-	available      uint64
-	storageType    StorageDomainType
-	status         StorageDomainStatus
-	externalStatus StorageDomainExternalStatus
+	id                         StorageDomainID
+	name                       string
+	available                  uint64
+	storageType                StorageDomainType
+	status                     StorageDomainStatus
+	externalStatus             StorageDomainExternalStatus
+	description                *string
+	comment                    *string
+	storageAddress             *string
+	storagePath                *string
+	storageFormat              *StorageFormat
+	wipeAfterDelete            *bool
+	backup                     *bool
+	criticalSpaceActionBlocker *int64
+	warningLowSpaceIndicator   *int64
 }
 
 func (s storageDomain) ID() StorageDomainID {
@@ -320,6 +410,50 @@ func (s storageDomain) Status() StorageDomainStatus {
 
 func (s storageDomain) ExternalStatus() StorageDomainExternalStatus {
 	return s.externalStatus
+}
+
+func (s storageDomain) Description() *string {
+	return s.description
+}
+
+func (s storageDomain) Comment() *string {
+	return s.comment
+}
+
+func (s storageDomain) StorageAddress() *string {
+	return s.storageAddress
+}
+
+func (s storageDomain) StoragePath() *string {
+	return s.storagePath
+}
+
+func (s storageDomain) StorageFormat() *StorageFormat {
+	return s.storageFormat
+}
+
+func (s storageDomain) WipeAfterDelete() *bool {
+	return s.wipeAfterDelete
+}
+
+func (s storageDomain) Backup() *bool {
+	return s.backup
+}
+
+func (s storageDomain) CriticalSpaceActionBlocker() *int64 {
+	return s.criticalSpaceActionBlocker
+}
+
+func (s storageDomain) WarningLowSpaceIndicator() *int64 {
+	return s.warningLowSpaceIndicator
+}
+
+func (s storageDomain) Update(params UpdateStorageDomainParams, retries ...RetryStrategy) (StorageDomain, error) {
+	return s.client.UpdateStorageDomain(s.id, params, retries...)
+}
+
+func (s storageDomain) Remove(params RemoveStorageDomainParams, retries ...RetryStrategy) error {
+	return s.client.RemoveStorageDomain(s.id, params, retries...)
 }
 
 type storageDomainDiskWait struct {
@@ -357,4 +491,441 @@ func (d *storageDomainDiskWait) Wait(retries ...RetryStrategy) (Disk, error) {
 		d.disk = disk
 	}
 	return disk, err
+}
+
+// StorageFormat represents the storage format version of a storage domain.
+type StorageFormat string
+
+const (
+	StorageFormatV1 StorageFormat = "v1"
+	StorageFormatV2 StorageFormat = "v2"
+	StorageFormatV3 StorageFormat = "v3"
+	StorageFormatV4 StorageFormat = "v4"
+	StorageFormatV5 StorageFormat = "v5"
+)
+
+// CreateNFSStorageDomainParams contains optional parameters for NFS storage domain creation.
+type CreateNFSStorageDomainParams interface {
+	Description() *string
+	Comment() *string
+	StorageFormat() *StorageFormat
+	WipeAfterDelete() *bool
+	Backup() *bool
+	CriticalSpaceActionBlocker() *int64
+	WarningLowSpaceIndicator() *int64
+	MountOptions() *string
+}
+
+// BuildableNFSStorageDomainParams is a buildable version of CreateNFSStorageDomainParams.
+type BuildableNFSStorageDomainParams interface {
+	CreateNFSStorageDomainParams
+
+	WithDescription(description string) (BuildableNFSStorageDomainParams, error)
+	MustWithDescription(description string) BuildableNFSStorageDomainParams
+	WithComment(comment string) (BuildableNFSStorageDomainParams, error)
+	MustWithComment(comment string) BuildableNFSStorageDomainParams
+	WithStorageFormat(format StorageFormat) (BuildableNFSStorageDomainParams, error)
+	MustWithStorageFormat(format StorageFormat) BuildableNFSStorageDomainParams
+	WithWipeAfterDelete(wipe bool) (BuildableNFSStorageDomainParams, error)
+	MustWithWipeAfterDelete(wipe bool) BuildableNFSStorageDomainParams
+	WithBackup(backup bool) (BuildableNFSStorageDomainParams, error)
+	MustWithBackup(backup bool) BuildableNFSStorageDomainParams
+	WithCriticalSpaceActionBlocker(percent int64) (BuildableNFSStorageDomainParams, error)
+	MustWithCriticalSpaceActionBlocker(percent int64) BuildableNFSStorageDomainParams
+	WithWarningLowSpaceIndicator(percent int64) (BuildableNFSStorageDomainParams, error)
+	MustWithWarningLowSpaceIndicator(percent int64) BuildableNFSStorageDomainParams
+	WithMountOptions(options string) (BuildableNFSStorageDomainParams, error)
+	MustWithMountOptions(options string) BuildableNFSStorageDomainParams
+}
+
+// NewCreateNFSStorageDomainParams creates a buildable set of CreateNFSStorageDomainParams.
+func NewCreateNFSStorageDomainParams() BuildableNFSStorageDomainParams {
+	return &createNFSStorageDomainParams{}
+}
+
+type createNFSStorageDomainParams struct {
+	description                *string
+	comment                    *string
+	storageFormat              *StorageFormat
+	wipeAfterDelete            *bool
+	backup                     *bool
+	criticalSpaceActionBlocker *int64
+	warningLowSpaceIndicator   *int64
+	mountOptions               *string
+}
+
+func (c *createNFSStorageDomainParams) Description() *string {
+	return c.description
+}
+
+func (c *createNFSStorageDomainParams) Comment() *string {
+	return c.comment
+}
+
+func (c *createNFSStorageDomainParams) StorageFormat() *StorageFormat {
+	return c.storageFormat
+}
+
+func (c *createNFSStorageDomainParams) WipeAfterDelete() *bool {
+	return c.wipeAfterDelete
+}
+
+func (c *createNFSStorageDomainParams) Backup() *bool {
+	return c.backup
+}
+
+func (c *createNFSStorageDomainParams) CriticalSpaceActionBlocker() *int64 {
+	return c.criticalSpaceActionBlocker
+}
+
+func (c *createNFSStorageDomainParams) WarningLowSpaceIndicator() *int64 {
+	return c.warningLowSpaceIndicator
+}
+
+func (c *createNFSStorageDomainParams) MountOptions() *string {
+	return c.mountOptions
+}
+
+func (c *createNFSStorageDomainParams) WithDescription(description string) (BuildableNFSStorageDomainParams, error) {
+	c.description = &description
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithDescription(description string) BuildableNFSStorageDomainParams {
+	b, err := c.WithDescription(description)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithComment(comment string) (BuildableNFSStorageDomainParams, error) {
+	c.comment = &comment
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithComment(comment string) BuildableNFSStorageDomainParams {
+	b, err := c.WithComment(comment)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithStorageFormat(format StorageFormat) (BuildableNFSStorageDomainParams, error) {
+	c.storageFormat = &format
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithStorageFormat(format StorageFormat) BuildableNFSStorageDomainParams {
+	b, err := c.WithStorageFormat(format)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithWipeAfterDelete(wipe bool) (BuildableNFSStorageDomainParams, error) {
+	c.wipeAfterDelete = &wipe
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithWipeAfterDelete(wipe bool) BuildableNFSStorageDomainParams {
+	b, err := c.WithWipeAfterDelete(wipe)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithBackup(backup bool) (BuildableNFSStorageDomainParams, error) {
+	c.backup = &backup
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithBackup(backup bool) BuildableNFSStorageDomainParams {
+	b, err := c.WithBackup(backup)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithCriticalSpaceActionBlocker(percent int64) (BuildableNFSStorageDomainParams, error) {
+	if percent < 0 || percent > 100 {
+		return nil, newError(EBadArgument, "critical space action blocker must be between 0 and 100")
+	}
+	c.criticalSpaceActionBlocker = &percent
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithCriticalSpaceActionBlocker(percent int64) BuildableNFSStorageDomainParams {
+	b, err := c.WithCriticalSpaceActionBlocker(percent)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithWarningLowSpaceIndicator(percent int64) (BuildableNFSStorageDomainParams, error) {
+	if percent < 0 || percent > 100 {
+		return nil, newError(EBadArgument, "warning low space indicator must be between 0 and 100")
+	}
+	c.warningLowSpaceIndicator = &percent
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithWarningLowSpaceIndicator(percent int64) BuildableNFSStorageDomainParams {
+	b, err := c.WithWarningLowSpaceIndicator(percent)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (c *createNFSStorageDomainParams) WithMountOptions(options string) (BuildableNFSStorageDomainParams, error) {
+	c.mountOptions = &options
+	return c, nil
+}
+
+func (c *createNFSStorageDomainParams) MustWithMountOptions(options string) BuildableNFSStorageDomainParams {
+	b, err := c.WithMountOptions(options)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// UpdateStorageDomainParams contains parameters for updating an existing storage domain.
+type UpdateStorageDomainParams interface {
+	Name() *string
+	Description() *string
+	Comment() *string
+	WipeAfterDelete() *bool
+	Backup() *bool
+	CriticalSpaceActionBlocker() *int64
+	WarningLowSpaceIndicator() *int64
+}
+
+// BuildableUpdateStorageDomainParams is a buildable version of UpdateStorageDomainParams.
+type BuildableUpdateStorageDomainParams interface {
+	UpdateStorageDomainParams
+
+	WithName(name string) (BuildableUpdateStorageDomainParams, error)
+	MustWithName(name string) BuildableUpdateStorageDomainParams
+	WithDescription(description string) (BuildableUpdateStorageDomainParams, error)
+	MustWithDescription(description string) BuildableUpdateStorageDomainParams
+	WithComment(comment string) (BuildableUpdateStorageDomainParams, error)
+	MustWithComment(comment string) BuildableUpdateStorageDomainParams
+	WithWipeAfterDelete(wipe bool) (BuildableUpdateStorageDomainParams, error)
+	MustWithWipeAfterDelete(wipe bool) BuildableUpdateStorageDomainParams
+	WithBackup(backup bool) (BuildableUpdateStorageDomainParams, error)
+	MustWithBackup(backup bool) BuildableUpdateStorageDomainParams
+	WithCriticalSpaceActionBlocker(percent int64) (BuildableUpdateStorageDomainParams, error)
+	MustWithCriticalSpaceActionBlocker(percent int64) BuildableUpdateStorageDomainParams
+	WithWarningLowSpaceIndicator(percent int64) (BuildableUpdateStorageDomainParams, error)
+	MustWithWarningLowSpaceIndicator(percent int64) BuildableUpdateStorageDomainParams
+}
+
+// NewUpdateStorageDomainParams creates a buildable set of UpdateStorageDomainParams.
+func NewUpdateStorageDomainParams() BuildableUpdateStorageDomainParams {
+	return &updateStorageDomainParams{}
+}
+
+type updateStorageDomainParams struct {
+	name                       *string
+	description                *string
+	comment                    *string
+	wipeAfterDelete            *bool
+	backup                     *bool
+	criticalSpaceActionBlocker *int64
+	warningLowSpaceIndicator   *int64
+}
+
+func (u *updateStorageDomainParams) Name() *string {
+	return u.name
+}
+
+func (u *updateStorageDomainParams) Description() *string {
+	return u.description
+}
+
+func (u *updateStorageDomainParams) Comment() *string {
+	return u.comment
+}
+
+func (u *updateStorageDomainParams) WipeAfterDelete() *bool {
+	return u.wipeAfterDelete
+}
+
+func (u *updateStorageDomainParams) Backup() *bool {
+	return u.backup
+}
+
+func (u *updateStorageDomainParams) CriticalSpaceActionBlocker() *int64 {
+	return u.criticalSpaceActionBlocker
+}
+
+func (u *updateStorageDomainParams) WarningLowSpaceIndicator() *int64 {
+	return u.warningLowSpaceIndicator
+}
+
+func (u *updateStorageDomainParams) WithName(name string) (BuildableUpdateStorageDomainParams, error) {
+	if name == "" {
+		return nil, newError(EBadArgument, "name cannot be empty")
+	}
+	u.name = &name
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithName(name string) BuildableUpdateStorageDomainParams {
+	b, err := u.WithName(name)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (u *updateStorageDomainParams) WithDescription(description string) (BuildableUpdateStorageDomainParams, error) {
+	u.description = &description
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithDescription(description string) BuildableUpdateStorageDomainParams {
+	b, err := u.WithDescription(description)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (u *updateStorageDomainParams) WithComment(comment string) (BuildableUpdateStorageDomainParams, error) {
+	u.comment = &comment
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithComment(comment string) BuildableUpdateStorageDomainParams {
+	b, err := u.WithComment(comment)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (u *updateStorageDomainParams) WithWipeAfterDelete(wipe bool) (BuildableUpdateStorageDomainParams, error) {
+	u.wipeAfterDelete = &wipe
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithWipeAfterDelete(wipe bool) BuildableUpdateStorageDomainParams {
+	b, err := u.WithWipeAfterDelete(wipe)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (u *updateStorageDomainParams) WithBackup(backup bool) (BuildableUpdateStorageDomainParams, error) {
+	u.backup = &backup
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithBackup(backup bool) BuildableUpdateStorageDomainParams {
+	b, err := u.WithBackup(backup)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (u *updateStorageDomainParams) WithCriticalSpaceActionBlocker(percent int64) (BuildableUpdateStorageDomainParams, error) {
+	if percent < 0 || percent > 100 {
+		return nil, newError(EBadArgument, "critical space action blocker must be between 0 and 100")
+	}
+	u.criticalSpaceActionBlocker = &percent
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithCriticalSpaceActionBlocker(percent int64) BuildableUpdateStorageDomainParams {
+	b, err := u.WithCriticalSpaceActionBlocker(percent)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (u *updateStorageDomainParams) WithWarningLowSpaceIndicator(percent int64) (BuildableUpdateStorageDomainParams, error) {
+	if percent < 0 || percent > 100 {
+		return nil, newError(EBadArgument, "warning low space indicator must be between 0 and 100")
+	}
+	u.warningLowSpaceIndicator = &percent
+	return u, nil
+}
+
+func (u *updateStorageDomainParams) MustWithWarningLowSpaceIndicator(percent int64) BuildableUpdateStorageDomainParams {
+	b, err := u.WithWarningLowSpaceIndicator(percent)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// RemoveStorageDomainParams contains options for removing a storage domain.
+type RemoveStorageDomainParams interface {
+	Destroy() *bool
+	Format() *bool
+}
+
+// BuildableRemoveStorageDomainParams is a buildable version of RemoveStorageDomainParams.
+type BuildableRemoveStorageDomainParams interface {
+	RemoveStorageDomainParams
+
+	WithDestroy(destroy bool) (BuildableRemoveStorageDomainParams, error)
+	MustWithDestroy(destroy bool) BuildableRemoveStorageDomainParams
+	WithFormat(format bool) (BuildableRemoveStorageDomainParams, error)
+	MustWithFormat(format bool) BuildableRemoveStorageDomainParams
+}
+
+// NewRemoveStorageDomainParams creates a buildable set of RemoveStorageDomainParams.
+func NewRemoveStorageDomainParams() BuildableRemoveStorageDomainParams {
+	return &removeStorageDomainParams{}
+}
+
+type removeStorageDomainParams struct {
+	destroy *bool
+	format  *bool
+}
+
+func (r *removeStorageDomainParams) Destroy() *bool {
+	return r.destroy
+}
+
+func (r *removeStorageDomainParams) Format() *bool {
+	return r.format
+}
+
+func (r *removeStorageDomainParams) WithDestroy(destroy bool) (BuildableRemoveStorageDomainParams, error) {
+	r.destroy = &destroy
+	return r, nil
+}
+
+func (r *removeStorageDomainParams) MustWithDestroy(destroy bool) BuildableRemoveStorageDomainParams {
+	b, err := r.WithDestroy(destroy)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (r *removeStorageDomainParams) WithFormat(format bool) (BuildableRemoveStorageDomainParams, error) {
+	r.format = &format
+	return r, nil
+}
+
+func (r *removeStorageDomainParams) MustWithFormat(format bool) BuildableRemoveStorageDomainParams {
+	b, err := r.WithFormat(format)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
