@@ -24,6 +24,7 @@ func NewMockWithLogger(logger Logger) MockClient {
 	testStorageDomain := generateTestStorageDomain()
 	secondaryStorageDomain := generateTestStorageDomain()
 	testDatacenter := generateTestDatacenter(testCluster)
+	testCluster.dcID = testDatacenter.ID()
 	testNetwork := generateTestNetwork(testDatacenter)
 	testVNICProfile := generateTestVNICProfile(testNetwork)
 	blankTemplate := &template{
@@ -197,9 +198,17 @@ func generateTestStorageDomain() *storageDomain {
 }
 
 func generateTestCluster() *cluster {
+	cpuType := "Intel SandyBridge Family"
+	cpuArch := "x86_64"
+	ballooning := false
+	memOvercommit := int64(100)
 	return &cluster{
-		id:   ClusterID(uuid.NewString()),
-		name: "Test cluster",
+		id:                      ClusterID(uuid.NewString()),
+		name:                    "Test cluster",
+		cpuType:                 cpuType,
+		cpuArch:                 &cpuArch,
+		ballooning:              &ballooning,
+		memoryOverCommitPercent: &memOvercommit,
 	}
 }
 
