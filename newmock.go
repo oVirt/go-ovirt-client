@@ -186,13 +186,25 @@ func generateTestDatacenter(testCluster *cluster) *datacenterWithClusters {
 }
 
 func generateTestStorageDomain() *storageDomain {
+	storageFormat := StorageFormatV5
+	address := "test-nfs.local"
+	path := "/exports/test"
+	wipe := false
+	csab := int64(5)
+	wlsi := int64(10)
 	return &storageDomain{
-		id:             StorageDomainID(uuid.NewString()),
-		name:           "Test storage domain",
-		available:      10 * 1024 * 1024 * 1024,
-		status:         StorageDomainStatusActive,
-		externalStatus: StorageDomainExternalStatusNA,
-		storageType:    StorageDomainTypeNFS,
+		id:                         StorageDomainID(uuid.NewString()),
+		name:                       "Test storage domain",
+		available:                  10 * 1024 * 1024 * 1024,
+		status:                     StorageDomainStatusActive,
+		externalStatus:             StorageDomainExternalStatusNA,
+		storageType:                StorageDomainTypeNFS,
+		storageAddress:             &address,
+		storagePath:                &path,
+		storageFormat:              &storageFormat,
+		wipeAfterDelete:            &wipe,
+		criticalSpaceActionBlocker: &csab,
+		warningLowSpaceIndicator:   &wlsi,
 	}
 }
 
