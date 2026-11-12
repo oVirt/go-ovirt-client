@@ -238,6 +238,17 @@ type VMData interface {
 
 	// OS returns the operating system structure.
 	OS() VMOS
+
+	// CustomEmulatedMachine returns the custom emulated machine type (e.g. "q35"), or nil if not set.
+	CustomEmulatedMachine() *string
+	// BiosType returns the BIOS type (e.g. BiosTypeQ35OVMF), or nil if not set.
+	BiosType() *BiosType
+	// HighAvailability returns whether high availability is enabled, or nil if not set.
+	HighAvailability() *bool
+	// HighAvailabilityPriority returns the high availability priority, or nil if not set.
+	HighAvailabilityPriority() *int64
+	// LeaseStorageDomainID returns the storage domain ID for the VM lease, or nil if not set.
+	LeaseStorageDomainID() *StorageDomainID
 }
 
 // VMOS is the structure describing the virtual machine operating system, if set.
@@ -842,6 +853,21 @@ type OptionalVMParameters interface {
 
 	// SoundcardEnabled returns if a soundcard should be created or not.
 	SoundcardEnabled() *bool
+
+	// CustomEmulatedMachine returns the custom emulated machine type, if set.
+	CustomEmulatedMachine() *string
+
+	// BiosType returns the BIOS type, if set.
+	BiosType() *BiosType
+
+	// HighAvailability returns whether high availability is enabled, if set.
+	HighAvailability() *bool
+
+	// HighAvailabilityPriority returns the high availability priority, if set.
+	HighAvailabilityPriority() *int64
+
+	// LeaseStorageDomainID returns the lease storage domain ID, if set.
+	LeaseStorageDomainID() *StorageDomainID
 }
 
 // BuildableVMParameters is a variant of OptionalVMParameters that can be changed using the supplied
@@ -922,6 +948,31 @@ type BuildableVMParameters interface {
 
 	// WithSoundcardEnabled enables or disables a soundcard for the VM.
 	WithSoundcardEnabled(soundcardEnabled bool) BuildableVMParameters
+
+	// WithCustomEmulatedMachine sets the custom emulated machine type (e.g. "q35").
+	WithCustomEmulatedMachine(customEmulatedMachine string) (BuildableVMParameters, error)
+	// MustWithCustomEmulatedMachine is identical to WithCustomEmulatedMachine, but panics instead of returning an error.
+	MustWithCustomEmulatedMachine(customEmulatedMachine string) BuildableVMParameters
+
+	// WithBiosType sets the BIOS/firmware type.
+	WithBiosType(biosType BiosType) (BuildableVMParameters, error)
+	// MustWithBiosType is identical to WithBiosType, but panics instead of returning an error.
+	MustWithBiosType(biosType BiosType) BuildableVMParameters
+
+	// WithHighAvailability sets whether high availability is enabled.
+	WithHighAvailability(highAvailability bool) (BuildableVMParameters, error)
+	// MustWithHighAvailability is identical to WithHighAvailability, but panics instead of returning an error.
+	MustWithHighAvailability(highAvailability bool) BuildableVMParameters
+
+	// WithHighAvailabilityPriority sets the high availability priority.
+	WithHighAvailabilityPriority(priority int64) (BuildableVMParameters, error)
+	// MustWithHighAvailabilityPriority is identical to WithHighAvailabilityPriority, but panics instead of returning an error.
+	MustWithHighAvailabilityPriority(priority int64) BuildableVMParameters
+
+	// WithLeaseStorageDomainID sets the storage domain ID for the VM lease.
+	WithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) (BuildableVMParameters, error)
+	// MustWithLeaseStorageDomainID is identical to WithLeaseStorageDomainID, but panics instead of returning an error.
+	MustWithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) BuildableVMParameters
 }
 
 // VMCPUParams contain the CPU parameters for a VM.
@@ -1210,6 +1261,43 @@ func VMTypeValues() []VMType {
 		VMTypeDesktop,
 		VMTypeServer,
 		VMTypeHighPerformance,
+	}
+}
+
+// BiosType represents the BIOS/firmware type for a virtual machine.
+type BiosType string
+
+const (
+	// BiosTypeClusterDefault indicates that the cluster default BIOS type should be used.
+	BiosTypeClusterDefault BiosType = "cluster_default"
+	// BiosTypeI440FXSeaBios indicates the i440fx chipset with SeaBIOS.
+	BiosTypeI440FXSeaBios BiosType = "i440fx_sea_bios"
+	// BiosTypeQ35OVMF indicates the Q35 chipset with OVMF (UEFI).
+	BiosTypeQ35OVMF BiosType = "q35_ovmf"
+	// BiosTypeQ35SeaBios indicates the Q35 chipset with SeaBIOS.
+	BiosTypeQ35SeaBios BiosType = "q35_sea_bios"
+	// BiosTypeQ35SecureBoot indicates the Q35 chipset with Secure Boot (UEFI).
+	BiosTypeQ35SecureBoot BiosType = "q35_secure_boot"
+)
+
+// Validate checks if the BiosType value is valid.
+func (b BiosType) Validate() error {
+	switch b {
+	case BiosTypeClusterDefault, BiosTypeI440FXSeaBios, BiosTypeQ35OVMF, BiosTypeQ35SeaBios, BiosTypeQ35SecureBoot:
+		return nil
+	default:
+		return newError(EBadArgument, "Invalid BIOS type: %s", b)
+	}
+}
+
+// BiosTypeValues returns all possible values for Bios types.
+func BiosTypeValues() []BiosType {
+	return []BiosType{
+		BiosTypeClusterDefault,
+		BiosTypeI440FXSeaBios,
+		BiosTypeQ35OVMF,
+		BiosTypeQ35SeaBios,
+		BiosTypeQ35SecureBoot,
 	}
 }
 
@@ -1563,6 +1651,21 @@ type UpdateVMParameters interface {
 
 	// SoundcardEnabled returns if a soundcard should be created or not. Return nil if the name should not be changed.
 	SoundcardEnabled() *bool
+
+	// CustomEmulatedMachine returns the custom emulated machine type. Return nil if it should not be changed.
+	CustomEmulatedMachine() *string
+
+	// BiosType returns the BIOS type. Return nil if it should not be changed.
+	BiosType() *BiosType
+
+	// HighAvailability returns whether high availability is enabled. Return nil if it should not be changed.
+	HighAvailability() *bool
+
+	// HighAvailabilityPriority returns the high availability priority. Return nil if it should not be changed.
+	HighAvailabilityPriority() *int64
+
+	// LeaseStorageDomainID returns the lease storage domain ID. Return nil if it should not be changed.
+	LeaseStorageDomainID() *StorageDomainID
 }
 
 // VMCPUTopo contains the CPU topology information about a VM.
@@ -1724,6 +1827,36 @@ type BuildableUpdateVMParameters interface {
 
 	// MustWithSoundcardEnabled is identical to WithSoundcardEnabled, but panics instead of returning an error.
 	MustWithSoundcardEnabled(soundcardEnabled bool) BuildableUpdateVMParameters
+
+	// WithCustomEmulatedMachine sets the custom emulated machine type.
+	WithCustomEmulatedMachine(customEmulatedMachine string) (BuildableUpdateVMParameters, error)
+
+	// MustWithCustomEmulatedMachine is identical to WithCustomEmulatedMachine, but panics instead of returning an error.
+	MustWithCustomEmulatedMachine(customEmulatedMachine string) BuildableUpdateVMParameters
+
+	// WithBiosType sets the BIOS/firmware type.
+	WithBiosType(biosType BiosType) (BuildableUpdateVMParameters, error)
+
+	// MustWithBiosType is identical to WithBiosType, but panics instead of returning an error.
+	MustWithBiosType(biosType BiosType) BuildableUpdateVMParameters
+
+	// WithHighAvailability sets whether high availability is enabled.
+	WithHighAvailability(highAvailability bool) (BuildableUpdateVMParameters, error)
+
+	// MustWithHighAvailability is identical to WithHighAvailability, but panics instead of returning an error.
+	MustWithHighAvailability(highAvailability bool) BuildableUpdateVMParameters
+
+	// WithHighAvailabilityPriority sets the high availability priority.
+	WithHighAvailabilityPriority(priority int64) (BuildableUpdateVMParameters, error)
+
+	// MustWithHighAvailabilityPriority is identical to WithHighAvailabilityPriority, but panics instead of returning an error.
+	MustWithHighAvailabilityPriority(priority int64) BuildableUpdateVMParameters
+
+	// WithLeaseStorageDomainID sets the storage domain ID for the VM lease.
+	WithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) (BuildableUpdateVMParameters, error)
+
+	// MustWithLeaseStorageDomainID is identical to WithLeaseStorageDomainID, but panics instead of returning an error.
+	MustWithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) BuildableUpdateVMParameters
 }
 
 // UpdateVMParams returns a buildable set of update parameters.
@@ -1756,6 +1889,52 @@ type updateVMParams struct {
 
 	serialConsole    *bool
 	soundcardEnabled *bool
+
+	customEmulatedMachine    *string
+	biosType                 *BiosType
+	highAvailability         *bool
+	highAvailabilityPriority *int64
+	leaseStorageDomainID     *StorageDomainID
+}
+
+func (u *updateVMParams) MustWithCustomEmulatedMachine(customEmulatedMachine string) BuildableUpdateVMParameters {
+	builder, err := u.WithCustomEmulatedMachine(customEmulatedMachine)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithBiosType(biosType BiosType) BuildableUpdateVMParameters {
+	builder, err := u.WithBiosType(biosType)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithHighAvailability(highAvailability bool) BuildableUpdateVMParameters {
+	builder, err := u.WithHighAvailability(highAvailability)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithHighAvailabilityPriority(priority int64) BuildableUpdateVMParameters {
+	builder, err := u.WithHighAvailabilityPriority(priority)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (u *updateVMParams) MustWithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) BuildableUpdateVMParameters {
+	builder, err := u.WithLeaseStorageDomainID(leaseStorageDomainID)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (u *updateVMParams) MustWithName(name string) BuildableUpdateVMParameters {
@@ -1946,6 +2125,26 @@ func (u *updateVMParams) SoundcardEnabled() *bool {
 	return u.soundcardEnabled
 }
 
+func (u *updateVMParams) CustomEmulatedMachine() *string {
+	return u.customEmulatedMachine
+}
+
+func (u *updateVMParams) BiosType() *BiosType {
+	return u.biosType
+}
+
+func (u *updateVMParams) HighAvailability() *bool {
+	return u.highAvailability
+}
+
+func (u *updateVMParams) HighAvailabilityPriority() *int64 {
+	return u.highAvailabilityPriority
+}
+
+func (u *updateVMParams) LeaseStorageDomainID() *StorageDomainID {
+	return u.leaseStorageDomainID
+}
+
 func (u *updateVMParams) WithName(name string) (BuildableUpdateVMParameters, error) {
 	if err := validateVMName(name); err != nil {
 		return nil, err
@@ -2067,6 +2266,37 @@ func (u *updateVMParams) WithSoundcardEnabled(soundcardEnabled bool) (BuildableU
 	return u, nil
 }
 
+func (u *updateVMParams) WithCustomEmulatedMachine(customEmulatedMachine string) (BuildableUpdateVMParameters, error) {
+	u.customEmulatedMachine = &customEmulatedMachine
+	return u, nil
+}
+
+func (u *updateVMParams) WithBiosType(biosType BiosType) (BuildableUpdateVMParameters, error) {
+	if err := biosType.Validate(); err != nil {
+		return nil, err
+	}
+	u.biosType = &biosType
+	return u, nil
+}
+
+func (u *updateVMParams) WithHighAvailability(highAvailability bool) (BuildableUpdateVMParameters, error) {
+	u.highAvailability = &highAvailability
+	return u, nil
+}
+
+func (u *updateVMParams) WithHighAvailabilityPriority(priority int64) (BuildableUpdateVMParameters, error) {
+	if priority < 0 {
+		return nil, newError(EBadArgument, "priority must be non-negative")
+	}
+	u.highAvailabilityPriority = &priority
+	return u, nil
+}
+
+func (u *updateVMParams) WithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) (BuildableUpdateVMParameters, error) {
+	u.leaseStorageDomainID = &leaseStorageDomainID
+	return u, nil
+}
+
 // NewCreateVMParams creates a set of BuildableVMParameters that can be used to construct the optional VM parameters.
 func NewCreateVMParams() BuildableVMParameters {
 	return &vmParams{
@@ -2109,6 +2339,52 @@ type vmParams struct {
 
 	serialConsole    *bool
 	soundcardEnabled *bool
+
+	customEmulatedMachine    *string
+	biosType                 *BiosType
+	highAvailability         *bool
+	highAvailabilityPriority *int64
+	leaseStorageDomainID     *StorageDomainID
+}
+
+func (v *vmParams) MustWithCustomEmulatedMachine(customEmulatedMachine string) BuildableVMParameters {
+	builder, err := v.WithCustomEmulatedMachine(customEmulatedMachine)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) MustWithBiosType(biosType BiosType) BuildableVMParameters {
+	builder, err := v.WithBiosType(biosType)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) MustWithHighAvailability(highAvailability bool) BuildableVMParameters {
+	builder, err := v.WithHighAvailability(highAvailability)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) MustWithHighAvailabilityPriority(priority int64) BuildableVMParameters {
+	builder, err := v.WithHighAvailabilityPriority(priority)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmParams) MustWithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) BuildableVMParameters {
+	builder, err := v.WithLeaseStorageDomainID(leaseStorageDomainID)
+	if err != nil {
+		panic(err)
+	}
+	return builder
 }
 
 func (v *vmParams) SerialConsole() *bool {
@@ -2401,29 +2677,85 @@ func (v vmParams) Description() string {
 	return v.description
 }
 
+func (v *vmParams) CustomEmulatedMachine() *string {
+	return v.customEmulatedMachine
+}
+
+func (v *vmParams) WithCustomEmulatedMachine(customEmulatedMachine string) (BuildableVMParameters, error) {
+	v.customEmulatedMachine = &customEmulatedMachine
+	return v, nil
+}
+
+func (v *vmParams) BiosType() *BiosType {
+	return v.biosType
+}
+
+func (v *vmParams) WithBiosType(biosType BiosType) (BuildableVMParameters, error) {
+	if err := biosType.Validate(); err != nil {
+		return nil, err
+	}
+	v.biosType = &biosType
+	return v, nil
+}
+
+func (v *vmParams) HighAvailability() *bool {
+	return v.highAvailability
+}
+
+func (v *vmParams) WithHighAvailability(highAvailability bool) (BuildableVMParameters, error) {
+	v.highAvailability = &highAvailability
+	return v, nil
+}
+
+func (v *vmParams) HighAvailabilityPriority() *int64 {
+	return v.highAvailabilityPriority
+}
+
+func (v *vmParams) WithHighAvailabilityPriority(priority int64) (BuildableVMParameters, error) {
+	if priority < 0 {
+		return nil, newError(EBadArgument, "priority must be non-negative")
+	}
+	v.highAvailabilityPriority = &priority
+	return v, nil
+}
+
+func (v *vmParams) LeaseStorageDomainID() *StorageDomainID {
+	return v.leaseStorageDomainID
+}
+
+func (v *vmParams) WithLeaseStorageDomainID(leaseStorageDomainID StorageDomainID) (BuildableVMParameters, error) {
+	v.leaseStorageDomainID = &leaseStorageDomainID
+	return v, nil
+}
+
 type vm struct {
 	client Client
 
-	id               VMID
-	name             string
-	comment          string
-	description      string
-	clusterID        ClusterID
-	templateID       TemplateID
-	status           VMStatus
-	cpu              *vmCPU
-	memory           int64
-	tagIDs           []TagID
-	hugePages        *VMHugePages
-	initialization   Initialization
-	hostID           *HostID
-	placementPolicy  *vmPlacementPolicy
-	memoryPolicy     *memoryPolicy
-	instanceTypeID   *InstanceTypeID
-	vmType           VMType
-	os               *vmOS
-	serialConsole    bool
-	soundcardEnabled bool
+	id                       VMID
+	name                     string
+	comment                  string
+	description              string
+	clusterID                ClusterID
+	templateID               TemplateID
+	status                   VMStatus
+	cpu                      *vmCPU
+	memory                   int64
+	tagIDs                   []TagID
+	hugePages                *VMHugePages
+	initialization           Initialization
+	hostID                   *HostID
+	placementPolicy          *vmPlacementPolicy
+	memoryPolicy             *memoryPolicy
+	instanceTypeID           *InstanceTypeID
+	vmType                   VMType
+	os                       *vmOS
+	serialConsole            bool
+	soundcardEnabled         bool
+	customEmulatedMachine    *string
+	biosType                 *BiosType
+	highAvailability         *bool
+	highAvailabilityPriority *int64
+	leaseStorageDomainID     *StorageDomainID
 }
 
 func (v *vm) SoundcardEnabled() bool {
@@ -2432,6 +2764,26 @@ func (v *vm) SoundcardEnabled() bool {
 
 func (v *vm) SerialConsole() bool {
 	return v.serialConsole
+}
+
+func (v *vm) CustomEmulatedMachine() *string {
+	return v.customEmulatedMachine
+}
+
+func (v *vm) BiosType() *BiosType {
+	return v.biosType
+}
+
+func (v *vm) HighAvailability() *bool {
+	return v.highAvailability
+}
+
+func (v *vm) HighAvailabilityPriority() *int64 {
+	return v.highAvailabilityPriority
+}
+
+func (v *vm) LeaseStorageDomainID() *StorageDomainID {
+	return v.leaseStorageDomainID
 }
 
 func (v *vm) ListGraphicsConsoles(retries ...RetryStrategy) ([]VMGraphicsConsole, error) {
@@ -2659,6 +3011,10 @@ func convertSDKVM(sdkObject *ovirtsdk.Vm, client Client) (VM, error) {
 		vmOSConverter,
 		vmSoundcardEnabledConverter,
 		vmSerialConsoleConverter,
+		vmCustomEmulatedMachineConverter,
+		vmBiosTypeConverter,
+		vmHighAvailabilityConverter,
+		vmLeaseConverter,
 	}
 	for _, converter := range vmConverters {
 		if err := converter(sdkObject, vmObject); err != nil {
@@ -2683,6 +3039,47 @@ func vmSerialConsoleConverter(object *ovirtsdk.Vm, v *vm) error {
 		return newFieldNotFound("serial console", "enabled")
 	}
 	v.serialConsole = enabled
+	return nil
+}
+
+func vmCustomEmulatedMachineConverter(object *ovirtsdk.Vm, v *vm) error {
+	if machine, ok := object.CustomEmulatedMachine(); ok {
+		v.customEmulatedMachine = &machine
+	}
+	return nil
+}
+
+func vmBiosTypeConverter(object *ovirtsdk.Vm, v *vm) error {
+	if bios, ok := object.Bios(); ok {
+		if bType, ok := bios.Type(); ok {
+			bt := BiosType(bType)
+			v.biosType = &bt
+		}
+	}
+	return nil
+}
+
+func vmHighAvailabilityConverter(object *ovirtsdk.Vm, v *vm) error {
+	if ha, ok := object.HighAvailability(); ok {
+		if enabled, ok := ha.Enabled(); ok {
+			v.highAvailability = &enabled
+		}
+		if priority, ok := ha.Priority(); ok {
+			v.highAvailabilityPriority = &priority
+		}
+	}
+	return nil
+}
+
+func vmLeaseConverter(object *ovirtsdk.Vm, v *vm) error {
+	if lease, ok := object.Lease(); ok {
+		if sd, ok := lease.StorageDomain(); ok {
+			if id, ok := sd.Id(); ok {
+				sdID := StorageDomainID(id)
+				v.leaseStorageDomainID = &sdID
+			}
+		}
+	}
 	return nil
 }
 
