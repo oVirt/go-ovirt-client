@@ -1146,3 +1146,109 @@ func assertCanCreateBootableVM(t *testing.T, helper ovirtclient.TestHelper) ovir
 	assertCanAttachDiskWithParams(t, vm1, disk1, ovirtclient.CreateDiskAttachmentParams().MustWithBootable(true).MustWithActive(true))
 	return vm1
 }
+
+func TestVMCustomEmulatedMachine(t *testing.T) {
+	helper := getHelper(t)
+	machine := "q35"
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		ovirtclient.NewCreateVMParams().MustWithCustomEmulatedMachine(machine),
+	)
+	if vm.CustomEmulatedMachine() == nil || *vm.CustomEmulatedMachine() != machine {
+		t.Fatalf("Expected custom emulated machine to be %s, got %v", machine, vm.CustomEmulatedMachine())
+	}
+
+	updatedMachine := "pc-q35-rhel8.6.0"
+	updatedVM, err := vm.Update(ovirtclient.UpdateVMParams().MustWithCustomEmulatedMachine(updatedMachine))
+	if err != nil {
+		t.Fatalf("Failed to update custom emulated machine: %v", err)
+	}
+	if updatedVM.CustomEmulatedMachine() == nil || *updatedVM.CustomEmulatedMachine() != updatedMachine {
+		t.Fatalf("Expected updated custom emulated machine to be %s, got %v", updatedMachine, updatedVM.CustomEmulatedMachine())
+	}
+}
+
+func TestVMBiosType(t *testing.T) {
+	helper := getHelper(t)
+	for _, bt := range ovirtclient.BiosTypeValues() {
+		if err := bt.Validate(); err != nil {
+			t.Fatalf("Valid bios type %s failed validation: %v", bt, err)
+		}
+	}
+	invalidBT := ovirtclient.BiosType("invalid_type")
+	if err := invalidBT.Validate(); err == nil {
+		t.Fatalf("Expected invalid bios type to fail validation")
+	}
+
+	biosType := ovirtclient.BiosTypeQ35OVMF
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		ovirtclient.NewCreateVMParams().MustWithBiosType(biosType),
+	)
+	if vm.BiosType() == nil || *vm.BiosType() != biosType {
+		t.Fatalf("Expected bios type to be %s, got %v", biosType, vm.BiosType())
+	}
+
+	updatedBiosType := ovirtclient.BiosTypeQ35SecureBoot
+	updatedVM, err := vm.Update(ovirtclient.UpdateVMParams().MustWithBiosType(updatedBiosType))
+	if err != nil {
+		t.Fatalf("Failed to update bios type: %v", err)
+	}
+	if updatedVM.BiosType() == nil || *updatedVM.BiosType() != updatedBiosType {
+		t.Fatalf("Expected updated bios type to be %s, got %v", updatedBiosType, updatedVM.BiosType())
+	}
+}
+
+func TestVMHighAvailability(t *testing.T) {
+	helper := getHelper(t)
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		ovirtclient.NewCreateVMParams().MustWithHighAvailability(true).MustWithHighAvailabilityPriority(50),
+	)
+	if vm.HighAvailability() == nil || !*vm.HighAvailability() {
+		t.Fatalf("Expected high availability to be true, got %v", vm.HighAvailability())
+	}
+	if vm.HighAvailabilityPriority() == nil || *vm.HighAvailabilityPriority() != 50 {
+		t.Fatalf("Expected priority to be 50, got %v", vm.HighAvailabilityPriority())
+	}
+
+	updatedVM, err := vm.Update(ovirtclient.UpdateVMParams().MustWithHighAvailability(false).MustWithHighAvailabilityPriority(100))
+	if err != nil {
+		t.Fatalf("Failed to update high availability: %v", err)
+	}
+	if updatedVM.HighAvailability() == nil || *updatedVM.HighAvailability() != false {
+		t.Fatalf("Expected updated high availability to be false, got %v", updatedVM.HighAvailability())
+	}
+	if updatedVM.HighAvailabilityPriority() == nil || *updatedVM.HighAvailabilityPriority() != 100 {
+		t.Fatalf("Expected updated priority to be 100, got %v", updatedVM.HighAvailabilityPriority())
+	}
+}
+
+func TestVMLeaseStorageDomainID(t *testing.T) {
+	helper := getHelper(t)
+	leaseDomainID := ovirtclient.StorageDomainID(helper.GenerateRandomID(5))
+	vm := assertCanCreateVM(
+		t,
+		helper,
+		helper.GenerateTestResourceName(t),
+		ovirtclient.NewCreateVMParams().MustWithLeaseStorageDomainID(leaseDomainID),
+	)
+	if vm.LeaseStorageDomainID() == nil || *vm.LeaseStorageDomainID() != leaseDomainID {
+		t.Fatalf("Expected lease storage domain ID to be %s, got %v", leaseDomainID, vm.LeaseStorageDomainID())
+	}
+
+	updatedLeaseDomainID := ovirtclient.StorageDomainID(helper.GenerateRandomID(5))
+	updatedVM, err := vm.Update(ovirtclient.UpdateVMParams().MustWithLeaseStorageDomainID(updatedLeaseDomainID))
+	if err != nil {
+		t.Fatalf("Failed to update lease storage domain ID: %v", err)
+	}
+	if updatedVM.LeaseStorageDomainID() == nil || *updatedVM.LeaseStorageDomainID() != updatedLeaseDomainID {
+		t.Fatalf("Expected updated lease storage domain ID to be %s, got %v", updatedLeaseDomainID, updatedVM.LeaseStorageDomainID())
+	}
+}
