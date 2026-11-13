@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -45,6 +46,9 @@ type BuildableTLSProvider interface {
 	// CACertsFromCertPool sets a certificate pool to use as a source for certificates. This is incompatible with  the
 	// CACertsFromSystem call as both create a certificate pool. This function must not be called twice.
 	CACertsFromCertPool(*x509.CertPool) BuildableTLSProvider
+
+	// WithLogger sets a logger for the TLS provider to log warnings (e.g. non-certificate files encountered in certificate directories).
+	WithLogger(logger Logger) BuildableTLSProvider
 }
 
 // TLS creates a BuildableTLSProvider that can be used to easily add trusted CA certificates and generally follows best
@@ -64,11 +68,19 @@ type standardTLSProvider struct {
 	certPool    *x509.CertPool
 	system      bool
 	configured  bool
+	logger      Logger
 }
 
 type standardTLSProviderDirectory struct {
 	dir      string
 	patterns []*regexp.Regexp
+}
+
+func (s *standardTLSProvider) WithLogger(logger Logger) BuildableTLSProvider {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.logger = logger
+	return s
 }
 
 func (s *standardTLSProvider) Insecure() TLSProvider {
@@ -199,6 +211,10 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 			if info.IsDir() {
 				continue
 			}
+			// Skip hidden files/dotfiles (e.g. .gitkeep, .DS_Store)
+			if strings.HasPrefix(info.Name(), ".") {
+				continue
+			}
 			if len(dir.patterns) > 0 {
 				matches := false
 				for _, pattern := range dir.patterns {
@@ -222,11 +238,10 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 				)
 			}
 			if !certPool.AppendCertsFromPEM(data) {
-				return newError(
-					ETLSError,
-					"failed to add certificate from file: %s (certificate not in PEM format?)",
-					fullPath,
-				)
+				if s.logger != nil {
+					s.logger.Warningf("file in certificate directory %s does not contain valid PEM certificates: %s (skipped)", dir.dir, info.Name())
+				}
+				continue
 			}
 		}
 	}
