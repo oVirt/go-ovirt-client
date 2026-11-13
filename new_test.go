@@ -78,12 +78,40 @@ func TestInvalidCredentials(t *testing.T) {
 
 func TestBadURL(t *testing.T) {
 	t.Parallel()
+
+	// Use a local web server that is not an oVirt Engine instead of an external site, so the
+	// test does not depend on network access or get rate limited.
+	caPrivKey, caCert, caCertBytes, err := createCA()
+	if err != nil {
+		t.Fatalf("failed to create CA (%v)", err)
+	}
+
+	serverPrivKey, serverCert, err := createSignedCert(
+		[]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		caPrivKey,
+		caCert,
+	)
+	if err != nil {
+		t.Fatalf("failed to create server certificate (%v)", err)
+	}
+
+	port := getNextFreePort(t)
+
+	srv, err := newTestServer(t, port, serverCert, serverPrivKey, &notFoundHandler{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := srv.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(srv.Stop)
+
 	logger := ovirtclientlog.NewTestLogger(t)
-	_, err := ovirtclient.New(
-		"https://example.com",
+	_, err = ovirtclient.New(
+		fmt.Sprintf("https://127.0.0.1:%d", port),
 		"nonexistent@internal",
 		"invalid-password-for-testing-purposes",
-		ovirtclient.TLS().Insecure(),
+		ovirtclient.TLS().CACertsFromMemory(caCertBytes),
 		logger,
 		nil,
 	)
