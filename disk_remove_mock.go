@@ -27,13 +27,18 @@ func (m *mockClient) RemoveDisk(diskID DiskID, _ ...RetryStrategy) error {
 		return newError(EUnidentified, "Cannot remove disk attached to a template. Please specify storage domain to remove from.")
 	}
 
+	m.deleteDiskLocked(diskID)
+
+	return nil
+}
+
+func (m *mockClient) deleteDiskLocked(diskID DiskID) {
 	if diskAttachment, ok := m.vmDiskAttachmentsByDisk[diskID]; ok {
-		vm := m.vms[diskAttachment.vmid]
-		delete(m.vmDiskAttachmentsByVM[vm.id], diskAttachment.id)
+		if vm, vmOK := m.vms[diskAttachment.vmid]; vmOK {
+			delete(m.vmDiskAttachmentsByVM[vm.id], diskAttachment.id)
+		}
 	}
 
 	delete(m.vmDiskAttachmentsByDisk, diskID)
 	delete(m.disks, diskID)
-
-	return nil
 }
