@@ -390,8 +390,12 @@ func TestVMCreationWithExtendedInit(t *testing.T) {
 	if vmInit.AuthorizedSSHKeys() == nil || *vmInit.AuthorizedSSHKeys() != sshKey {
 		t.Fatalf("expected authorized SSH keys %s, got %v", sshKey, vmInit.AuthorizedSSHKeys())
 	}
-	if vmInit.RootPassword() == nil || *vmInit.RootPassword() != rootPass {
-		t.Fatalf("expected root password %s, got %v", rootPass, vmInit.RootPassword())
+	if _, isMock := helper.GetClient().(ovirtclient.MockClient); isMock {
+		if vmInit.RootPassword() == nil || *vmInit.RootPassword() != rootPass {
+			t.Fatalf("expected root password %s, got %v", rootPass, vmInit.RootPassword())
+		}
+	} else if vmInit.RootPassword() == nil || *vmInit.RootPassword() == "" {
+		t.Fatalf("expected non-empty masked root password on live engine, got %v", vmInit.RootPassword())
 	}
 	if vmInit.UserName() == nil || *vmInit.UserName() != userName {
 		t.Fatalf("expected username %s, got %v", userName, vmInit.UserName())
