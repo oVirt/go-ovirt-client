@@ -71,8 +71,12 @@ func TestCACertsFromDirWithDotfilesAndNonPEM(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	// Add a dotfile (like .gitkeep)
-	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte(""), 0644); err != nil {
+	// Add a dotfile with a distinct valid CA cert (like .hidden-ca.pem) to verify dotfiles are excluded
+	_, _, hiddenCAPEM, err := createCA()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, ".hidden-ca.pem"), hiddenCAPEM, 0644); err != nil {
 		t.Fatal(err)
 	}
 
