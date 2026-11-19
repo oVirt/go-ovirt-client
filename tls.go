@@ -37,7 +37,8 @@ type BuildableTLSProvider interface {
 	// CACertsFromDir adds all PEM-encoded certificates from a directory. If one or more patterns are passed, the
 	// files will only be added if the files match at least one of the patterns. Dotfiles are excluded, and matching
 	// files that do not contain a valid certificate are skipped (with a warning if a logger is configured), whereas
-	// file-read errors still cause failure.
+	// file-read errors still cause failure. If no valid certificates are loaded from any configured CA source,
+	// CreateTLSConfig returns an error.
 	CACertsFromDir(dir string, patterns ...*regexp.Regexp) BuildableTLSProvider
 
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
@@ -47,9 +48,6 @@ type BuildableTLSProvider interface {
 	// CACertsFromCertPool sets a certificate pool to use as a source for certificates. This is incompatible with  the
 	// CACertsFromSystem call as both create a certificate pool. This function must not be called twice.
 	CACertsFromCertPool(*x509.CertPool) BuildableTLSProvider
-
-	// WithLogger sets a logger for the TLS provider to log warnings (e.g. non-certificate files encountered in certificate directories).
-	WithLogger(logger Logger) BuildableTLSProvider
 }
 
 // TLS creates a BuildableTLSProvider that can be used to easily add trusted CA certificates and generally follows best
@@ -57,6 +55,15 @@ type BuildableTLSProvider interface {
 func TLS() BuildableTLSProvider {
 	return &standardTLSProvider{
 		lock: &sync.Mutex{},
+	}
+}
+
+// TLSWithLogger creates a BuildableTLSProvider that logs warnings (for example, non-certificate files skipped in
+// certificate directories) using the provided logger.
+func TLSWithLogger(logger Logger) BuildableTLSProvider {
+	return &standardTLSProvider{
+		lock:   &sync.Mutex{},
+		logger: logger,
 	}
 }
 
@@ -190,18 +197,23 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 	if err := s.addCertsFromFile(certPool); err != nil {
 		return nil, err
 	}
-	if err := s.addCertsFromDir(certPool); err != nil {
+	addedFromDir, err := s.addCertsFromDir(certPool)
+	if err != nil {
 		return nil, err
+	}
+	if !addedFromDir && !s.system && s.certPool == nil && len(s.caCerts) == 0 && len(s.files) == 0 && len(s.directories) > 0 {
+		return nil, newError(ETLSError, "no valid CA certificates found in configured certificate directories")
 	}
 	tlsConfig.RootCAs = certPool
 	return tlsConfig, nil
 }
 
-func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
+func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) (bool, error) {
+	added := false
 	for _, dir := range s.directories {
 		files, err := os.ReadDir(dir.dir)
 		if err != nil {
-			return wrap(
+			return false, wrap(
 				err,
 				ELocalIO,
 				"failed to list contents of %s directory",
@@ -231,7 +243,7 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 			fullPath := filepath.Join(dir.dir, info.Name())
 			data, err := os.ReadFile(fullPath) //nolint:gosec
 			if err != nil {
-				return wrap(
+				return false, wrap(
 					err,
 					EFileReadFailed,
 					"failed to read certificate file: %s (%w)",
@@ -244,9 +256,10 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 				}
 				continue
 			}
+			added = true
 		}
 	}
-	return nil
+	return added, nil
 }
 
 func (s *standardTLSProvider) addCertsFromFile(certPool *x509.CertPool) error {

@@ -91,7 +91,7 @@ func TestCACertsFromDirWithDotfilesAndNonPEM(t *testing.T) {
 	}
 
 	logger := ovirtclientlog.NewTestLogger(t)
-	tls := ovirtclient.TLS().WithLogger(logger)
+	tls := ovirtclient.TLSWithLogger(logger)
 	tls.CACertsFromDir(tmpDir)
 
 	tlsConfig, err := tls.CreateTLSConfig()
@@ -107,5 +107,22 @@ func TestCACertsFromDirWithDotfilesAndNonPEM(t *testing.T) {
 	}
 	if !expectedPool.Equal(tlsConfig.RootCAs) {
 		t.Fatal("expected RootCAs to match generated CA certificate pool")
+	}
+}
+
+func TestCACertsFromDirEmptyOrNoValidCerts(t *testing.T) {
+	t.Parallel()
+
+	emptyDir := t.TempDir()
+	if _, err := ovirtclient.TLS().CACertsFromDir(emptyDir).CreateTLSConfig(); err == nil {
+		t.Fatal("expected error creating TLS config from empty directory")
+	}
+
+	nonPEMDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(nonPEMDir, "README.md"), []byte("not a cert"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ovirtclient.TLS().CACertsFromDir(nonPEMDir).CreateTLSConfig(); err == nil {
+		t.Fatal("expected error creating TLS config when all files in directory are non-PEM")
 	}
 }
