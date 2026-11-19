@@ -159,8 +159,21 @@ func TestDatacenterCannotRemoveWithClusters(t *testing.T) {
 	if len(datacenters) == 0 {
 		t.Fatalf("no datacenters found")
 	}
-	// Default datacenter has a cluster attached in mock
-	err = client.RemoveDatacenter(datacenters[0].ID())
+	var targetDC ovirtclient.Datacenter
+	for _, dc := range datacenters {
+		clusters, err := dc.Clusters()
+		if err != nil {
+			t.Fatalf("failed to list clusters for datacenter %s: %v", dc.ID(), err)
+		}
+		if len(clusters) > 0 {
+			targetDC = dc
+			break
+		}
+	}
+	if targetDC == nil {
+		t.Skip("no datacenter with attached clusters found")
+	}
+	err = client.RemoveDatacenter(targetDC.ID())
 	if err == nil {
 		t.Fatalf("expected error removing datacenter with attached clusters, got nil")
 	}

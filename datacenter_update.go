@@ -74,6 +74,10 @@ func (m *mockClient) UpdateDatacenter(
 		return nil, newError(ENotFound, "datacenter with ID %s not found", id)
 	}
 
+	if params == nil {
+		params = NewUpdateDatacenterParams()
+	}
+
 	name := dc.name
 	if newName := params.Name(); newName != nil {
 		if *newName == "" {
@@ -102,10 +106,12 @@ func (m *mockClient) UpdateDatacenter(
 		quotaMode = newQM
 	}
 
-	dc.name = name
-	dc.description = description
-	dc.comment = comment
-	dc.quotaMode = quotaMode
+	updated := *dc
+	updated.name = name
+	updated.description = description
+	updated.comment = comment
+	updated.quotaMode = quotaMode
+	m.dataCenters[id] = &updated
 
-	return dc, nil
+	return &updated, nil
 }
