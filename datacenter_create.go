@@ -24,7 +24,7 @@ func (o *oVirtClient) CreateDatacenter(
 		o.logger,
 		retries,
 		func() error {
-			builder := ovirtsdk4.NewDataCenterBuilder().Name(name)
+			builder := ovirtsdk4.NewDataCenterBuilder().Name(name).Local(false)
 			if desc := params.Description(); desc != nil {
 				builder.Description(*desc)
 			}
