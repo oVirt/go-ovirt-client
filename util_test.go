@@ -194,6 +194,15 @@ func (t *noopHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(200)
 }
 
+// notFoundHandler simulates a generic web server that is not an oVirt Engine.
+type notFoundHandler struct{}
+
+func (n *notFoundHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Content-Type", "text/html")
+	writer.WriteHeader(404)
+	_, _ = writer.Write([]byte("<html><head><title>Not Found</title></head><body>Not Found</body></html>"))
+}
+
 type unauthorizedHandler struct{}
 
 func (u *unauthorizedHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
