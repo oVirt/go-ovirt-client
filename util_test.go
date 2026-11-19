@@ -152,7 +152,6 @@ func newTestServer(t *testing.T, port int, serverCert []byte, serverPrivKey []by
 		Handler:  handler,
 		ErrorLog: testLogger(t),
 		TLSConfig: &tls.Config{
-			PreferServerCipherSuites: true,
 			Certificates: []tls.Certificate{
 				cert,
 			},
