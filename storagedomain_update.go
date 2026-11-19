@@ -87,6 +87,10 @@ func (m *mockClient) UpdateStorageDomain(
 		return nil, newError(ENotFound, "storage domain with ID %s not found", id)
 	}
 
+	if params == nil {
+		params = NewUpdateStorageDomainParams()
+	}
+
 	name := sd.name
 	if newName := params.Name(); newName != nil {
 		if *newName == "" {
@@ -130,13 +134,15 @@ func (m *mockClient) UpdateStorageDomain(
 		wlsi = newWLSI
 	}
 
-	sd.name = name
-	sd.description = description
-	sd.comment = comment
-	sd.wipeAfterDelete = wipeAfterDelete
-	sd.backup = backup
-	sd.criticalSpaceActionBlocker = csab
-	sd.warningLowSpaceIndicator = wlsi
+	updated := *sd
+	updated.name = name
+	updated.description = description
+	updated.comment = comment
+	updated.wipeAfterDelete = wipeAfterDelete
+	updated.backup = backup
+	updated.criticalSpaceActionBlocker = csab
+	updated.warningLowSpaceIndicator = wlsi
+	m.storageDomains[id] = &updated
 
-	return sd, nil
+	return &updated, nil
 }

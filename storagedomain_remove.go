@@ -20,11 +20,16 @@ func (o *oVirtClient) RemoveStorageDomain(
 		retries,
 		func() error {
 			req := o.conn.SystemService().StorageDomainsService().StorageDomainService(string(id)).Remove()
-			if d := params.Destroy(); d != nil {
-				req.Destroy(*d)
-			}
-			if f := params.Format(); f != nil {
-				req.Format(*f)
+			if params != nil {
+				if d := params.Destroy(); d != nil {
+					req.Destroy(*d)
+				}
+				if f := params.Format(); f != nil {
+					req.Format(*f)
+				}
+				if h := params.Host(); h != nil {
+					req.Host(*h)
+				}
 			}
 			_, err := req.Send()
 			return err
@@ -56,6 +61,20 @@ func (m *mockClient) RemoveStorageDomain(
 				if sID == id {
 					return newError(EConflict, "cannot remove storage domain %s because it still contains disks", id)
 				}
+			}
+		}
+	} else {
+		for diskID, disk := range m.disks {
+			remaining := make([]StorageDomainID, 0, len(disk.storageDomainIDs))
+			for _, sID := range disk.storageDomainIDs {
+				if sID != id {
+					remaining = append(remaining, sID)
+				}
+			}
+			if len(remaining) == 0 {
+				delete(m.disks, diskID)
+			} else {
+				disk.storageDomainIDs = remaining
 			}
 		}
 	}

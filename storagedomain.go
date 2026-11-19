@@ -65,7 +65,7 @@ type StorageDomainData interface {
 	WipeAfterDelete() *bool
 	// Backup returns whether the storage domain is marked for backup.
 	Backup() *bool
-	// CriticalSpaceActionBlocker returns the percentage threshold to block actions.
+	// CriticalSpaceActionBlocker returns the GB threshold to block actions.
 	CriticalSpaceActionBlocker() *int64
 	// WarningLowSpaceIndicator returns the percentage threshold for low space warning.
 	WarningLowSpaceIndicator() *int64
@@ -530,8 +530,8 @@ type BuildableNFSStorageDomainParams interface {
 	MustWithWipeAfterDelete(wipe bool) BuildableNFSStorageDomainParams
 	WithBackup(backup bool) (BuildableNFSStorageDomainParams, error)
 	MustWithBackup(backup bool) BuildableNFSStorageDomainParams
-	WithCriticalSpaceActionBlocker(percent int64) (BuildableNFSStorageDomainParams, error)
-	MustWithCriticalSpaceActionBlocker(percent int64) BuildableNFSStorageDomainParams
+	WithCriticalSpaceActionBlocker(gb int64) (BuildableNFSStorageDomainParams, error)
+	MustWithCriticalSpaceActionBlocker(gb int64) BuildableNFSStorageDomainParams
 	WithWarningLowSpaceIndicator(percent int64) (BuildableNFSStorageDomainParams, error)
 	MustWithWarningLowSpaceIndicator(percent int64) BuildableNFSStorageDomainParams
 	WithMountOptions(options string) (BuildableNFSStorageDomainParams, error)
@@ -651,16 +651,16 @@ func (c *createNFSStorageDomainParams) MustWithBackup(backup bool) BuildableNFSS
 	return b
 }
 
-func (c *createNFSStorageDomainParams) WithCriticalSpaceActionBlocker(percent int64) (BuildableNFSStorageDomainParams, error) {
-	if percent < 0 || percent > 100 {
-		return nil, newError(EBadArgument, "critical space action blocker must be between 0 and 100")
+func (c *createNFSStorageDomainParams) WithCriticalSpaceActionBlocker(gb int64) (BuildableNFSStorageDomainParams, error) {
+	if gb < 0 || gb > 2147483647 {
+		return nil, newError(EBadArgument, "critical space action blocker must be between 0 and 2147483647 GB")
 	}
-	c.criticalSpaceActionBlocker = &percent
+	c.criticalSpaceActionBlocker = &gb
 	return c, nil
 }
 
-func (c *createNFSStorageDomainParams) MustWithCriticalSpaceActionBlocker(percent int64) BuildableNFSStorageDomainParams {
-	b, err := c.WithCriticalSpaceActionBlocker(percent)
+func (c *createNFSStorageDomainParams) MustWithCriticalSpaceActionBlocker(gb int64) BuildableNFSStorageDomainParams {
+	b, err := c.WithCriticalSpaceActionBlocker(gb)
 	if err != nil {
 		panic(err)
 	}
@@ -721,8 +721,8 @@ type BuildableUpdateStorageDomainParams interface {
 	MustWithWipeAfterDelete(wipe bool) BuildableUpdateStorageDomainParams
 	WithBackup(backup bool) (BuildableUpdateStorageDomainParams, error)
 	MustWithBackup(backup bool) BuildableUpdateStorageDomainParams
-	WithCriticalSpaceActionBlocker(percent int64) (BuildableUpdateStorageDomainParams, error)
-	MustWithCriticalSpaceActionBlocker(percent int64) BuildableUpdateStorageDomainParams
+	WithCriticalSpaceActionBlocker(gb int64) (BuildableUpdateStorageDomainParams, error)
+	MustWithCriticalSpaceActionBlocker(gb int64) BuildableUpdateStorageDomainParams
 	WithWarningLowSpaceIndicator(percent int64) (BuildableUpdateStorageDomainParams, error)
 	MustWithWarningLowSpaceIndicator(percent int64) BuildableUpdateStorageDomainParams
 }
@@ -838,16 +838,16 @@ func (u *updateStorageDomainParams) MustWithBackup(backup bool) BuildableUpdateS
 	return b
 }
 
-func (u *updateStorageDomainParams) WithCriticalSpaceActionBlocker(percent int64) (BuildableUpdateStorageDomainParams, error) {
-	if percent < 0 || percent > 100 {
-		return nil, newError(EBadArgument, "critical space action blocker must be between 0 and 100")
+func (u *updateStorageDomainParams) WithCriticalSpaceActionBlocker(gb int64) (BuildableUpdateStorageDomainParams, error) {
+	if gb < 0 || gb > 2147483647 {
+		return nil, newError(EBadArgument, "critical space action blocker must be between 0 and 2147483647 GB")
 	}
-	u.criticalSpaceActionBlocker = &percent
+	u.criticalSpaceActionBlocker = &gb
 	return u, nil
 }
 
-func (u *updateStorageDomainParams) MustWithCriticalSpaceActionBlocker(percent int64) BuildableUpdateStorageDomainParams {
-	b, err := u.WithCriticalSpaceActionBlocker(percent)
+func (u *updateStorageDomainParams) MustWithCriticalSpaceActionBlocker(gb int64) BuildableUpdateStorageDomainParams {
+	b, err := u.WithCriticalSpaceActionBlocker(gb)
 	if err != nil {
 		panic(err)
 	}
@@ -874,6 +874,7 @@ func (u *updateStorageDomainParams) MustWithWarningLowSpaceIndicator(percent int
 type RemoveStorageDomainParams interface {
 	Destroy() *bool
 	Format() *bool
+	Host() *string
 }
 
 // BuildableRemoveStorageDomainParams is a buildable version of RemoveStorageDomainParams.
@@ -884,6 +885,8 @@ type BuildableRemoveStorageDomainParams interface {
 	MustWithDestroy(destroy bool) BuildableRemoveStorageDomainParams
 	WithFormat(format bool) (BuildableRemoveStorageDomainParams, error)
 	MustWithFormat(format bool) BuildableRemoveStorageDomainParams
+	WithHost(host string) (BuildableRemoveStorageDomainParams, error)
+	MustWithHost(host string) BuildableRemoveStorageDomainParams
 }
 
 // NewRemoveStorageDomainParams creates a buildable set of RemoveStorageDomainParams.
@@ -894,6 +897,7 @@ func NewRemoveStorageDomainParams() BuildableRemoveStorageDomainParams {
 type removeStorageDomainParams struct {
 	destroy *bool
 	format  *bool
+	host    *string
 }
 
 func (r *removeStorageDomainParams) Destroy() *bool {
@@ -902,6 +906,10 @@ func (r *removeStorageDomainParams) Destroy() *bool {
 
 func (r *removeStorageDomainParams) Format() *bool {
 	return r.format
+}
+
+func (r *removeStorageDomainParams) Host() *string {
+	return r.host
 }
 
 func (r *removeStorageDomainParams) WithDestroy(destroy bool) (BuildableRemoveStorageDomainParams, error) {
@@ -924,6 +932,22 @@ func (r *removeStorageDomainParams) WithFormat(format bool) (BuildableRemoveStor
 
 func (r *removeStorageDomainParams) MustWithFormat(format bool) BuildableRemoveStorageDomainParams {
 	b, err := r.WithFormat(format)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (r *removeStorageDomainParams) WithHost(host string) (BuildableRemoveStorageDomainParams, error) {
+	if host == "" {
+		return nil, newError(EBadArgument, "host cannot be empty")
+	}
+	r.host = &host
+	return r, nil
+}
+
+func (r *removeStorageDomainParams) MustWithHost(host string) BuildableRemoveStorageDomainParams {
+	b, err := r.WithHost(host)
 	if err != nil {
 		panic(err)
 	}

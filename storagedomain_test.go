@@ -11,6 +11,9 @@ func TestStorageDomainCRUD(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
+	if _, isMock := client.(ovirtclient.MockClient); !isMock {
+		t.Skip("skipping NFS storage domain CRUD test on live engine without provisioned NFS export")
+	}
 
 	hosts, err := client.ListHosts()
 	if err != nil {
@@ -182,6 +185,9 @@ func TestStorageDomainDuplicateName(t *testing.T) {
 	t.Parallel()
 	helper := getHelper(t)
 	client := helper.GetClient()
+	if _, isMock := client.(ovirtclient.MockClient); !isMock {
+		t.Skip("skipping NFS storage domain duplicate name test on live engine without provisioned NFS export")
+	}
 
 	hosts, err := client.ListHosts()
 	if err != nil {
@@ -202,5 +208,75 @@ func TestStorageDomainDuplicateName(t *testing.T) {
 	_, err = client.CreateNFSStorageDomain(sdName, hostID, "nfs.local", "/exports/2", nil)
 	if err == nil {
 		t.Fatalf("expected error creating storage domain with duplicate name, got nil")
+	}
+}
+
+func TestStorageDomainValidationAndCleanup(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	client := helper.GetClient()
+	if _, isMock := client.(ovirtclient.MockClient); !isMock {
+		t.Skip("skipping mock-only storage domain validation and cleanup test")
+	}
+
+	// CriticalSpaceActionBlocker accepts GB values (0..2147483647), not just 0..100
+	if _, err := ovirtclient.NewCreateNFSStorageDomainParams().WithCriticalSpaceActionBlocker(-1); err == nil {
+		t.Fatalf("expected error for negative critical space action blocker")
+	}
+	createParams, err := ovirtclient.NewCreateNFSStorageDomainParams().WithCriticalSpaceActionBlocker(500)
+	if err != nil {
+		t.Fatalf("expected GB value 500 for critical space action blocker to succeed (%v)", err)
+	}
+	if _, err := ovirtclient.NewUpdateStorageDomainParams().WithCriticalSpaceActionBlocker(2147483647); err != nil {
+		t.Fatalf("expected max int32 GB value for critical space action blocker to succeed (%v)", err)
+	}
+	if _, err := ovirtclient.NewUpdateStorageDomainParams().WithCriticalSpaceActionBlocker(-1); err == nil {
+		t.Fatalf("expected error for negative update critical space action blocker")
+	}
+
+	// RemoveStorageDomainParams.WithHost
+	removeHostParams, err := ovirtclient.NewRemoveStorageDomainParams().WithHost("host-1")
+	if err != nil {
+		t.Fatalf("failed to set host on remove params (%v)", err)
+	}
+	if removeHostParams.Host() == nil || *removeHostParams.Host() != "host-1" {
+		t.Fatalf("expected remove host 'host-1', got %v", removeHostParams.Host())
+	}
+
+	hosts, err := client.ListHosts()
+	if err != nil {
+		t.Fatalf("failed to list hosts (%v)", err)
+	}
+	sdName := fmt.Sprintf("sd_cleanup_%s", helper.GenerateRandomID(5))
+	sd, err := client.CreateNFSStorageDomain(sdName, hosts[0].ID(), "nfs.local", "/exports/cleanup", createParams)
+	if err != nil {
+		t.Fatalf("failed to create storage domain (%v)", err)
+	}
+
+	// Nil params update should succeed and not panic or mutate prior snapshot
+	updated, err := client.UpdateStorageDomain(sd.ID(), nil)
+	if err != nil {
+		t.Fatalf("failed to update storage domain with nil params (%v)", err)
+	}
+	if updated.Name() != sdName {
+		t.Fatalf("expected name %s after nil update, got %s", sdName, updated.Name())
+	}
+
+	// Create a disk on this storage domain, then remove with Destroy=true
+	disk, err := client.CreateDisk(sd.ID(), ovirtclient.ImageFormatRaw, 1024*1024, nil)
+	if err != nil {
+		t.Fatalf("failed to create disk on storage domain (%v)", err)
+	}
+
+	removeParams, err := ovirtclient.NewRemoveStorageDomainParams().WithDestroy(true)
+	if err != nil {
+		t.Fatalf("failed to build remove params (%v)", err)
+	}
+	if err := client.RemoveStorageDomain(sd.ID(), removeParams); err != nil {
+		t.Fatalf("failed to destroy storage domain with disks (%v)", err)
+	}
+
+	if _, err := client.GetDisk(disk.ID()); err == nil {
+		t.Fatalf("expected disk %s to be deleted after storage domain destroy", disk.ID())
 	}
 }
