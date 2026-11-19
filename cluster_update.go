@@ -96,6 +96,10 @@ func (m *mockClient) UpdateCluster(
 		return nil, newError(ENotFound, "cluster with ID %s not found", id)
 	}
 
+	if params == nil {
+		params = NewUpdateClusterParams()
+	}
+
 	name := c.name
 	if newName := params.Name(); newName != nil {
 		if *newName == "" {
@@ -142,13 +146,15 @@ func (m *mockClient) UpdateCluster(
 		memOvercommit = newMem
 	}
 
-	c.name = name
-	c.description = description
-	c.comment = comment
-	c.cpuType = cpuType
-	c.cpuArch = cpuArch
-	c.ballooning = ballooning
-	c.memoryOverCommitPercent = memOvercommit
+	updated := *c
+	updated.name = name
+	updated.description = description
+	updated.comment = comment
+	updated.cpuType = cpuType
+	updated.cpuArch = cpuArch
+	updated.ballooning = ballooning
+	updated.memoryOverCommitPercent = memOvercommit
+	m.clusters[id] = &updated
 
-	return c, nil
+	return &updated, nil
 }
