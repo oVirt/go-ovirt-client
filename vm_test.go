@@ -1232,7 +1232,7 @@ func TestVMHighAvailability(t *testing.T) {
 
 func TestVMLeaseStorageDomainID(t *testing.T) {
 	helper := getHelper(t)
-	leaseDomainID := ovirtclient.StorageDomainID(helper.GenerateRandomID(5))
+	leaseDomainID := helper.GetStorageDomainID()
 	vm := assertCanCreateVM(
 		t,
 		helper,
@@ -1243,7 +1243,7 @@ func TestVMLeaseStorageDomainID(t *testing.T) {
 		t.Fatalf("Expected lease storage domain ID to be %s, got %v", leaseDomainID, vm.LeaseStorageDomainID())
 	}
 
-	updatedLeaseDomainID := ovirtclient.StorageDomainID(helper.GenerateRandomID(5))
+	updatedLeaseDomainID := helper.GetSecondaryStorageDomainID(t)
 	updatedVM, err := vm.Update(ovirtclient.UpdateVMParams().MustWithLeaseStorageDomainID(updatedLeaseDomainID))
 	if err != nil {
 		t.Fatalf("Failed to update lease storage domain ID: %v", err)
