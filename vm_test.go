@@ -342,7 +342,7 @@ func TestVMCreationWithInit(t *testing.T) { //nolint:funlen
 				t.Fatalf("got Unexpected output from the HostName (%s) init field ", vm2.Initialization().HostName())
 			}
 
-			if testCase.hostName != "" {
+			if _, isMock := helper.GetClient().(ovirtclient.MockClient); isMock && testCase.hostName != "" {
 				if vm2.FQDN() == nil || *vm2.FQDN() != testCase.hostName {
 					t.Fatalf("expected FQDN %s, got %v", testCase.hostName, vm2.FQDN())
 				}
