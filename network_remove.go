@@ -32,10 +32,19 @@ func (m *mockClient) RemoveNetwork(
 		return newError(ENotFound, "network with ID %s not found", id)
 	}
 
-	for _, profile := range m.vnicProfiles {
+	unusedProfiles := make([]VNICProfileID, 0)
+	for profileID, profile := range m.vnicProfiles {
 		if profile.networkID == id {
-			return newError(EConflict, "cannot remove network with ID %s because it is still in use by VNIC profile %s", id, profile.id)
+			for _, n := range m.nics {
+				if n.vnicProfileID == profileID {
+					return newError(EConflict, "cannot remove network with ID %s because VNIC profile %s is in use by NIC %s", id, profileID, n.id)
+				}
+			}
+			unusedProfiles = append(unusedProfiles, profileID)
 		}
+	}
+	for _, profileID := range unusedProfiles {
+		delete(m.vnicProfiles, profileID)
 	}
 
 	delete(m.networks, id)
