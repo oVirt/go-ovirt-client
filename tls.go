@@ -35,8 +35,9 @@ type BuildableTLSProvider interface {
 	CACertsFromFile(file string) BuildableTLSProvider
 
 	// CACertsFromDir adds all PEM-encoded certificates from a directory. If one or more patterns are passed, the
-	// files will only be added if the files match at least one of the patterns. The certificate will fail if one or
-	// more matching files don't contain a valid certificate.
+	// files will only be added if the files match at least one of the patterns. Dotfiles are excluded, and matching
+	// files that do not contain a valid certificate are skipped (with a warning if a logger is configured), whereas
+	// file-read errors still cause failure.
 	CACertsFromDir(dir string, patterns ...*regexp.Regexp) BuildableTLSProvider
 
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
