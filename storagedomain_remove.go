@@ -64,10 +64,12 @@ func (m *mockClient) RemoveStorageDomain(
 			}
 		}
 	} else {
-		for diskID, disk := range m.disks {
+		var toDelete []DiskID
+		toUpdate := make(map[DiskID]*diskWithData)
+		for diskID, d := range m.disks {
 			found := false
-			remaining := make([]StorageDomainID, 0, len(disk.storageDomainIDs))
-			for _, sID := range disk.storageDomainIDs {
+			remaining := make([]StorageDomainID, 0, len(d.storageDomainIDs))
+			for _, sID := range d.storageDomainIDs {
 				if sID == id {
 					found = true
 				} else {
@@ -78,12 +80,21 @@ func (m *mockClient) RemoveStorageDomain(
 				continue
 			}
 			if len(remaining) == 0 {
-				m.deleteDiskLocked(diskID)
+				if _, ok := m.templateDiskAttachmentsByDisk[diskID]; ok {
+					return newError(EConflict, "cannot remove storage domain %s because disk %s is attached to a template", id, diskID)
+				}
+				toDelete = append(toDelete, diskID)
 			} else {
-				updatedDisk := *disk
+				updatedDisk := *d
 				updatedDisk.storageDomainIDs = remaining
-				m.disks[diskID] = &updatedDisk
+				toUpdate[diskID] = &updatedDisk
 			}
+		}
+		for _, diskID := range toDelete {
+			m.deleteDiskLocked(diskID)
+		}
+		for diskID, updatedDisk := range toUpdate {
+			m.disks[diskID] = updatedDisk
 		}
 	}
 
