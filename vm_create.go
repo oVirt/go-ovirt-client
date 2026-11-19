@@ -446,6 +446,14 @@ func (m *mockClient) CreateVM(
 				}
 			}
 
+			if params != nil && len(params.NICs()) > 0 {
+				for _, n := range params.NICs() {
+					if _, ok := m.vnicProfiles[n.VNICProfileID()]; !ok {
+						return newError(ENotFound, "VNIC profile with ID %s not found", n.VNICProfileID())
+					}
+				}
+			}
+
 			cpu := m.createVMCPU(params, tpl)
 
 			vm := m.createVM(name, params, clusterID, templateID, cpu)
@@ -453,9 +461,10 @@ func (m *mockClient) CreateVM(
 			m.attachVMDisksFromTemplate(tpl, vm, params)
 
 			if params != nil && len(params.NICs()) > 0 {
+				reservedNames := make(map[string]bool)
 				for _, n := range params.NICs() {
-					if _, ok := m.vnicProfiles[n.VNICProfileID()]; !ok {
-						return newError(ENotFound, "VNIC profile with ID %s not found", n.VNICProfileID())
+					if n.Name() != "" {
+						reservedNames[n.Name()] = true
 					}
 				}
 				for _, n := range params.NICs() {
@@ -472,15 +481,18 @@ func (m *mockClient) CreateVM(
 						nicIndex := 0
 						for {
 							candidate := fmt.Sprintf("eth%d", nicIndex)
-							inUse := false
-							for _, existing := range m.nics {
-								if existing.vmid == vm.id && existing.name == candidate {
-									inUse = true
-									break
+							inUse := reservedNames[candidate]
+							if !inUse {
+								for _, existing := range m.nics {
+									if existing.vmid == vm.id && existing.name == candidate {
+										inUse = true
+										break
+									}
 								}
 							}
 							if !inUse {
 								nicName = candidate
+								reservedNames[candidate] = true
 								break
 							}
 							nicIndex++
