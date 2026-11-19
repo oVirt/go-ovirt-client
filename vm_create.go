@@ -231,6 +231,10 @@ func createSDKVM(
 		vmOSCreator,
 		vmSerialConsoleCreator,
 		vmSoundcardEnabledCreator,
+		vmCustomEmulatedMachineCreator,
+		vmBiosTypeCreator,
+		vmHighAvailabilityCreator,
+		vmLeaseCreator,
 	}
 
 	for _, part := range parts {
@@ -283,6 +287,51 @@ func vmSoundcardEnabledCreator(params OptionalVMParameters, builder *ovirtsdk.Vm
 		return
 	}
 	builder.SoundcardEnabled(*soundcardEnabled)
+}
+
+func vmCustomEmulatedMachineCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if params == nil {
+		return
+	}
+	if machine := params.CustomEmulatedMachine(); machine != nil {
+		builder.CustomEmulatedMachine(*machine)
+	}
+}
+
+func vmBiosTypeCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if params == nil {
+		return
+	}
+	if biosType := params.BiosType(); biosType != nil {
+		builder.BiosBuilder(ovirtsdk.NewBiosBuilder().Type(ovirtsdk.BiosType(*biosType)))
+	}
+}
+
+func vmHighAvailabilityCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if params == nil {
+		return
+	}
+	haEnabled := params.HighAvailability()
+	haPriority := params.HighAvailabilityPriority()
+	if haEnabled != nil || haPriority != nil {
+		haBuilder := ovirtsdk.NewHighAvailabilityBuilder()
+		if haEnabled != nil {
+			haBuilder.Enabled(*haEnabled)
+		}
+		if haPriority != nil {
+			haBuilder.Priority(*haPriority)
+		}
+		builder.HighAvailabilityBuilder(haBuilder)
+	}
+}
+
+func vmLeaseCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
+	if params == nil {
+		return
+	}
+	if leaseDomainID := params.LeaseStorageDomainID(); leaseDomainID != nil {
+		builder.LeaseBuilder(ovirtsdk.NewStorageDomainLeaseBuilder().StorageDomainBuilder(ovirtsdk.NewStorageDomainBuilder().Id(string(*leaseDomainID))))
+	}
 }
 
 func vmOSCreator(params OptionalVMParameters, builder *ovirtsdk.VmBuilder) {
@@ -491,6 +540,11 @@ func (m *mockClient) createVM(
 		m.createVMOS(params),
 		console,
 		soundcardEnabled,
+		params.CustomEmulatedMachine(),
+		params.BiosType(),
+		params.HighAvailability(),
+		params.HighAvailabilityPriority(),
+		params.LeaseStorageDomainID(),
 	}
 	m.vms[VMID(id)] = vm
 	return vm
