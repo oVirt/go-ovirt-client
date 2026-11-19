@@ -148,8 +148,8 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		},
-		SessionTicketsDisabled:   false,
-		ClientSessionCache:       nil,
+		SessionTicketsDisabled: false,
+		ClientSessionCache:     nil,
 		// Based on Mozilla intermediate compatibility:
 		// https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
 		MinVersion: tls.VersionTLS12,
