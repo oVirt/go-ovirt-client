@@ -101,4 +101,11 @@ func TestCACertsFromDirWithDotfilesAndNonPEM(t *testing.T) {
 	if tlsConfig.RootCAs == nil {
 		t.Fatal("expected RootCAs to be populated")
 	}
+	expectedPool := x509.NewCertPool()
+	if !expectedPool.AppendCertsFromPEM(caPEM) {
+		t.Fatal("failed to append caPEM to expectedPool")
+	}
+	if !expectedPool.Equal(tlsConfig.RootCAs) {
+		t.Fatal("expected RootCAs to match generated CA certificate pool")
+	}
 }
