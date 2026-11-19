@@ -65,16 +65,24 @@ func (m *mockClient) RemoveStorageDomain(
 		}
 	} else {
 		for diskID, disk := range m.disks {
+			found := false
 			remaining := make([]StorageDomainID, 0, len(disk.storageDomainIDs))
 			for _, sID := range disk.storageDomainIDs {
-				if sID != id {
+				if sID == id {
+					found = true
+				} else {
 					remaining = append(remaining, sID)
 				}
 			}
+			if !found {
+				continue
+			}
 			if len(remaining) == 0 {
-				delete(m.disks, diskID)
+				m.deleteDiskLocked(diskID)
 			} else {
-				disk.storageDomainIDs = remaining
+				updatedDisk := *disk
+				updatedDisk.storageDomainIDs = remaining
+				m.disks[diskID] = &updatedDisk
 			}
 		}
 	}
