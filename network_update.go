@@ -69,6 +69,10 @@ func (m *mockClient) UpdateNetwork(
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	if params == nil {
+		params = NewUpdateNetworkParams()
+	}
+
 	net, ok := m.networks[id]
 	if !ok {
 		return nil, newError(ENotFound, "network with ID %s not found", id)

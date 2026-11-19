@@ -179,3 +179,41 @@ func TestNetworkInvalidVLAN(t *testing.T) {
 		_ = client.RemoveNetwork(net.ID())
 	})
 }
+
+func TestNetworkUpdateNilParamsAndRemoveWithProfiles(t *testing.T) {
+	t.Parallel()
+	helper := getHelper(t)
+	client := helper.GetClient()
+	if _, isMock := client.(ovirtclient.MockClient); !isMock {
+		t.Skip("mock-only test")
+	}
+
+	datacenters, err := client.ListDatacenters()
+	if err != nil || len(datacenters) == 0 {
+		t.Fatalf("failed to list datacenters: %v", err)
+	}
+	dcID := datacenters[0].ID()
+	net, err := client.CreateNetwork(dcID, fmt.Sprintf("net_nil_%s", helper.GenerateRandomID(5)), nil)
+	if err != nil {
+		t.Fatalf("failed to create network: %v", err)
+	}
+
+	updated, err := client.UpdateNetwork(net.ID(), nil)
+	if err != nil {
+		t.Fatalf("UpdateNetwork(id, nil) failed: %v", err)
+	}
+	if updated.Name() != net.Name() {
+		t.Fatalf("expected unchanged name %s, got %s", net.Name(), updated.Name())
+	}
+
+	profile, err := client.CreateVNICProfile(fmt.Sprintf("prof_%s", helper.GenerateRandomID(5)), net.ID(), nil)
+	if err != nil {
+		t.Fatalf("failed to create VNIC profile: %v", err)
+	}
+	if err := client.RemoveNetwork(net.ID()); err != nil {
+		t.Fatalf("expected RemoveNetwork with unused profile to succeed, got: %v", err)
+	}
+	if _, err := client.GetVNICProfile(profile.ID()); err == nil || !ovirtclient.HasErrorCode(err, ovirtclient.ENotFound) {
+		t.Fatalf("expected unused VNIC profile to be removed, got: %v", err)
+	}
+}

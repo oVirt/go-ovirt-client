@@ -79,14 +79,30 @@ func (m *mockClient) CreateNetwork(
 		}
 	}
 
+	var descCopy *string
+	if d := params.Description(); d != nil {
+		v := *d
+		descCopy = &v
+	}
+	var commentCopy *string
+	if c := params.Comment(); c != nil {
+		v := *c
+		commentCopy = &v
+	}
+	var vlanCopy *uint
+	if vl := params.VLAN(); vl != nil {
+		v := *vl
+		vlanCopy = &v
+	}
+
 	id := NetworkID(m.GenerateUUID())
 	net := &network{
 		client:      m,
 		id:          id,
 		name:        name,
-		description: params.Description(),
-		comment:     params.Comment(),
-		vlan:        params.VLAN(),
+		description: descCopy,
+		comment:     commentCopy,
+		vlan:        vlanCopy,
 		dcID:        datacenterID,
 	}
 	m.networks[id] = net
