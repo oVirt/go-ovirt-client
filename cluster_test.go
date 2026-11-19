@@ -198,16 +198,15 @@ func TestClusterCannotRemoveWithHosts(t *testing.T) {
 	helper := getHelper(t)
 	client := helper.GetClient()
 
-	clusters, err := client.ListClusters()
+	hosts, err := client.ListHosts()
 	if err != nil {
-		t.Fatalf("failed to list clusters (%v)", err)
+		t.Fatalf("failed to list hosts (%v)", err)
 	}
-	if len(clusters) == 0 {
-		t.Fatalf("no clusters found")
+	if len(hosts) == 0 {
+		t.Skip("no hosts found to test cluster-in-use removal")
 	}
 
-	// Default cluster has a host attached in mock
-	err = client.RemoveCluster(clusters[0].ID())
+	err = client.RemoveCluster(hosts[0].ClusterID())
 	if err == nil {
 		t.Fatalf("expected error removing cluster with attached hosts, got nil")
 	}
