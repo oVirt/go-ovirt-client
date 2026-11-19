@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"testing"
 
-	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v3"
+	ovirtclient "github.com/ovirt/go-ovirt-client/v3"
 )
 
 // This example shows how to set up TLS verification in a variety of ways.
