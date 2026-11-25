@@ -312,6 +312,11 @@ func (v vmCPU) Mode() *CPUMode {
 }
 
 func (v vmCPU) Topo() VMCPUTopo {
+	// Returning the nil *vmCPUTopo directly would yield a non-nil interface holding a nil pointer, which
+	// callers cannot detect with a nil check and whose accessors panic.
+	if v.topo == nil {
+		return nil
+	}
 	return v.topo
 }
 
