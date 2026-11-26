@@ -243,14 +243,26 @@ type VMData interface {
 // VMOS is the structure describing the virtual machine operating system, if set.
 type VMOS interface {
 	Type() string
+	// BootDevices returns the boot sequence for the virtual machine.
+	BootDevices() []BootDevice
 }
 
 type vmOS struct {
-	t string
+	t           string
+	bootDevices []BootDevice
 }
 
 func (v vmOS) Type() string {
 	return v.t
+}
+
+func (v vmOS) BootDevices() []BootDevice {
+	if v.bootDevices == nil {
+		return []BootDevice{}
+	}
+	result := make([]BootDevice, len(v.bootDevices))
+	copy(result, v.bootDevices)
+	return result
 }
 
 // VMPlacementPolicy is the structure that holds the rules for VM migration to other hosts.
@@ -1087,10 +1099,43 @@ func (v *vmCPUTopoParams) MustWithThreads(threads uint) BuildableVMCPUTopoParams
 	return builder
 }
 
+// BootDevice represents the device a virtual machine can boot from.
+type BootDevice string
+
+const (
+	// BootDeviceCDROM boots from CD-ROM.
+	BootDeviceCDROM BootDevice = "cdrom"
+	// BootDeviceHardDisk boots from hard disk.
+	BootDeviceHardDisk BootDevice = "hd"
+	// BootDeviceNetwork boots from network interface (PXE).
+	BootDeviceNetwork BootDevice = "network"
+)
+
+// Validate checks if the BootDevice value is valid.
+func (b BootDevice) Validate() error {
+	switch b {
+	case BootDeviceCDROM, BootDeviceHardDisk, BootDeviceNetwork:
+		return nil
+	default:
+		return newError(EBadArgument, "invalid boot device: %s", b)
+	}
+}
+
+// BootDeviceValues returns all possible values for boot devices.
+func BootDeviceValues() []BootDevice {
+	return []BootDevice{
+		BootDeviceCDROM,
+		BootDeviceHardDisk,
+		BootDeviceNetwork,
+	}
+}
+
 // VMOSParameters contains the VM parameters pertaining to the operating system.
 type VMOSParameters interface {
 	// Type returns the type-string for the operating system.
 	Type() *string
+	// BootDevices returns the boot devices sequence for the operating system, if set.
+	BootDevices() []BootDevice
 }
 
 // BuildableVMOSParameters is a buildable version of VMOSParameters.
@@ -1099,6 +1144,9 @@ type BuildableVMOSParameters interface {
 
 	WithType(t string) (BuildableVMOSParameters, error)
 	MustWithType(t string) BuildableVMOSParameters
+
+	WithBootDevices(bootDevices []BootDevice) (BuildableVMOSParameters, error)
+	MustWithBootDevices(bootDevices []BootDevice) BuildableVMOSParameters
 }
 
 // NewVMOSParameters creates a new VMOSParameters structure.
@@ -1107,7 +1155,8 @@ func NewVMOSParameters() BuildableVMOSParameters {
 }
 
 type vmOSParameters struct {
-	t *string
+	t           *string
+	bootDevices []BootDevice
 }
 
 func (v *vmOSParameters) Type() *string {
@@ -1121,6 +1170,38 @@ func (v *vmOSParameters) WithType(t string) (BuildableVMOSParameters, error) {
 
 func (v *vmOSParameters) MustWithType(t string) BuildableVMOSParameters {
 	builder, err := v.WithType(t)
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
+func (v *vmOSParameters) BootDevices() []BootDevice {
+	if v.bootDevices == nil {
+		return nil
+	}
+	result := make([]BootDevice, len(v.bootDevices))
+	copy(result, v.bootDevices)
+	return result
+}
+
+func (v *vmOSParameters) WithBootDevices(bootDevices []BootDevice) (BuildableVMOSParameters, error) {
+	if len(bootDevices) == 0 {
+		return nil, newError(EBadArgument, "boot devices list cannot be empty")
+	}
+	for _, dev := range bootDevices {
+		if err := dev.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	devicesCopy := make([]BootDevice, len(bootDevices))
+	copy(devicesCopy, bootDevices)
+	v.bootDevices = devicesCopy
+	return v, nil
+}
+
+func (v *vmOSParameters) MustWithBootDevices(bootDevices []BootDevice) BuildableVMOSParameters {
+	builder, err := v.WithBootDevices(bootDevices)
 	if err != nil {
 		panic(err)
 	}
@@ -2708,6 +2789,15 @@ func vmOSConverter(object *ovirtsdk.Vm, v *vm) error {
 		return newFieldNotFound("os on vm", "type")
 	}
 	v.os.t = osType
+	if boot, ok := sdkOS.Boot(); ok {
+		if devices, ok := boot.Devices(); ok {
+			bootDevices := make([]BootDevice, len(devices))
+			for i, dev := range devices {
+				bootDevices[i] = BootDevice(dev)
+			}
+			v.os.bootDevices = bootDevices
+		}
+	}
 	return nil
 }
 
