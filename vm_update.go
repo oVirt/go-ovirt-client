@@ -64,6 +64,27 @@ func (o *oVirtClient) UpdateVM(
 	if soundcardEnabled := params.SoundcardEnabled(); soundcardEnabled != nil {
 		vm.SetSoundcardEnabled(*soundcardEnabled)
 	}
+	if machine := params.CustomEmulatedMachine(); machine != nil {
+		vm.SetCustomEmulatedMachine(*machine)
+	}
+	if biosType := params.BiosType(); biosType != nil {
+		vm.SetBios(ovirtsdk.NewBiosBuilder().Type(ovirtsdk.BiosType(*biosType)).MustBuild())
+	}
+	haEnabled := params.HighAvailability()
+	haPriority := params.HighAvailabilityPriority()
+	if haEnabled != nil || haPriority != nil {
+		haBuilder := ovirtsdk.NewHighAvailabilityBuilder()
+		if haEnabled != nil {
+			haBuilder.Enabled(*haEnabled)
+		}
+		if haPriority != nil {
+			haBuilder.Priority(*haPriority)
+		}
+		vm.SetHighAvailability(haBuilder.MustBuild())
+	}
+	if leaseDomainID := params.LeaseStorageDomainID(); leaseDomainID != nil {
+		vm.SetLease(ovirtsdk.NewStorageDomainLeaseBuilder().StorageDomainBuilder(ovirtsdk.NewStorageDomainBuilder().Id(string(*leaseDomainID))).MustBuild())
+	}
 
 	err = retry(
 		fmt.Sprintf("updating vm %s", id),
@@ -181,6 +202,21 @@ func (m *mockClient) UpdateVM(id VMID, params UpdateVMParameters, _ ...RetryStra
 	}
 	if soundcardEnabled := params.SoundcardEnabled(); soundcardEnabled != nil {
 		vm.soundcardEnabled = *soundcardEnabled
+	}
+	if machine := params.CustomEmulatedMachine(); machine != nil {
+		vm.customEmulatedMachine = machine
+	}
+	if biosType := params.BiosType(); biosType != nil {
+		vm.biosType = biosType
+	}
+	if ha := params.HighAvailability(); ha != nil {
+		vm.highAvailability = ha
+	}
+	if priority := params.HighAvailabilityPriority(); priority != nil {
+		vm.highAvailabilityPriority = priority
+	}
+	if lease := params.LeaseStorageDomainID(); lease != nil {
+		vm.leaseStorageDomainID = lease
 	}
 	m.vms[id] = vm
 
