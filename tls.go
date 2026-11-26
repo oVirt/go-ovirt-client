@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -34,8 +35,10 @@ type BuildableTLSProvider interface {
 	CACertsFromFile(file string) BuildableTLSProvider
 
 	// CACertsFromDir adds all PEM-encoded certificates from a directory. If one or more patterns are passed, the
-	// files will only be added if the files match at least one of the patterns. The certificate will fail if one or
-	// more matching files don't contain a valid certificate.
+	// files will only be added if the files match at least one of the patterns. Dotfiles are excluded, and matching
+	// files that do not contain a valid certificate are skipped (with a warning if a logger is configured), whereas
+	// file-read errors still cause failure. If no valid certificates are loaded from any configured CA source,
+	// CreateTLSConfig returns an error.
 	CACertsFromDir(dir string, patterns ...*regexp.Regexp) BuildableTLSProvider
 
 	// CACertsFromSystem adds the system certificate store. This may fail because the certificate store is not available
@@ -55,6 +58,15 @@ func TLS() BuildableTLSProvider {
 	}
 }
 
+// TLSWithLogger creates a BuildableTLSProvider that logs warnings (for example, non-certificate files skipped in
+// certificate directories) using the provided logger.
+func TLSWithLogger(logger Logger) BuildableTLSProvider {
+	return &standardTLSProvider{
+		lock:   &sync.Mutex{},
+		logger: logger,
+	}
+}
+
 type standardTLSProvider struct {
 	lock        *sync.Mutex
 	insecure    bool
@@ -64,11 +76,19 @@ type standardTLSProvider struct {
 	certPool    *x509.CertPool
 	system      bool
 	configured  bool
+	logger      Logger
 }
 
 type standardTLSProviderDirectory struct {
 	dir      string
 	patterns []*regexp.Regexp
+}
+
+func (s *standardTLSProvider) WithLogger(logger Logger) BuildableTLSProvider {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.logger = logger
+	return s
 }
 
 func (s *standardTLSProvider) Insecure() TLSProvider {
@@ -175,18 +195,23 @@ func (s *standardTLSProvider) CreateTLSConfig() (*tls.Config, error) {
 	if err := s.addCertsFromFile(certPool); err != nil {
 		return nil, err
 	}
-	if err := s.addCertsFromDir(certPool); err != nil {
+	addedFromDir, err := s.addCertsFromDir(certPool)
+	if err != nil {
 		return nil, err
+	}
+	if !addedFromDir && !s.system && s.certPool == nil && len(s.caCerts) == 0 && len(s.files) == 0 && len(s.directories) > 0 {
+		return nil, newError(ETLSError, "no valid CA certificates found in configured certificate directories")
 	}
 	tlsConfig.RootCAs = certPool
 	return tlsConfig, nil
 }
 
-func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
+func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) (bool, error) {
+	added := false
 	for _, dir := range s.directories {
 		files, err := os.ReadDir(dir.dir)
 		if err != nil {
-			return wrap(
+			return false, wrap(
 				err,
 				ELocalIO,
 				"failed to list contents of %s directory",
@@ -195,6 +220,10 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 		}
 		for _, info := range files {
 			if info.IsDir() {
+				continue
+			}
+			// Skip hidden files/dotfiles (e.g. .gitkeep, .DS_Store)
+			if strings.HasPrefix(info.Name(), ".") {
 				continue
 			}
 			if len(dir.patterns) > 0 {
@@ -212,7 +241,7 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 			fullPath := filepath.Join(dir.dir, info.Name())
 			data, err := os.ReadFile(fullPath) //nolint:gosec
 			if err != nil {
-				return wrap(
+				return false, wrap(
 					err,
 					EFileReadFailed,
 					"failed to read certificate file: %s (%w)",
@@ -220,15 +249,15 @@ func (s *standardTLSProvider) addCertsFromDir(certPool *x509.CertPool) error {
 				)
 			}
 			if !certPool.AppendCertsFromPEM(data) {
-				return newError(
-					ETLSError,
-					"failed to add certificate from file: %s (certificate not in PEM format?)",
-					fullPath,
-				)
+				if s.logger != nil {
+					s.logger.Warningf("file in certificate directory %s does not contain valid PEM certificates: %s (skipped)", dir.dir, info.Name())
+				}
+				continue
 			}
+			added = true
 		}
 	}
-	return nil
+	return added, nil
 }
 
 func (s *standardTLSProvider) addCertsFromFile(certPool *x509.CertPool) error {
