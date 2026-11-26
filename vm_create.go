@@ -89,6 +89,30 @@ func buildSDKVMInitializationBuilder(init Initialization) *ovirtsdk.Initializati
 	if init.HostName() != "" {
 		initBuilder.HostName(init.HostName())
 	}
+	if init.AuthorizedSSHKeys() != nil {
+		initBuilder.AuthorizedSshKeys(*init.AuthorizedSSHKeys())
+	}
+	if init.RootPassword() != nil {
+		initBuilder.RootPassword(*init.RootPassword())
+	}
+	if init.UserName() != nil {
+		initBuilder.UserName(*init.UserName())
+	}
+	if init.Timezone() != nil {
+		initBuilder.Timezone(*init.Timezone())
+	}
+	if init.DNSServers() != nil {
+		initBuilder.DnsServers(*init.DNSServers())
+	}
+	if init.DNSSearch() != nil {
+		initBuilder.DnsSearch(*init.DNSSearch())
+	}
+	if init.RegenerateSSHKeys() != nil {
+		initBuilder.RegenerateSshKeys(*init.RegenerateSSHKeys())
+	}
+	if init.WindowsLicenseKey() != nil {
+		initBuilder.WindowsLicenseKey(*init.WindowsLicenseKey())
+	}
 	if nicConf := init.NicConfiguration(); nicConf != nil {
 		nicBuilder := ovirtsdk.NewNicConfigurationBuilder()
 		nicBuilder.BootProtocol(ovirtsdk.BOOTPROTOCOL_STATIC)
